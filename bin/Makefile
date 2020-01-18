@@ -81,3 +81,6 @@ sound_handler.o: ../src/sound_handler.cpp
 
 pugixml.o: ../src/pugixml.cpp
 	g++ -c ../src/pugixml.cpp
+
+clean:
+	rm -f *.o rick2
