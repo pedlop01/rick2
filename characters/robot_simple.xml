@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<character name="robot_simple">
+  <states>
+    <state name="CHAR_STATE_STOP" id="0">
+      <animation bitmap="../characters/enemies.png" speed="0">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_JUMPING" id="1">
+      <animation bitmap="../characters/enemies.png" speed="1">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_RUNNING" id="2">
+      <animation bitmap="../characters/enemies.png" speed="5">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+        <sprite x="21" y="1" width="19" height="21"></sprite>
+        <sprite x="41" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_CLIMBING" id="3">
+      <animation bitmap="../characters/enemies.png" speed="3">
+        <sprite x="1" y="23" width="19" height="21"></sprite>
+        <sprite x="21" y="23" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_CROUCHING" id="4">
+      <animation bitmap="../characters/enemies.png" speed="3">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_SHOOTING" id="4">
+      <animation bitmap="../characters/enemies.png" speed="3">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_BOMBING" id="4">
+      <animation bitmap="../characters/enemies.png" speed="3">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_HITTING" id="4">
+      <animation bitmap="../characters/enemies.png" speed="3">
+        <sprite x="1" y="1" width="19" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="CHAR_STATE_DYING" id="5">
+      <animation bitmap="../characters/enemies.png" speed="5">
+        <sprite x="1" y="45" width="25" height="21"></sprite>
+        <sprite x="27" y="45" width="25" height="21"></sprite>
+      </animation>
+    </state>
+  </states>
+</character>

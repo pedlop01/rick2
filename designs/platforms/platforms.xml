@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object name="platform">
+  <states>
+    <state name="OBJ_STATE_STOP" id="0">
+      <animation bitmap="../designs/platforms/platforms.png" speed="0">
+        <sprite x="1" y="1" width="24" height="8">
+        </sprite>
+      </animation>
+    </state>
+    <state name="OBJ_STATE_MOVING" id="0">
+      <animation bitmap="../designs/platforms/platforms.png" speed="0">
+        <sprite x="1" y="1" width="24" height="8">
+        </sprite>
+      </animation>
+    </state>
+  </states>
+</object>

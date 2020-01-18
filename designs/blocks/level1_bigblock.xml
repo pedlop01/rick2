@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object name="level1_bigblock">
+  <states>
+    <state name="OBJ_STATE_STOP" id="0">
+      <animation bitmap="../designs/blocks/level1_blocks.png" speed="0">
+        <sprite x="1" y="1" width="24" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="OBJ_STATE_MOVING" id="1">
+      <animation bitmap="../designs/blocks/level1_blocks.png" speed="0">
+        <sprite x="1" y="1" width="24" height="21"></sprite>
+      </animation>
+    </state>
+    <state name="OBJ_STATE_DYING" id="1">
+      <animation bitmap="../designs/blocks/level1_blocks.png" speed="3">
+        <sprite x="1" y="23" width="25" height="22"></sprite>
+        <sprite x="27" y="23" width="25" height="22"></sprite>
+        <sprite x="53" y="23" width="25" height="22"></sprite>
+        <sprite x="79" y="23" width="25" height="22"></sprite>
+        <sprite x="105" y="23" width="25" height="22"></sprite>
+      </animation>
+    </state>
+  </states>
+</object>

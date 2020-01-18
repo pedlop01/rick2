@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object name="liquid">
+  <states>
+    <state name="OBJ_STATE_STOP" id="0">
+      <animation bitmap="../designs/backgrounds/level1_background.png" speed="0">
+        <sprite x="1" y="79" width="12" height="8"></sprite>
+      </animation>
+    </state>
+    <state name="OBJ_STATE_MOVING" id="1">
+      <animation bitmap="../designs/backgrounds/level1_background.png" speed="4">
+        <sprite x="1" y="79" width="12" height="8"></sprite>
+        <sprite x="14" y="79" width="12" height="8"></sprite>
+        <sprite x="27" y="79" width="12" height="8"></sprite>
+      </animation>
+    </state>
+  </states>
+</object>
