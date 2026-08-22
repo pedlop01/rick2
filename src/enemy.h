@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <vector>
 
-#include "pugixml.hpp"
 #include "rick_params.h"
 #include "character.h"
 #include "enemy_ia.h"

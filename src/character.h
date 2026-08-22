@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "rick_params.h"
-#include "pugixml.hpp"
 #include "world.h"
 #include "platform.h"
 #include "block.h"
@@ -99,7 +98,6 @@ class Character {
     Platform* inPlatformPtr;
     Block*    blockCollisionPtr;
 
-    pugi::xml_document character_file;
 
     // Animations
     vector<Animation*> animations;

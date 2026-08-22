@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "rick_params.h"
-#include "pugixml.hpp"
 #include "animation.h"
 #include "colbox.h"
 #include "sound_handler.h"
@@ -148,8 +147,6 @@ class Object {
     Enemy*     enemyPtr;
 
     vector<Animation*> animations;
-
-    pugi::xml_document obj_file;
 
     SoundHandler* sound_handler;
 

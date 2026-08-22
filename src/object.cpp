@@ -184,36 +184,39 @@ void Object::Init(const char* file,
   initial_speed_x = speed_x;
   initial_speed_y = speed_y;
 
-  // Read animations
-  LoadReferencedData(obj_file, file);
-  ValidateAnimationXml(obj_file, "object", file);
+  // Read animations directly from the canonical JSON package.
+  const nlohmann::json& definition = GetAnimationDefinition(file);
 
   printf("- Initializing object:\n");
   // Iterate over states
   int num_anims = 0;  
-  sprintf(name, "%s", obj_file.child("object").attribute("name").as_string());
+  sprintf(name, "%s", definition.at("name").get<std::string>().c_str());
   printf("Object name = %s\n", name);
-  for (pugi::xml_node state = obj_file.child("object").child("states").first_child();
-       state; state = state.next_sibling()) {
-    printf("State name = %s, id = %d\n", state.attribute("name").as_string(), state.attribute("id").as_int());
-    // Create state
-    pugi::xml_node animation = state.child("animation");
+  for (nlohmann::json::const_iterator state = definition.at("states").begin();
+       state != definition.at("states").end(); ++state) {
+    printf("State name = %s, id = %d\n",
+           state->at("name").get<std::string>().c_str(),
+           state->at("id").get<int>());
+    const nlohmann::json& animation = state->at("animation");
     // Create animation and attach to state
-    printf("\tAnimation %d: file = %s, speed = %d\n", num_anims, animation.attribute("bitmap").as_string(), animation.attribute("speed").as_int());
-    ALLEGRO_BITMAP* obj_bitmap = al_load_bitmap(animation.attribute("bitmap").as_string());
+    const std::string bitmap_file = animation.at("bitmap").get<std::string>();
+    printf("\tAnimation %d: file = %s, speed = %d\n", num_anims,
+           bitmap_file.c_str(), animation.at("speed").get<int>());
+    ALLEGRO_BITMAP* obj_bitmap = al_load_bitmap(bitmap_file.c_str());
     if (!obj_bitmap) {
       throw DataLoadError(std::string("Cannot load animation bitmap '") +
-                          animation.attribute("bitmap").as_string() +
+                          bitmap_file +
                           "' referenced by '" + file + "'");
     }
-    Animation* obj_anim = new Animation(obj_bitmap, animation.attribute("speed").as_int());
+    Animation* obj_anim = new Animation(obj_bitmap, animation.at("speed").get<int>());
     int num_sprites = 0;
     // Traverse all sprites in the animation
-    for (pugi::xml_node sprite = animation.first_child(); sprite; sprite = sprite.next_sibling()) {
-      int sprite_x      = sprite.attribute("x").as_int();
-      int sprite_y      = sprite.attribute("y").as_int();
-      int sprite_width  = sprite.attribute("width").as_int();
-      int sprite_height = sprite.attribute("height").as_int();
+    for (nlohmann::json::const_iterator sprite = animation.at("sprites").begin();
+         sprite != animation.at("sprites").end(); ++sprite) {
+      int sprite_x      = sprite->at("x").get<int>();
+      int sprite_y      = sprite->at("y").get<int>();
+      int sprite_width  = sprite->at("width").get<int>();
+      int sprite_height = sprite->at("height").get<int>();
 
       printf("\t\tSprite %d: x = %d, y = %d, width = %d, height = %d\n", num_sprites,
                                                                          sprite_x,

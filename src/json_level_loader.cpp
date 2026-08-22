@@ -15,6 +15,7 @@ using json = nlohmann::json;
 std::map<std::string, std::string> referenced_documents;
 std::vector<std::string> music_files;
 std::vector<std::string> effect_files;
+json loaded_package;
 
 const json& RequireJsonMember(const json& value, const char* member,
                               const char* file)
@@ -207,6 +208,7 @@ void LoadWorldData(pugi::xml_document& document, const char* file)
                           "': unsupported formatVersion or kind");
     }
     referenced_documents.clear();
+    loaded_package = package;
     music_files = RequireJsonMember(RequireJsonMember(package, "audio", file),
                                     "music", file).get<std::vector<std::string> >();
     effect_files = RequireJsonMember(RequireJsonMember(package, "audio", file),
@@ -229,6 +231,16 @@ const std::vector<std::string>& GetLevelMusicFiles()
 const std::vector<std::string>& GetLevelEffectFiles()
 {
   return effect_files;
+}
+
+const nlohmann::json& GetAnimationDefinition(const char* key)
+{
+  try {
+    return loaded_package.at("definitions").at(key);
+  } catch (const std::exception&) {
+    throw DataLoadError(std::string("Missing JSON animation definition '") +
+                        key + "'");
+  }
 }
 
 void LoadReferencedData(pugi::xml_document& document, const char* file)

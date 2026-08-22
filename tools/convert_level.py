@@ -104,6 +104,11 @@ def convert(project_root, tmx_path, level_dir, player_path):
 
     player_key = "../" + player_path.as_posix()
     definitions[player_key] = animation_definition(player_path, project_root)
+    for definition_path in ("../designs/shoot/shoot.xml",
+                            "../designs/bomb/bomb.xml"):
+        definitions[definition_path] = animation_definition(
+            definition_path.removeprefix("../"), project_root
+        )
 
     return {
         "formatVersion": FORMAT_VERSION,
