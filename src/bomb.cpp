@@ -68,7 +68,7 @@ void Bomb::UpdateFSMState(World* map) {
     case OBJ_STATE_DYING:
       direction = OBJ_DIR_STOP;
       if (blockCollision) {
-        ((Block*)blockColPtr)->SetTrigger(true);
+        ((Block*)blockColPtr)->SetTriggered(true);
       }
       if (playerCol) {
         playerPtr->SetKilled(map);

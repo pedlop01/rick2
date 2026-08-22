@@ -35,7 +35,7 @@ class Enemy : public Character {
           int _ia_type, bool _ia_random, int _ia_randomness, int _block_steps,
           int _orig_x, int _orig_y, int _ia_limit_x, int _ia_limit_y);
 
-    ~Enemy();
+    ~Enemy() override;
 
     int GetId() { return id; }
 

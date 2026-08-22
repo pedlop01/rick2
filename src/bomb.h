@@ -9,16 +9,16 @@
 
 class Bomb : public Object {
   private:
-    void UpdateFSMState(World* map);
+    void UpdateFSMState(World* map) override;
 
   public:
     Bomb();
     Bomb(const char* file, int _x, int _y, int _width, int _height, int _direction);
-    ~Bomb();
+    ~Bomb() override;
 
-    void ComputeNextPosition(World* map);
+    void ComputeNextPosition(World* map) override;
 
-    int GetTypeId() { return obj_id; };
+    int GetTypeId() override { return obj_id; };
 };
 
 #endif // BOMB_H

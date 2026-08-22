@@ -114,7 +114,7 @@ class Character {
 	  Character();    // class constructor
     Character(const char* file);    
 
-    ~Character();   // class desructor
+    virtual ~Character();   // class destructor
 
     void Reset();
 

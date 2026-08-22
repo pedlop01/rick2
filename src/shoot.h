@@ -9,14 +9,14 @@
 
 class Shoot : public Object {
   private:
-    void UpdateFSMState(World* map);
+    void UpdateFSMState(World* map) override;
 
   public:
     Shoot();
     Shoot(const char* file, int _x, int _y, int _width, int _height, int _direction);
-    ~Shoot();
+    ~Shoot() override;
 
-    int GetTypeId() { return obj_id; };
+    int GetTypeId() override { return obj_id; };
 };
 
 #endif // SHOOT_H

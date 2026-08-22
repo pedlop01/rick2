@@ -39,20 +39,20 @@ class Hazard : public Object {
            int _height,
            bool _trigger,
            bool _stop_inactive);
-    ~Hazard();
+    ~Hazard() override;
 
     // Add new action
     void AddAction(int direction, int desp, int wait, float speed, bool enabled, int cond);
 
     // Set the onehot trigger
-    void SetTrigger() { trigger = true; }
+    void SetTrigger() override { trigger = true; }
 
     // Enable or disable conditional action execution
-    void SetCondActions(bool _cond_actions) { cond_actions = _cond_actions; }
-    bool GetCondActions()                   { return cond_actions; }
+    void SetCondActions(bool _cond_actions) override { cond_actions = _cond_actions; }
+    bool GetCondActions() override                   { return cond_actions; }
 
     int  GetID()      { return obj_id;    }
-    int  GetTypeId()  { return hazard_id; };
+    int  GetTypeId() override { return hazard_id; };
 
     void ComputeCollisionsPlayer(World* map, Character* player);
     void HazardStep(World* map, Character* player);

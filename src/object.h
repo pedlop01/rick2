@@ -157,7 +157,7 @@ class Object {
 
     Object();
     Object(int _x, int _y, int _width, int _height, int _visible, int _active);
-    ~Object();
+    virtual ~Object();
 
     int GetType()  { return obj_type; }
     int GetState() { return state;    }
@@ -184,7 +184,7 @@ class Object {
     virtual void UnsetTrigger() {;};
 
     virtual bool GetCondActions() { return false; }
-    virtual void SetCondActions(bool _cond_action) {;};
+    virtual void SetCondActions(bool) {;};
 
     void SetX(int _x)              { x = _x;              };
     void SetY(int _y)              { y = _y;              };
@@ -209,7 +209,7 @@ class Object {
     bool GetVisible() { return visible;                         };
     bool GetActive()  { return active;                          };
 
-    virtual int GetTypeId() { return -1; };
+    virtual int GetTypeId() = 0;
 
     void SetSpeedX(float _speed_x)          { speed_x = _speed_x;           };
     void SetSpeedXMax(float _speed_x_max)   { speed_x_max = _speed_x_max;   };

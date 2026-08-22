@@ -15,9 +15,9 @@ class StaticObject : public Object {
   public:
     StaticObject();
     StaticObject(int _type_id);
-    ~StaticObject();
+    ~StaticObject() override;
 
-    int GetTypeId() { return type_id; }
+    int GetTypeId() override { return type_id; }
 
     void Init(const char* _file, int _x, int _y, int _width, int _height, int _anim_step);
     void StaticObjectStep();

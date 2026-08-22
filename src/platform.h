@@ -39,21 +39,21 @@ class Platform : public Object {
              bool _visible,
              bool _recursive,
              bool _one_use);
-    ~Platform();
+    ~Platform() override;
 
     // Add new action
     void AddAction(int direction, int desp, int wait, float speed, int cond);
 
     // Set the onehot trigger
-    void SetTrigger() { trigger = true; }
+    void SetTrigger() override { trigger = true; }
 
     // Enable or disable conditional action execution
-    void SetCondActions(bool _cond_actions) { cond_actions = _cond_actions; }
-    bool GetCondActions()                   { return cond_actions; }
+    void SetCondActions(bool _cond_actions) override { cond_actions = _cond_actions; }
+    bool GetCondActions() override                   { return cond_actions; }
 
     // IDs
     int  GetID()      { return obj_id;      }
-    int  GetTypeId()  { return platform_id; };
+    int GetTypeId() override { return platform_id; };
 
     // Get currection direction of the platform based on current action
     int   GetDirection();

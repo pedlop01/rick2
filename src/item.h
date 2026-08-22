@@ -14,17 +14,17 @@ class Item : public Object {
     int steps_dying;
 
   private:
-    void UpdateFSMState(World* map);
+    void UpdateFSMState(World* map) override;
 
   public:
     Item();
     Item(int _type_id);
-    ~Item();
+    ~Item() override;
 
-    int GetTypeId() { return type_id; }
+    int GetTypeId() override { return type_id; }
 
     // Re-write computeation of next position
-    void ComputeNextPosition(World* map);
+    void ComputeNextPosition(World* map) override;
     // Re-write step from parent class
     void ObjectStep(World* map, Character* player);
 };

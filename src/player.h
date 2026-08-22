@@ -14,7 +14,7 @@ class Player : public Character {
 	  Player();    // class constructor
     Player(const char* file);    
 
-    ~Player();   // class desructor
+    ~Player() override;
 };
 
 #endif // PLAYER_H

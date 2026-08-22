@@ -28,19 +28,19 @@ class Laser : public Object {
     int already_triggered;
 
   private:
-    void UpdateFSMState(World* map);
+    void UpdateFSMState(World* map) override;
 
   public:
     Laser();
     Laser(const char* file, int _id, int _x, int _y, int _bb_x, int _bb_y, int _bb_width, int _bb_height, int _type, bool _onehot, float _speed, int _direction, int _default_trigger);
-    ~Laser();
+    ~Laser() override;
 
     void Reset();
 
-    int GetTypeId() { return obj_id; };
+    int GetTypeId() override { return obj_id; };
 
-    void SetTrigger()   { trigger = true;  }
-    void UnsetTrigger() { default_trigger = false; trigger = false; }
+    void SetTrigger() override   { trigger = true;  }
+    void UnsetTrigger() override { default_trigger = false; trigger = false; }
 
     void SetDefaultTrigger()   { default_trigger = true;  }
     void UnsetDefaultTrigger() { default_trigger = false; }

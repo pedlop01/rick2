@@ -16,20 +16,20 @@ class Block : public Object {
     bool trigger;
 
   private:
-    void UpdateFSMState(World* map);
-    void ComputeCollisions(World* map, Character* player);
-    void ComputeNextPosition(World* map);
+    void UpdateFSMState(World* map) override;
+    void ComputeCollisions(World* map, Character* player) override;
+    void ComputeNextPosition(World* map) override;
 
   public:
     Block();
     Block(int _type_id);
-    ~Block();
+    ~Block() override;
 
-    void SetTrigger(bool _trigger) { trigger = _trigger; };
+    void SetTriggered(bool _trigger) { trigger = _trigger; };
 
     void Init(const char* _file, int _x, int _y, int _width, int _height, bool _exploits);
 
-    int GetTypeId() { return type_id; };
+    int GetTypeId() override { return type_id; };
 };
 
 #endif // BLOCK_H
