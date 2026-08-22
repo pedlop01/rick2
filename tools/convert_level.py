@@ -4,7 +4,8 @@
 import argparse
 import json
 from pathlib import Path
-import xml.etree.ElementTree as ET
+
+from tmx_importer import TmxImportError, import_tmx
 
 
 FORMAT_VERSION = 1
@@ -72,21 +73,9 @@ def entity_group(path):
     return json.loads(path.read_text(encoding="utf-8"))["entities"]
 
 
-def layer(map_root, name):
-    element = next(
-        (candidate for candidate in map_root.findall("layer")
-         if candidate.attrib.get("name") == name),
-        None,
-    )
-    if element is None:
-        raise ValueError(f"missing TMX layer: {name}")
-    return [int(tile.attrib["gid"]) for tile in element.find("data")]
-
-
 def convert(project_root, tmx_path, level_dir, config_path):
-    map_root = ET.parse(project_root / tmx_path).getroot()
-    tileset = map_root.find("tileset")
-    image = tileset.find("image")
+    imported_map = import_tmx(project_root / tmx_path)
+    visual_tileset = imported_map["tilesets"][0]
     config = json.loads((project_root / config_path).read_text(encoding="utf-8"))
 
     entities = {}
@@ -123,21 +112,21 @@ def convert(project_root, tmx_path, level_dir, config_path):
         "kind": "rick2.level",
         "id": level_dir.name,
         "map": {
-            "width": int(map_root.attrib["width"]),
-            "height": int(map_root.attrib["height"]),
-            "tileWidth": int(map_root.attrib["tilewidth"]),
-            "tileHeight": int(map_root.attrib["tileheight"]),
+            "width": imported_map["width"],
+            "height": imported_map["height"],
+            "tileWidth": imported_map["tileWidth"],
+            "tileHeight": imported_map["tileHeight"],
             "tileset": {
-                "image": "../../" + (tmx_path.parent / image.attrib["source"]).as_posix(),
-                "tileCount": int(tileset.attrib["tilecount"]),
-                "columns": int(tileset.attrib["columns"]),
-                "imageWidth": int(image.attrib["width"]),
-                "imageHeight": int(image.attrib["height"]),
+                "image": "../../" + (tmx_path.parent / visual_tileset["image"]).as_posix(),
+                "tileCount": visual_tileset["tileCount"],
+                "columns": visual_tileset["columns"],
+                "imageWidth": visual_tileset["imageWidth"],
+                "imageHeight": visual_tileset["imageHeight"],
             },
             "layers": {
-                "tiles": layer(map_root, "Tiles"),
-                "frontTiles": layer(map_root, "FrontTiles"),
-                "collisions": layer(map_root, "Collisions"),
+                "tiles": imported_map["layers"]["Tiles"],
+                "frontTiles": imported_map["layers"]["FrontTiles"],
+                "collisions": imported_map["layers"]["Collisions"],
             },
         },
         "entities": entities,
@@ -158,7 +147,10 @@ def main():
     parser.add_argument("--config", type=Path, default=Path("levels/level1/config.json"))
     parser.add_argument("--output", type=Path, default=Path("levels/level1/level.json"))
     args = parser.parse_args()
-    package = convert(args.project_root, args.tmx, args.level_dir, args.config)
+    try:
+        package = convert(args.project_root, args.tmx, args.level_dir, args.config)
+    except TmxImportError as error:
+        parser.error(str(error))
     output = args.project_root / args.output
     output.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
 

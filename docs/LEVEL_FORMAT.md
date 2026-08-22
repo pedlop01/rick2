@@ -30,6 +30,13 @@ python3 tools/convert_level.py
 python3 tools/check_level_conversion.py
 ```
 
+The TMX importer supports finite orthogonal maps with embedded tilesets and
+uncompressed XML or CSV layer data. It requires `Tiles`, `FrontTiles` and
+`Collisions` layers with the map dimensions, validates every GID and rejects
+external TSX files, compression, flip flags and unsupported orientations with
+an explicit error. GID `0` remains empty and GID `1` remains the first visual
+tile; they are distinct in both the canonical package and the runtime.
+
 The game uses `levels/level1/level.json` by default and accepts another package
 as its single command-line argument. Entity instances, runtime configuration
 and animation definitions are maintained as JSON files and assembled into that package. TMX

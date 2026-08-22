@@ -96,6 +96,7 @@ compare it with its JSON sources and imported TMX map using:
 ```sh
 python3 tools/convert_level.py
 python3 tools/check_level_conversion.py
+python3 tests/tmx_importer_test.py
 ```
 
 Validate the C++ JSON loader independently of Allegro:

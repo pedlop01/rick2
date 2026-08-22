@@ -78,14 +78,16 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
     int tile_front_id = front_gid != 0 ? front_gid - 1 : 0;
     int tile_prop     = collision_gid != 0 ? collision_gid - 1 : 0;
     // Save the id of the tile aswell as the coordinates in the tileset bitmap
-    world_tiles[x][y]->SetValue(tile_id);
+    // Preserve the TMX GID as the presence marker: 0 means empty while GID 1
+    // is the first (zero-based index 0) tile in the tileset.
+    world_tiles[x][y]->SetValue(tile_gid);
     world_tiles[x][y]->SetType(tile_prop);
     world_tiles[x][y]->SetLeftUpX((tile_id % tileset_columns) * tileset_width);
     world_tiles[x][y]->SetLeftUpY(ceil(tile_id/tileset_columns)*tileset_height);
     world_tiles[x][y]->SetRightDownX((tile_id % tileset_columns) * tileset_width + tileset_width);
     world_tiles[x][y]->SetRightDownY(ceil((tile_id/tileset_columns))*tileset_height + tileset_height);
     // Same for tiles in front
-    world_tiles_front[x][y]->SetValue(tile_front_id);
+    world_tiles_front[x][y]->SetValue(front_gid);
     world_tiles_front[x][y]->SetType(tile_prop);
     world_tiles_front[x][y]->SetLeftUpX((tile_front_id % tileset_columns) * tileset_width);
     world_tiles_front[x][y]->SetLeftUpY(ceil(tile_front_id/tileset_columns)*tileset_height);

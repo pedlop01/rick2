@@ -134,7 +134,7 @@ void Camera::DrawBackTiles(World* world, Character* player, ALLEGRO_FONT *font) 
     for (int x = 0; x < tiles_width_corrected; x++) {
 
       tile = map->GetTile(tile_x, tile_y);
-      if (tile->GetValue() != 0) {
+      if (!tile->IsEmpty()) {
         left_up_x = tile->GetLeftUpX();
         left_up_y = tile->GetLeftUpY();
 
@@ -181,7 +181,7 @@ void Camera::DrawFrontTiles(World* world, Character* player, ALLEGRO_FONT *font)
     int tile_x = pos_x / tile_width;    
     for (int x = 0; x < tiles_width_corrected; x++) {
       tile = map->GetTileFront(tile_x, tile_y);
-      if (tile->GetValue() != 0) {
+      if (!tile->IsEmpty()) {
         left_up_x = tile->GetLeftUpX();
         left_up_y = tile->GetLeftUpY();
   

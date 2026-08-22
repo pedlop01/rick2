@@ -62,6 +62,7 @@ class Tile
         int  GetRightDownY()           { return right_down_y;  }        
         int  GetValue()                { return value;         }
         void SetValue(int val)         { value = val;          }
+        bool IsEmpty() const           { return value == 0;    }
         int  GetType()                 { return type;          }
         void SetType(int _type)        { type = _type;         }
 
