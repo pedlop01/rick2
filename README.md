@@ -16,11 +16,17 @@ make clean
 make -j2
 ```
 
-Run the executable from `bin/`. Asset paths are currently relative to that
-directory:
+Run the executable from `bin/`. The default level is selected by `game.json`;
+assets referenced by a level are resolved relative to that level package:
 
 ```sh
 ./rick2
+```
+
+To load another level package without recompiling:
+
+```sh
+./rick2 ../levels/another-level/level.json
 ```
 
 Controls implemented by the current prototype include the arrow keys, Space,

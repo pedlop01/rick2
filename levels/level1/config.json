@@ -1,0 +1,50 @@
+{
+  "display": {
+    "width": 1280,
+    "height": 960
+  },
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "width": 256,
+    "height": 200
+  },
+  "player": {
+    "definition": "characters/rick"
+  },
+  "projectiles": {
+    "shoot": {
+      "definition": "designs/shoot/shoot",
+      "width": 12,
+      "height": 6,
+      "yOffset": 0
+    },
+    "bomb": {
+      "definition": "designs/bomb/bomb",
+      "width": 25,
+      "height": 22,
+      "yOffset": -1,
+      "boundingBox": {
+        "x": 8,
+        "y": 10,
+        "width": 10,
+        "height": 13
+      }
+    }
+  },
+  "audio": {
+    "initialMusic": 0,
+    "music": [
+      "music/level1.ogg"
+    ],
+    "effects": [
+      "fx/walk.wav",
+      "fx/zap.wav",
+      "fx/kickbomb.wav",
+      "fx/waaaaaa1.wav",
+      "fx/bonus.wav",
+      "fx/ring.wav",
+      "fx/explosion.wav"
+    ]
+  }
+}

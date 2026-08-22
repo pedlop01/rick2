@@ -1237,7 +1237,11 @@ bool World::CreateNewShoot(int x, int y, int direction) {
   bool created = false;
   // Allow only one shoot to be created right now
   if (!shoot_exists) {
-    Shoot* shoot = new Shoot(GetProjectileDefinition("shoot").c_str(), x, y, 12, 6, direction);
+    const nlohmann::json& config = GetProjectileDefinition("shoot");
+    Shoot* shoot = new Shoot(config.at("definition").get<std::string>().c_str(),
+                             x, y + config.at("yOffset").get<int>(),
+                             config.at("width").get<int>(),
+                             config.at("height").get<int>(), direction);
     objects.push_back(shoot);
     shoot_exists = true;
     created = true;
@@ -1251,9 +1255,17 @@ bool World::CreateNewBomb(int x, int y, int direction) {
   // Allow only one bomb to be created right now
   if (!bomb_exists) {    
     printf("CreateNewBomb x=%d, y=%d\n", x, y);
-    Bomb* shoot = new Bomb(GetProjectileDefinition("bomb").c_str(), x, y - 1, 25, 22, direction);
-    // REVISIT: not sure why height is 16. May it be 17?
-    shoot->SetBoundingBox(8, 10, 10, 13);
+    const nlohmann::json& config = GetProjectileDefinition("bomb");
+    Bomb* shoot = new Bomb(config.at("definition").get<std::string>().c_str(),
+                           x, y + config.at("yOffset").get<int>(),
+                           config.at("width").get<int>(),
+                           config.at("height").get<int>(), direction);
+    if (config.contains("boundingBox")) {
+      const nlohmann::json& box = config.at("boundingBox");
+      shoot->SetBoundingBox(box.at("x").get<int>(), box.at("y").get<int>(),
+                            box.at("width").get<int>(),
+                            box.at("height").get<int>());
+    }
     objects.push_back(shoot);
     bomb_exists = true;
     created = true;

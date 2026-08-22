@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <vector>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
@@ -10,9 +11,6 @@
 #include "rick_params.h"
 #include "data_loading.h"
 #include "json_level_loader.h"
-
-#define NUM_SONGS  1
-#define NUM_FXS   16
 
 #define FX_WALK      0
 #define FX_SHOT      1
@@ -25,10 +23,10 @@
 class SoundHandler
 {
   private:
-    ALLEGRO_SAMPLE* music[NUM_SONGS];
-    ALLEGRO_SAMPLE* fx[NUM_FXS];
-    ALLEGRO_SAMPLE_INSTANCE* music_instance[NUM_SONGS];
-    ALLEGRO_SAMPLE_ID fx_id[NUM_FXS];
+    std::vector<ALLEGRO_SAMPLE*> music;
+    std::vector<ALLEGRO_SAMPLE*> fx;
+    std::vector<ALLEGRO_SAMPLE_INSTANCE*> music_instance;
+    std::vector<ALLEGRO_SAMPLE_ID> fx_id;
 
     int playing_music_id;
 

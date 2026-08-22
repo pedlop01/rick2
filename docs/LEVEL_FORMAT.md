@@ -5,16 +5,18 @@ Rick2 levels use a single JSON package validated by
 `formatVersion` is mandatory; readers must reject versions they do not support.
 Version 1 contains:
 
+- `display` and `camera`: output resolution and the initial logical viewport.
 - `map`: dimensions, tileset and the `tiles`, `frontTiles` and `collisions`
   layers. Every layer contains exactly `width * height` GIDs.
 - `entities`: all level instances, grouped by gameplay type.
 - `player`: the player definition used by the level.
-- `projectiles`: definitions used for dynamically created bombs and shots.
+- `projectiles`: definitions, dimensions, offsets and optional collision boxes
+  used for dynamically created bombs and shots.
 - `definitions`: animation and sprite definitions indexed by stable JSON IDs.
-- `audio`: ordered music and effect asset lists.
+- `audio`: initial track plus ordered music and effect asset lists.
 
-Paths currently retain the historical convention of being relative to the
-`bin` working directory. Removing that convention belongs to task 8.
+Asset paths are relative to the package JSON, so levels can be loaded from a
+different location without depending on the process working directory.
 
 The committed level package is generated reproducibly:
 
@@ -23,7 +25,12 @@ python3 tools/convert_level.py
 python3 tools/check_level_conversion.py
 ```
 
-The game starts from `levels/level1/level.json`. Entity instances and animation
-definitions are maintained as JSON files and assembled into that package. TMX
+The game uses `levels/level1/level.json` by default and accepts another package
+as its single command-line argument. Entity instances, runtime configuration
+and animation definitions are maintained as JSON files and assembled into that package. TMX
 is retained only as a supported map-import format; no runtime class parses XML
 and PugiXML is not part of the executable.
+
+The default is not compiled into the executable: `game.json`, validated by
+`schema/game.schema.json`, selects `initialLevel`. Its path is relative to the
+game package itself.

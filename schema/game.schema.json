@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rick2.example/schema/game.schema.json",
+  "title": "Rick2 game package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "kind", "initialLevel"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "kind": { "const": "rick2.game" },
+    "initialLevel": { "type": "string", "minLength": 1 }
+  }
+}

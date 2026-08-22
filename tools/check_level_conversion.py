@@ -13,7 +13,7 @@ def main():
         project_root,
         Path("maps/level1/Map1_prueba.tmx"),
         Path("levels/level1"),
-        Path("characters/rick.json"),
+        Path("levels/level1/config.json"),
     )
     committed = json.loads((project_root / "levels/level1/level.json").read_text())
     if committed != expected:

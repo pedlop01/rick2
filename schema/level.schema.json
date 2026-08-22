@@ -4,11 +4,25 @@
   "title": "Rick2 canonical level package",
   "type": "object",
   "additionalProperties": false,
-  "required": ["formatVersion", "kind", "id", "map", "entities", "player", "projectiles", "definitions", "audio"],
+  "required": ["formatVersion", "kind", "id", "display", "camera", "map", "entities", "player", "projectiles", "definitions", "audio"],
   "properties": {
     "formatVersion": { "const": 1 },
     "kind": { "const": "rick2.level" },
     "id": { "$ref": "#/$defs/nonEmptyString" },
+    "display": { "$ref": "#/$defs/viewport" },
+    "camera": {
+      "allOf": [
+        { "$ref": "#/$defs/viewport" },
+        {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
     "map": { "$ref": "#/$defs/map" },
     "entities": { "$ref": "#/$defs/entities" },
     "player": {
@@ -22,8 +36,8 @@
       "additionalProperties": false,
       "required": ["shoot", "bomb"],
       "properties": {
-        "shoot": { "$ref": "#/$defs/nonEmptyString" },
-        "bomb": { "$ref": "#/$defs/nonEmptyString" }
+        "shoot": { "$ref": "#/$defs/projectile" },
+        "bomb": { "$ref": "#/$defs/projectile" }
       }
     },
     "definitions": {
@@ -34,8 +48,9 @@
     "audio": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["music", "effects"],
+      "required": ["initialMusic", "music", "effects"],
       "properties": {
+        "initialMusic": { "type": "integer", "minimum": 0 },
         "music": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "effects": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
       }
@@ -44,6 +59,36 @@
   "$defs": {
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "positiveInteger": { "type": "integer", "minimum": 1 },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" }
+      }
+    },
+    "projectile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition", "width", "height", "yOffset"],
+      "properties": {
+        "definition": { "$ref": "#/$defs/nonEmptyString" },
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" },
+        "yOffset": { "type": "integer" },
+        "boundingBox": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "width", "height"],
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 },
+            "width": { "$ref": "#/$defs/positiveInteger" },
+            "height": { "$ref": "#/$defs/positiveInteger" }
+          }
+        }
+      }
+    },
     "map": {
       "type": "object",
       "additionalProperties": false,

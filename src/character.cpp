@@ -700,8 +700,9 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
           if (camera)
             camera_y = camera->GetPosY();
           else
-            camera_y = map->GetMapHeight()*map->GetTilesetTileHeight() - CAMERA_Y;
-          if (pos_y >= (camera_y + CAMERA_Y)) {   // REVISIT
+            camera_y = map->GetMapHeight()*map->GetTilesetTileHeight() -
+                       GetCameraConfig().height;
+          if (pos_y >= (camera_y + GetCameraConfig().height)) {
             state = CHAR_STATE_DEAD;
           }
         }

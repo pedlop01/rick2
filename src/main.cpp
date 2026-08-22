@@ -41,6 +41,7 @@ class AllegroSystemGuard {
 }
 
 int main(int argc, char *argv[]) {
+  std::string level_file;
   const bool resource_check = getenv("RICK2_RESOURCE_CHECK") != nullptr;
   const char* smoke_ticks_value = getenv("RICK2_SMOKE_TEST_TICKS");
   const unsigned int smoke_tick_limit = smoke_ticks_value
@@ -58,15 +59,26 @@ int main(int argc, char *argv[]) {
   Camera                 camera;
   Timer                  timer;
   SoundHandler           sound_handler;
-  unique_ptr<World>      map_level1;
+  unique_ptr<World>      world;
   unique_ptr<Player>     player;
 
 
   // Check arguments
-  if(argc != 1) {
-    printf("Error: wrong parameters. Usage: XXXX\n");
+  if(argc > 2) {
+    printf("Usage: %s [level.json]\n", argv[0]);
     exit(-1);
   }
+
+  try {
+    level_file = argc == 2 ? argv[1] :
+                            GetInitialLevelFromGamePackage("../game.json");
+    LoadLevelPackage(level_file.c_str());
+  } catch (const std::exception& error) {
+    fprintf(stderr, "Game data error: %s\n", error.what());
+    return -1;
+  }
+  const ViewportConfig& display_config = GetDisplayConfig();
+  const ViewportConfig& camera_config = GetCameraConfig();
 
   // allegro initializations
   if(!al_init()) {
@@ -86,7 +98,7 @@ int main(int argc, char *argv[]) {
   }
 
   al_set_new_display_flags(ALLEGRO_WINDOWED);
-  display.reset(al_create_display(SCREEN_X, SCREEN_Y));
+  display.reset(al_create_display(display_config.width, display_config.height));
   if(!display) {
     printf("Error: failed to create display!\n");
     return -1;
@@ -102,7 +114,7 @@ int main(int argc, char *argv[]) {
     al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
   }
 
-  bitmap.reset(al_create_bitmap(SCREEN_X, SCREEN_Y));
+  bitmap.reset(al_create_bitmap(display_config.width, display_config.height));
   if(!bitmap) {
     printf("Error: failed to create bitmap!\n");
     return -1;
@@ -154,15 +166,17 @@ int main(int argc, char *argv[]) {
 
   // Game initializations
   try {
-    map_level1.reset(new World("../levels/level1/level.json", &sound_handler, false));
-    camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1.get(), bitmap.get());
+    world.reset(new World(level_file.c_str(), &sound_handler, false));
+    camera.InitCamera(camera_config.x, camera_config.y,
+                      camera_config.width, camera_config.height,
+                      world.get(), bitmap.get());
     player.reset(new Player(GetPlayerDefinition().c_str()));
     player->RegisterCamera(&camera);
     player->RegisterSoundHandler(&sound_handler);
 
     // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
     sound_handler.InitializeSounds();
-    sound_handler.PlayMusic(0);
+    sound_handler.PlayMusic(GetInitialMusic());
   } catch (const DataLoadError& error) {
     fprintf(stderr, "Game data error: %s\n", error.what());
     return -1;
@@ -198,13 +212,13 @@ int main(int argc, char *argv[]) {
     for (unsigned int tick = 0; tick < simulation_ticks; ++tick) {
       // Perform a fixed-time step for the world and player. If rendering was
       // briefly delayed, process a bounded number of ticks to catch up.
-      map_level1->WorldStep(player.get());
-      player->CharacterStep(map_level1.get(), keyboard);
+      world->WorldStep(player.get());
+      player->CharacterStep(world.get(), keyboard);
       ++processed_ticks;
     }
 
     //printf("[Main] Camera positioning and drawing\n");
-    camera.CameraStep(map_level1.get(), player.get(), font.get());
+    camera.CameraStep(world.get(), player.get(), font.get());
 
     // Move bitmap into display
     al_set_target_bitmap(al_get_backbuffer(display.get()));

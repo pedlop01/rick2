@@ -514,7 +514,8 @@ void Camera::DrawScreen(World* world, Character* player, ALLEGRO_FONT *font) {
 
   al_draw_scaled_bitmap(camera_bitmap,
                         0, 0, pixels_width, pixels_height,
-                        0, 0, SCREEN_X, SCREEN_Y, 0);
+                        0, 0, GetDisplayConfig().width,
+                        GetDisplayConfig().height, 0);
 
   steps_drawing++;
 }

@@ -4,6 +4,8 @@
 #include <string>
 
 int main() {
+  assert(GetInitialLevelFromGamePackage("game.json") ==
+         "./levels/level1/level.json");
   LoadLevelPackage("levels/level1/level.json");
   const nlohmann::json& map = GetLevelMap();
   assert(map.at("width").get<int>() == 160);
@@ -11,7 +13,12 @@ int main() {
   assert(map.at("layers").at("tiles").size() == 160U * 255U);
   assert(GetLevelEntities("platforms").size() == 17);
   assert(GetAnimationDefinition(GetPlayerDefinition().c_str()).at("name") == "rick");
-  assert(GetAnimationDefinition(GetProjectileDefinition("bomb").c_str()).at("kind") == "object");
+  const nlohmann::json& bomb = GetProjectileDefinition("bomb");
+  assert(GetAnimationDefinition(bomb.at("definition").get<std::string>().c_str()).at("kind") == "object");
+  assert(bomb.at("width").get<int>() == 25);
+  assert(GetDisplayConfig().width == 1280);
+  assert(GetCameraConfig().height == 200);
+  assert(GetInitialMusic() == 0);
   bool failed = false;
   try { LoadLevelPackage("tests/does-not-exist.json"); }
   catch (const DataLoadError& error) {

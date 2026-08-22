@@ -50,8 +50,18 @@ def xml_element(element):
     return result
 
 
+def package_asset_path(path):
+    """Store assets relative to levels/<id>/ instead of the bin directory."""
+    return "../../" + str(path).removeprefix("../")
+
+
 def animation_definition(path, project_root):
-    return json.loads((project_root / path).read_text(encoding="utf-8"))
+    definition = json.loads((project_root / path).read_text(encoding="utf-8"))
+    for state in definition["states"]:
+        state["animation"]["bitmap"] = package_asset_path(
+            state["animation"]["bitmap"]
+        )
+    return definition
 
 
 def definition_id(path):
@@ -73,10 +83,11 @@ def layer(map_root, name):
     return [int(tile.attrib["gid"]) for tile in element.find("data")]
 
 
-def convert(project_root, tmx_path, level_dir, player_path):
+def convert(project_root, tmx_path, level_dir, config_path):
     map_root = ET.parse(project_root / tmx_path).getroot()
     tileset = map_root.find("tileset")
     image = tileset.find("image")
+    config = json.loads((project_root / config_path).read_text(encoding="utf-8"))
 
     entities = {}
     definitions = {}
@@ -92,16 +103,20 @@ def convert(project_root, tmx_path, level_dir, player_path):
                         Path(key + ".json"), project_root
                     )
 
-    player_key = player_path.with_suffix("").as_posix()
-    definitions[player_key] = animation_definition(player_path, project_root)
-    projectile_definitions = {}
-    for definition_path in (Path("designs/shoot/shoot.json"),
-                            Path("designs/bomb/bomb.json")):
-        key = definition_path.with_suffix("").as_posix()
+    player_key = config["player"]["definition"]
+    definitions[player_key] = animation_definition(
+        Path(player_key + ".json"), project_root
+    )
+    for projectile in config["projectiles"].values():
+        key = projectile["definition"]
+        definition_path = Path(key + ".json")
         definitions[key] = animation_definition(
             definition_path, project_root
         )
-        projectile_definitions[Path(definition_path).stem] = key
+
+    audio = config["audio"].copy()
+    audio["music"] = [package_asset_path(path) for path in audio["music"]]
+    audio["effects"] = [package_asset_path(path) for path in audio["effects"]]
 
     return {
         "formatVersion": FORMAT_VERSION,
@@ -113,7 +128,7 @@ def convert(project_root, tmx_path, level_dir, player_path):
             "tileWidth": int(map_root.attrib["tilewidth"]),
             "tileHeight": int(map_root.attrib["tileheight"]),
             "tileset": {
-                "image": "../maps/level1/" + image.attrib["source"],
+                "image": "../../" + (tmx_path.parent / image.attrib["source"]).as_posix(),
                 "tileCount": int(tileset.attrib["tilecount"]),
                 "columns": int(tileset.attrib["columns"]),
                 "imageWidth": int(image.attrib["width"]),
@@ -126,17 +141,12 @@ def convert(project_root, tmx_path, level_dir, player_path):
             },
         },
         "entities": entities,
-        "player": {"definition": player_key},
-        "projectiles": projectile_definitions,
+        "display": config["display"],
+        "camera": config["camera"],
+        "player": config["player"],
+        "projectiles": config["projectiles"],
         "definitions": definitions,
-        "audio": {
-            "music": ["../music/level1.ogg"],
-            "effects": [
-                "../fx/walk.wav", "../fx/zap.wav", "../fx/kickbomb.wav",
-                "../fx/waaaaaa1.wav", "../fx/bonus.wav", "../fx/ring.wav",
-                "../fx/explosion.wav",
-            ],
-        },
+        "audio": audio,
     }
 
 
@@ -145,10 +155,10 @@ def main():
     parser.add_argument("--project-root", type=Path, default=Path(__file__).parents[1])
     parser.add_argument("--tmx", type=Path, default=Path("maps/level1/Map1_prueba.tmx"))
     parser.add_argument("--level-dir", type=Path, default=Path("levels/level1"))
-    parser.add_argument("--player", type=Path, default=Path("characters/rick.json"))
+    parser.add_argument("--config", type=Path, default=Path("levels/level1/config.json"))
     parser.add_argument("--output", type=Path, default=Path("levels/level1/level.json"))
     args = parser.parse_args()
-    package = convert(args.project_root, args.tmx, args.level_dir, args.player)
+    package = convert(args.project_root, args.tmx, args.level_dir, args.config)
     output = args.project_root / args.output
     output.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
 

@@ -43,7 +43,7 @@ void Block::UpdateFSMState(World* map) {
       break;
     case OBJ_STATE_MOVING:
       // If block is far from the camera size then it can be completely destroyed
-      if (abs(start_x - x) >= CAMERA_X)
+      if (abs(start_x - x) >= GetCameraConfig().width)
         state = OBJ_STATE_DEAD;
       break;
     case OBJ_STATE_DYING:

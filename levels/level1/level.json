@@ -8,7 +8,7 @@
     "tileWidth": 8,
     "tileHeight": 8,
     "tileset": {
-      "image": "../maps/level1/Map1_final.png",
+      "image": "../../maps/level1/Map1_final.png",
       "tileCount": 308,
       "columns": 22,
       "imageWidth": 176,
@@ -126496,12 +126496,38 @@
       }
     ]
   },
+  "display": {
+    "width": 1280,
+    "height": 960
+  },
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "width": 256,
+    "height": 200
+  },
   "player": {
     "definition": "characters/rick"
   },
   "projectiles": {
-    "shoot": "designs/shoot/shoot",
-    "bomb": "designs/bomb/bomb"
+    "shoot": {
+      "definition": "designs/shoot/shoot",
+      "width": 12,
+      "height": 6,
+      "yOffset": 0
+    },
+    "bomb": {
+      "definition": "designs/bomb/bomb",
+      "width": 25,
+      "height": 22,
+      "yOffset": -1,
+      "boundingBox": {
+        "x": 8,
+        "y": 10,
+        "width": 10,
+        "height": 13
+      }
+    }
   },
   "definitions": {
     "designs/platforms/platforms": {
@@ -126512,7 +126538,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/platforms/platforms.png",
+            "bitmap": "../../designs/platforms/platforms.png",
             "speed": 0,
             "sprites": [
               {
@@ -126528,7 +126554,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/platforms/platforms.png",
+            "bitmap": "../../designs/platforms/platforms.png",
             "speed": 0,
             "sprites": [
               {
@@ -126550,7 +126576,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 4,
             "sprites": [
               {
@@ -126578,7 +126604,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 4,
             "sprites": [
               {
@@ -126606,7 +126632,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 6,
             "sprites": [
               {
@@ -126646,7 +126672,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 0,
             "sprites": [
               {
@@ -126662,7 +126688,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 0,
             "sprites": [
               {
@@ -126678,7 +126704,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 2,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 3,
             "sprites": [
               {
@@ -126724,7 +126750,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 0,
             "sprites": [
               {
@@ -126740,7 +126766,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 1,
             "sprites": [
               {
@@ -126756,7 +126782,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 2,
           "animation": {
-            "bitmap": "../designs/items/items.png",
+            "bitmap": "../../designs/items/items.png",
             "speed": 3,
             "sprites": [
               {
@@ -126802,7 +126828,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 0,
             "sprites": [
               {
@@ -126818,7 +126844,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 4,
             "sprites": [
               {
@@ -126864,7 +126890,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 0,
             "sprites": [
               {
@@ -126880,7 +126906,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 4,
             "sprites": [
               {
@@ -126920,7 +126946,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 0,
             "sprites": [
               {
@@ -126936,7 +126962,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 4,
             "sprites": [
               {
@@ -126970,7 +126996,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 0,
             "sprites": [
               {
@@ -126986,7 +127012,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 3,
             "sprites": [
               {
@@ -127026,7 +127052,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 0,
             "sprites": [
               {
@@ -127042,7 +127068,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/backgrounds/level1_background.png",
+            "bitmap": "../../designs/backgrounds/level1_background.png",
             "speed": 10,
             "sprites": [
               {
@@ -127082,7 +127108,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 0,
             "sprites": [
               {
@@ -127098,7 +127124,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 0,
             "sprites": [
               {
@@ -127114,7 +127140,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 3,
             "sprites": [
               {
@@ -127160,7 +127186,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 0,
             "sprites": [
               {
@@ -127176,7 +127202,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 0,
             "sprites": [
               {
@@ -127192,7 +127218,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/blocks/level1_blocks.png",
+            "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 3,
             "sprites": [
               {
@@ -127238,7 +127264,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/hazards/hazards.png",
+            "bitmap": "../../designs/hazards/hazards.png",
             "speed": 1,
             "sprites": [
               {
@@ -127272,7 +127298,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/hazards/hazards.png",
+            "bitmap": "../../designs/hazards/hazards.png",
             "speed": 1,
             "sprites": [
               {
@@ -127312,7 +127338,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/hazards/hazards.png",
+            "bitmap": "../../designs/hazards/hazards.png",
             "speed": 2,
             "sprites": [
               {
@@ -127352,7 +127378,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/hazards/hazards.png",
+            "bitmap": "../../designs/hazards/hazards.png",
             "speed": 1,
             "sprites": [
               {
@@ -127374,7 +127400,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/hazards/hazards.png",
+            "bitmap": "../../designs/hazards/hazards.png",
             "speed": 4,
             "sprites": [
               {
@@ -127420,7 +127446,7 @@
           "name": "CHAR_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 0,
             "sprites": [
               {
@@ -127436,7 +127462,7 @@
           "name": "CHAR_STATE_MOVING",
           "id": 2,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127470,7 +127496,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 0,
             "sprites": [
               {
@@ -127486,7 +127512,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 1,
             "sprites": [
               {
@@ -127502,7 +127528,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
             "sprites": [
               {
@@ -127548,7 +127574,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 0,
             "sprites": [
               {
@@ -127564,7 +127590,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 1,
             "sprites": [
               {
@@ -127580,7 +127606,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
             "sprites": [
               {
@@ -127626,7 +127652,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 0,
             "sprites": [
               {
@@ -127642,7 +127668,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 1,
             "sprites": [
               {
@@ -127658,7 +127684,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/lasers/lasers.png",
+            "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
             "sprites": [
               {
@@ -127704,7 +127730,7 @@
           "name": "CHAR_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 0,
             "sprites": [
               {
@@ -127720,7 +127746,7 @@
           "name": "CHAR_STATE_JUMPING",
           "id": 1,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 1,
             "sprites": [
               {
@@ -127736,7 +127762,7 @@
           "name": "CHAR_STATE_RUNNING",
           "id": 2,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -127764,7 +127790,7 @@
           "name": "CHAR_STATE_CLIMBING",
           "id": 3,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127786,7 +127812,7 @@
           "name": "CHAR_STATE_CROUCHING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127802,7 +127828,7 @@
           "name": "CHAR_STATE_SHOOTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127818,7 +127844,7 @@
           "name": "CHAR_STATE_BOMBING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127834,7 +127860,7 @@
           "name": "CHAR_STATE_HITTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127850,7 +127876,7 @@
           "name": "CHAR_STATE_DYING",
           "id": 5,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -127878,7 +127904,7 @@
           "name": "CHAR_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 0,
             "sprites": [
               {
@@ -127894,7 +127920,7 @@
           "name": "CHAR_STATE_JUMPING",
           "id": 1,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 1,
             "sprites": [
               {
@@ -127910,7 +127936,7 @@
           "name": "CHAR_STATE_RUNNING",
           "id": 2,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -127938,7 +127964,7 @@
           "name": "CHAR_STATE_CLIMBING",
           "id": 3,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127954,7 +127980,7 @@
           "name": "CHAR_STATE_CROUCHING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127982,7 +128008,7 @@
           "name": "CHAR_STATE_SHOOTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -127998,7 +128024,7 @@
           "name": "CHAR_STATE_BOMBING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128014,7 +128040,7 @@
           "name": "CHAR_STATE_HITTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128030,7 +128056,7 @@
           "name": "CHAR_STATE_DYING",
           "id": 5,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -128064,7 +128090,7 @@
           "name": "CHAR_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 0,
             "sprites": [
               {
@@ -128080,7 +128106,7 @@
           "name": "CHAR_STATE_JUMPING",
           "id": 1,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 1,
             "sprites": [
               {
@@ -128096,7 +128122,7 @@
           "name": "CHAR_STATE_RUNNING",
           "id": 2,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -128124,7 +128150,7 @@
           "name": "CHAR_STATE_CLIMBING",
           "id": 3,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128146,7 +128172,7 @@
           "name": "CHAR_STATE_CROUCHING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128162,7 +128188,7 @@
           "name": "CHAR_STATE_SHOOTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128178,7 +128204,7 @@
           "name": "CHAR_STATE_BOMBING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128194,7 +128220,7 @@
           "name": "CHAR_STATE_HITTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 3,
             "sprites": [
               {
@@ -128210,7 +128236,7 @@
           "name": "CHAR_STATE_DYING",
           "id": 5,
           "animation": {
-            "bitmap": "../characters/enemies.png",
+            "bitmap": "../../characters/enemies.png",
             "speed": 5,
             "sprites": [
               {
@@ -128238,7 +128264,7 @@
           "name": "RICK_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 0,
             "sprites": [
               {
@@ -128254,7 +128280,7 @@
           "name": "RICK_STATE_JUMPING",
           "id": 1,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 1,
             "sprites": [
               {
@@ -128270,7 +128296,7 @@
           "name": "RICK_STATE_RUNNING",
           "id": 2,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 5,
             "sprites": [
               {
@@ -128310,7 +128336,7 @@
           "name": "RICK_STATE_CLIMBING",
           "id": 3,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 3,
             "sprites": [
               {
@@ -128332,7 +128358,7 @@
           "name": "RICK_STATE_CROUCHING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 3,
             "sprites": [
               {
@@ -128354,7 +128380,7 @@
           "name": "RICK_STATE_SHOOTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 3,
             "sprites": [
               {
@@ -128370,7 +128396,7 @@
           "name": "RICK_STATE_BOMBING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 3,
             "sprites": [
               {
@@ -128386,7 +128412,7 @@
           "name": "RICK_STATE_HITTING",
           "id": 4,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 3,
             "sprites": [
               {
@@ -128402,7 +128428,7 @@
           "name": "RICK_STATE_DYING",
           "id": 5,
           "animation": {
-            "bitmap": "../characters/rick.png",
+            "bitmap": "../../characters/rick.png",
             "speed": 5,
             "sprites": [
               {
@@ -128430,7 +128456,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/shoot/shoot.png",
+            "bitmap": "../../designs/shoot/shoot.png",
             "speed": 0,
             "sprites": [
               {
@@ -128446,7 +128472,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/shoot/shoot.png",
+            "bitmap": "../../designs/shoot/shoot.png",
             "speed": 1,
             "sprites": [
               {
@@ -128474,7 +128500,7 @@
           "name": "OBJ_STATE_STOP",
           "id": 0,
           "animation": {
-            "bitmap": "../designs/bomb/bomb.png",
+            "bitmap": "../../designs/bomb/bomb.png",
             "speed": 0,
             "sprites": [
               {
@@ -128490,7 +128516,7 @@
           "name": "OBJ_STATE_MOVING",
           "id": 15,
           "animation": {
-            "bitmap": "../designs/bomb/bomb.png",
+            "bitmap": "../../designs/bomb/bomb.png",
             "speed": 11,
             "sprites": [
               {
@@ -128536,7 +128562,7 @@
           "name": "OBJ_STATE_DYING",
           "id": 1,
           "animation": {
-            "bitmap": "../designs/bomb/bomb.png",
+            "bitmap": "../../designs/bomb/bomb.png",
             "speed": 4,
             "sprites": [
               {
@@ -128576,17 +128602,18 @@
     }
   },
   "audio": {
+    "initialMusic": 0,
     "music": [
-      "../music/level1.ogg"
+      "../../music/level1.ogg"
     ],
     "effects": [
-      "../fx/walk.wav",
-      "../fx/zap.wav",
-      "../fx/kickbomb.wav",
-      "../fx/waaaaaa1.wav",
-      "../fx/bonus.wav",
-      "../fx/ring.wav",
-      "../fx/explosion.wav"
+      "../../fx/walk.wav",
+      "../../fx/zap.wav",
+      "../../fx/kickbomb.wav",
+      "../../fx/waaaaaa1.wav",
+      "../../fx/bonus.wav",
+      "../../fx/ring.wav",
+      "../../fx/explosion.wav"
     ]
   }
 }

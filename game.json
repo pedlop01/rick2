@@ -1,0 +1,5 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.game",
+  "initialLevel": "levels/level1/level.json"
+}
