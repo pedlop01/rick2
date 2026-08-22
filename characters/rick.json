@@ -1,0 +1,192 @@
+{
+  "kind": "character",
+  "name": "rick",
+  "states": [
+    {
+      "name": "RICK_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_JUMPING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 1,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 23,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_RUNNING",
+      "id": 2,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 5,
+        "sprites": [
+          {
+            "x": 25,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          },
+          {
+            "x": 49,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          },
+          {
+            "x": 73,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          },
+          {
+            "x": 97,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          },
+          {
+            "x": 121,
+            "y": 1,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_CLIMBING",
+      "id": 3,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 45,
+            "width": 23,
+            "height": 21
+          },
+          {
+            "x": 25,
+            "y": 45,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_CROUCHING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 67,
+            "width": 23,
+            "height": 15
+          },
+          {
+            "x": 25,
+            "y": 67,
+            "width": 23,
+            "height": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_SHOOTING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 105,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_BOMBING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 127,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_HITTING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 149,
+            "width": 23,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "RICK_STATE_DYING",
+      "id": 5,
+      "animation": {
+        "bitmap": "../characters/rick.png",
+        "speed": 5,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 83,
+            "width": 24,
+            "height": 21
+          },
+          {
+            "x": 26,
+            "y": 83,
+            "width": 24,
+            "height": 21
+          }
+        ]
+      }
+    }
+  ]
+}

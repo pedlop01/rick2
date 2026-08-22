@@ -72,16 +72,8 @@ g++ -std=c++11 tests/tile_bounds_test.cpp \
 /tmp/rick2-tile-bounds-test
 ```
 
-The data-loading regression test covers missing, malformed and incomplete XML:
-
-```sh
-g++ -std=c++11 tests/data_loading_test.cpp src/pugixml.cpp \
-  -o /tmp/rick2-data-loading-test
-/tmp/rick2-data-loading-test
-```
-
 Level 1 is loaded from the canonical, versioned JSON package. Regenerate and
-compare it with every legacy TMX/XML source using:
+compare it with its JSON sources and imported TMX map using:
 
 ```sh
 python3 tools/convert_level.py
@@ -92,7 +84,7 @@ Validate the C++ JSON loader independently of Allegro:
 
 ```sh
 g++ -std=c++11 tests/json_level_loader_test.cpp \
-  src/json_level_loader.cpp src/pugixml.cpp \
+  src/json_level_loader.cpp \
   -o /tmp/rick2-json-loader-test
 /tmp/rick2-json-loader-test
 ```

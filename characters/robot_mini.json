@@ -1,0 +1,186 @@
+{
+  "kind": "character",
+  "name": "robot_advanced",
+  "states": [
+    {
+      "name": "CHAR_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_JUMPING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 1,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_RUNNING",
+      "id": 2,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 5,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 19,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 37,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_CLIMBING",
+      "id": 3,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_CROUCHING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 19,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 37,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_SHOOTING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_BOMBING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_HITTING",
+      "id": 4,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "CHAR_STATE_DYING",
+      "id": 5,
+      "animation": {
+        "bitmap": "../characters/enemies.png",
+        "speed": 5,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 19,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          },
+          {
+            "x": 37,
+            "y": 155,
+            "width": 16,
+            "height": 20
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "kind": "object",
+  "name": "wave_hazard",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/hazards/hazards.png",
+        "speed": 1,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 26,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 51,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 76,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_MOVING",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/hazards/hazards.png",
+        "speed": 1,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 26,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 51,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          },
+          {
+            "x": 76,
+            "y": 8,
+            "width": 24,
+            "height": 12
+          }
+        ]
+      }
+    }
+  ]
+}

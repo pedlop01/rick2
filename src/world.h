@@ -12,7 +12,6 @@
 #include <math.h>
 #include <iostream>
 
-#include "pugixml.hpp"
 #include "rick_params.h"
 #include "checkpoint.h"
 #include "camera_view.h"
@@ -114,9 +113,7 @@ class World
 
         ALLEGRO_BITMAP* world_image;
 
-        pugi::xml_document world_file;
-        
-	public:		
+	public:
 		World();                          // class constructor		
     World(const char *file, SoundHandler* sound_handler, bool b);  // class constructor		
 		~World();                         // class destructor

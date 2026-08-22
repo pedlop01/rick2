@@ -9,9 +9,8 @@ Version 1 contains:
   layers. Every layer contains exactly `width * height` GIDs.
 - `entities`: all level instances, grouped by gameplay type.
 - `player`: the player definition used by the level.
-- `definitions`: animation and sprite definitions indexed by their legacy asset
-  key. Keeping the key stable makes the migration lossless while XML support is
-  phased out.
+- `projectiles`: definitions used for dynamically created bombs and shots.
+- `definitions`: animation and sprite definitions indexed by stable JSON IDs.
 - `audio`: ordered music and effect asset lists.
 
 Paths currently retain the historical convention of being relative to the
@@ -24,6 +23,7 @@ python3 tools/convert_level.py
 python3 tools/check_level_conversion.py
 ```
 
-The game now starts from `levels/level1/level.json`. Legacy XML/TMX remains in
-the repository as converter input and temporary backwards compatibility, not as
-the runtime source of truth for level 1.
+The game starts from `levels/level1/level.json`. Entity instances and animation
+definitions are maintained as JSON files and assembled into that package. TMX
+is retained only as a supported map-import format; no runtime class parses XML
+and PugiXML is not part of the executable.

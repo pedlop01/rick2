@@ -1,0 +1,78 @@
+{
+  "kind": "object",
+  "name": "shoots",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/items/items.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 20,
+            "height": 18
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_MOVING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../designs/items/items.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 20,
+            "height": 18
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_DYING",
+      "id": 2,
+      "animation": {
+        "bitmap": "../designs/items/items.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 58,
+            "width": 20,
+            "height": 18
+          },
+          {
+            "x": 22,
+            "y": 58,
+            "width": 20,
+            "height": 18
+          },
+          {
+            "x": 43,
+            "y": 58,
+            "width": 20,
+            "height": 18
+          },
+          {
+            "x": 64,
+            "y": 58,
+            "width": 20,
+            "height": 18
+          },
+          {
+            "x": 85,
+            "y": 58,
+            "width": 20,
+            "height": 18
+          }
+        ]
+      }
+    }
+  ]
+}

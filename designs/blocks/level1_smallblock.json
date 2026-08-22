@@ -1,0 +1,78 @@
+{
+  "kind": "object",
+  "name": "level1_smallblock",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/blocks/level1_blocks.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 26,
+            "y": 1,
+            "width": 24,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_MOVING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../designs/blocks/level1_blocks.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 26,
+            "y": 1,
+            "width": 24,
+            "height": 21
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_DYING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../designs/blocks/level1_blocks.png",
+        "speed": 3,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 23,
+            "width": 25,
+            "height": 22
+          },
+          {
+            "x": 27,
+            "y": 23,
+            "width": 25,
+            "height": 22
+          },
+          {
+            "x": 53,
+            "y": 23,
+            "width": 25,
+            "height": 22
+          },
+          {
+            "x": 79,
+            "y": 23,
+            "width": 25,
+            "height": 22
+          },
+          {
+            "x": 105,
+            "y": 23,
+            "width": 25,
+            "height": 22
+          }
+        ]
+      }
+    }
+  ]
+}

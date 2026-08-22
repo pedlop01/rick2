@@ -1,0 +1,627 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.entities",
+  "group": "hazards",
+  "entities": [
+    {
+      "id": 0,
+      "attributes": {
+        "ini_x": 592,
+        "ini_y": 1787,
+        "width": 24,
+        "height": 12,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 20,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 64,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          },
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 20,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 64,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "attributes": {
+        "ini_x": 808,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "attributes": {
+        "ini_x": 296,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "attributes": {
+        "ini_x": 313,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 4,
+      "attributes": {
+        "ini_x": 330,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 5,
+      "attributes": {
+        "ini_x": 347,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "attributes": {
+        "ini_x": 364,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 7,
+      "attributes": {
+        "ini_x": 381,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 8,
+      "attributes": {
+        "ini_x": 398,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 9,
+      "attributes": {
+        "ini_x": 415,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "attributes": {
+        "ini_x": 432,
+        "ini_y": 1744,
+        "width": 17,
+        "height": 6,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/electricity_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "stop",
+          "desp": 0,
+          "wait": 0,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 11,
+      "attributes": {
+        "ini_x": 400,
+        "ini_y": 1436,
+        "width": 24,
+        "height": 11,
+        "trigger": 0,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/vapor_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "right",
+          "desp": 0,
+          "wait": 50,
+          "speed": 0,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 12,
+      "attributes": {
+        "ini_x": 336,
+        "ini_y": 924,
+        "width": 24,
+        "height": 11,
+        "trigger": 0,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/vapor_hazard"
+      },
+      "actions": {
+        "action": {
+          "direction": "right",
+          "desp": 0,
+          "wait": 50,
+          "speed": 1,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 13,
+      "attributes": {
+        "ini_x": 584,
+        "ini_y": 1068,
+        "width": 24,
+        "height": 12,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 20,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 88,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          },
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 20,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 88,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "attributes": {
+        "ini_x": 584,
+        "ini_y": 492,
+        "width": 24,
+        "height": 12,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 60,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 60,
+            "speed": 1,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "attributes": {
+        "ini_x": 608,
+        "ini_y": 492,
+        "width": 24,
+        "height": 12,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 60,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 60,
+            "speed": 1,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "attributes": {
+        "ini_x": 592,
+        "ini_y": 1532,
+        "width": 24,
+        "height": 12,
+        "trigger": 0,
+        "stop_inactive": 1,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 32,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          },
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 32,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "attributes": {
+        "ini_x": 664,
+        "ini_y": 1596,
+        "width": 24,
+        "height": 12,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/wave_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 50,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 24,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          },
+          {
+            "direction": "deactivate",
+            "desp": 0,
+            "wait": 50,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 24,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "attributes": {
+        "ini_x": 436,
+        "ini_y": 1123,
+        "width": 16,
+        "height": 21,
+        "trigger": 0,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/cube_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "left",
+            "desp": 96,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 96,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "attributes": {
+        "ini_x": 426,
+        "ini_y": 867,
+        "width": 16,
+        "height": 21,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/cube_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "left",
+            "desp": 48,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 48,
+            "wait": 0,
+            "speed": 1,
+            "cond": 1
+          },
+          {
+            "direction": "right",
+            "desp": 48,
+            "wait": 0,
+            "speed": 1,
+            "cond": 1
+          },
+          {
+            "direction": "right",
+            "desp": 48,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "attributes": {
+        "ini_x": 577,
+        "ini_y": 1635,
+        "width": 16,
+        "height": 21,
+        "trigger": 1,
+        "stop_inactive": 0,
+        "definition": "designs/hazards/cube_hazard"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 30,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 32,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 30,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 32,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 30,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 64,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
   try {
     map_level1 = new World("../levels/level1/level.json", &sound_handler, false);
     camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1, bitmap);
-    player = new Player("../characters/rick.xml");
+    player = new Player(GetPlayerDefinition().c_str());
     player->RegisterCamera(&camera);
     player->RegisterSoundHandler(&sound_handler);
 
@@ -134,6 +134,11 @@ int main(int argc, char *argv[]) {
     sound_handler.PlayMusic(0);
   } catch (const DataLoadError& error) {
     fprintf(stderr, "Game data error: %s\n", error.what());
+    delete player;
+    delete map_level1;
+    return -1;
+  } catch (const std::exception& error) {
+    fprintf(stderr, "Invalid JSON game data: %s\n", error.what());
     delete player;
     delete map_level1;
     return -1;

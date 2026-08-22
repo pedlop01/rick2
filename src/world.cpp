@@ -15,59 +15,22 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 {
   boundary_tile.SetType(TILE_COL);
 
-  // REVISIT: need to read collision map
-  char aux_file[100];
-  char tileset_file[100];
+  LoadLevelPackage(file);
+  const nlohmann::json& map = GetLevelMap();
+  map_width = map.at("width").get<int>();
+  map_height = map.at("height").get<int>();
+  tileset_width = map.at("tileWidth").get<int>();
+  tileset_height = map.at("tileHeight").get<int>();
+  const nlohmann::json& tileset = map.at("tileset");
+  const std::string tileset_file = tileset.at("image").get<std::string>();
+  const nlohmann::json& layers = map.at("layers");
+  const nlohmann::json& tiles = layers.at("tiles");
+  const nlohmann::json& front_tiles = layers.at("frontTiles");
+  const nlohmann::json& collision_tiles = layers.at("collisions");
 
-  LoadWorldData(world_file, file);
+  printf("Tileset file = %s\n", tileset_file.c_str());
 
-  pugi::xml_node map = RequireXmlChild(world_file, "map", file);
-
-  map_width = RequirePositiveXmlInt(map, "width", file);
-  map_height = RequirePositiveXmlInt(map, "height", file);
-  tileset_width = RequirePositiveXmlInt(map, "tilewidth", file);
-  tileset_height = RequirePositiveXmlInt(map, "tileheight", file);
-
-  pugi::xml_node tileset = RequireXmlChild(map, "tileset", file);
-  RequireXmlAttribute(tileset, "name", file);
-  RequirePositiveXmlInt(tileset, "tilecount", file);
-  RequirePositiveXmlInt(tileset, "columns", file);
-  RequirePositiveXmlInt(tileset, "tilewidth", file);
-  RequirePositiveXmlInt(tileset, "tileheight", file);
-
-  pugi::xml_node tiles_layer =
-      map.find_child_by_attribute("layer", "name", "Tiles");
-  pugi::xml_node front_layer =
-      map.find_child_by_attribute("layer", "name", "FrontTiles");
-  pugi::xml_node collision_layer =
-      map.find_child_by_attribute("layer", "name", "Collisions");
-  if (!tiles_layer || !front_layer || !collision_layer) {
-    throw DataLoadError(std::string("Invalid '") + file +
-                        "': required layers are Tiles, FrontTiles and Collisions");
-  }
-  pugi::xml_node xml_tile = RequireXmlChild(tiles_layer, "data", file);
-  pugi::xml_node xml_tile_front = RequireXmlChild(front_layer, "data", file);
-  pugi::xml_node xml_tile_prop = RequireXmlChild(collision_layer, "data", file);
-  const unsigned int expected_tiles =
-      static_cast<unsigned int>(map_width * map_height);
-  if (CountXmlChildren(xml_tile) != expected_tiles ||
-      CountXmlChildren(xml_tile_front) != expected_tiles ||
-      CountXmlChildren(xml_tile_prop) != expected_tiles) {
-    throw DataLoadError(std::string("Invalid '") + file +
-                        "': every required layer must contain exactly " +
-                        std::to_string(expected_tiles) + " tiles");
-  }
-
-  sprintf(aux_file, "%s", file);
-  if (IsJsonLevelFile(file)) {
-    sprintf(tileset_file, "%s", tileset.attribute("name").as_string());
-  } else {
-    sprintf(tileset_file, "%s/%s", chopToDirectory(aux_file).c_str(), tileset.attribute("name").as_string());
-  }
-
-  printf("Tileset file = %s\n", tileset_file);
-
-  world_image = al_load_bitmap(tileset_file);
+  world_image = al_load_bitmap(tileset_file.c_str());
   if (!world_image) {
     throw DataLoadError(std::string("Cannot load tileset bitmap '") +
                         tileset_file + "'");
@@ -76,10 +39,10 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   // Set transparent color for tileset
   al_convert_mask_to_alpha(world_image, al_map_rgb(255,0,255));
 
-  tileset_count = tileset.attribute("tilecount").as_int();
-  tileset_columns = tileset.attribute("columns").as_int();
-  tileset_tile_width = tileset.attribute("tilewidth").as_int();
-  tileset_tile_height = tileset.attribute("tileheight").as_int();
+  tileset_count = tileset.at("tileCount").get<int>();
+  tileset_columns = tileset.at("columns").get<int>();
+  tileset_tile_width = map.at("tileWidth").get<int>();
+  tileset_tile_height = map.at("tileHeight").get<int>();
 
   printf("Tileset count = %d\nTileset columns = %d\nTile width = %d\nTile height = %d\n", tileset_count, tileset_columns, tileset_tile_width, tileset_tile_height);
   
@@ -99,18 +62,15 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   // First initialize tiles
   // Tile properties is a layer of same size as tiles, so we can reuse the for stament
   // for both of them. REVISIT: add check to verify they have same size?
-  int x = 0;
-  int y = 0;
-  pugi::xml_node prop       = xml_tile_prop.first_child();
-  pugi::xml_node tile_front = xml_tile_front.first_child();
-  for (pugi::xml_node tile = xml_tile.first_child(); tile; tile = tile.next_sibling()) {
-    pugi::xml_attribute tile_attr       = tile.first_attribute();
-    pugi::xml_attribute tile_front_attr = tile_front.first_attribute();
-    pugi::xml_attribute prop_attr       = prop.first_attribute();
-
-    int tile_id       = ((tile_attr.as_int() != 0) ? tile_attr.as_int() - 1: tile_attr.as_int());
-    int tile_front_id = ((tile_front_attr.as_int() != 0) ? tile_front_attr.as_int() - 1: tile_front_attr.as_int());
-    int tile_prop     = ((prop_attr.as_int() != 0) ? prop_attr.as_int() - 1: prop_attr.as_int());
+  for (std::size_t index = 0; index < tiles.size(); ++index) {
+    const int x = static_cast<int>(index % map_width);
+    const int y = static_cast<int>(index / map_width);
+    const int tile_gid = tiles[index].get<int>();
+    const int front_gid = front_tiles[index].get<int>();
+    const int collision_gid = collision_tiles[index].get<int>();
+    int tile_id       = tile_gid != 0 ? tile_gid - 1 : 0;
+    int tile_front_id = front_gid != 0 ? front_gid - 1 : 0;
+    int tile_prop     = collision_gid != 0 ? collision_gid - 1 : 0;
     // Save the id of the tile aswell as the coordinates in the tileset bitmap
     world_tiles[x][y]->SetValue(tile_id);
     world_tiles[x][y]->SetType(tile_prop);
@@ -125,37 +85,28 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
     world_tiles_front[x][y]->SetLeftUpY(ceil(tile_front_id/tileset_columns)*tileset_height);
     world_tiles_front[x][y]->SetRightDownX((tile_front_id % tileset_columns) * tileset_width + tileset_width);
     world_tiles_front[x][y]->SetRightDownY(ceil((tile_front_id/tileset_columns))*tileset_height + tileset_height);
-    if (x == (map_width - 1)) {
-      y++;
-      x = 0;
-    } else {
-      x++;
-    }
-    // Move prop and front pointer
-    prop       = prop.next_sibling();
-    tile_front = tile_front.next_sibling();
   }
 
   // Read platforms
-  this->InitializePlatforms("../levels/level1/platforms.xml");
+  this->InitializePlatforms("platforms");
   // Read items
-  this->InitializeItems("../levels/level1/items.xml", sound_handler);
+  this->InitializeItems("items", sound_handler);
   // Read dynamic background objects
-  this->InitializeDynamicBackObjects("../levels/level1/anim_tiles.xml");
+  this->InitializeDynamicBackObjects("backgroundObjects");
   // Read blocks
-  this->InitializeBlocks("../levels/level1/blocks.xml");
+  this->InitializeBlocks("blocks");
   // Read hazards
-  this->InitializeHazards("../levels/level1/hazards.xml");
+  this->InitializeHazards("hazards");
   // Read checkpoints
-  this->InitializeCheckpoints("../levels/level1/checkpoints.xml");
+  this->InitializeCheckpoints("checkpoints");
   // Read lasers
-  this->InitializeLasers("../levels/level1/lasers.xml");
+  this->InitializeLasers("lasers");
   // Read triggers
-  this->InitializeTriggers("../levels/level1/triggers.xml");
+  this->InitializeTriggers("triggers");
   // Read enemies
-  this->InitializeEnemies("../levels/level1/enemies.xml");
+  this->InitializeEnemies("enemies");
   // Read camera views
-  this->InitializeCameraViews("../levels/level1/camera_views.xml");
+  this->InitializeCameraViews("cameraViews");
 
   shoot_exists = false;
   bomb_exists = false;
@@ -209,38 +160,32 @@ void World::InitializePlatforms(const char* file) {
   float action_speed;
   int action_cond;
   int num_actions;
-  pugi::xml_document plat_file;
 
   printf("---------------------------\n");
   printf("| Initializing platforms  |\n");
   printf("---------------------------\n");
 
-  LoadReferencedData(plat_file, file);
-  RequireXmlChild(plat_file, "platforms", file);
-  
-  for (pugi::xml_node plat = plat_file.child("platforms").first_child();
-       plat;
-       plat = plat.next_sibling()) {
-    RequireXmlAttributes(plat, file, {"id"});
-    pugi::xml_node plat_attrs = RequireXmlChild(plat, "attributes", file);
-    RequireXmlAttributes(plat_attrs, file,
-                         {"file", "ini_x", "ini_y", "width", "height",
-                          "visible", "recursive", "one_use", "ini_state"});
+  const nlohmann::json& platform_data = GetLevelEntities("platforms");
+  for (nlohmann::json::const_iterator plat = platform_data.begin();
+       plat != platform_data.end(); ++plat) {
+    const nlohmann::json& plat_attrs = plat->at("attributes");
     // First read attributes
-    platform_id = plat.attribute("id").as_int();
+    platform_id = plat->at("id").get<int>();
     printf("Platform id = %d\n", platform_id);
 
-    plat_ini_x = plat_attrs.attribute("ini_x").as_int();
-    plat_ini_y = plat_attrs.attribute("ini_y").as_int();
-    plat_width = plat_attrs.attribute("width").as_int();
-    plat_height = plat_attrs.attribute("height").as_int();
-    plat_visible = plat_attrs.attribute("visible").as_int();
-    plat_recursive = plat_attrs.attribute("recursive").as_int();
-    plat_one_use = plat_attrs.attribute("one_use").as_int();
-    plat_ini_state = strcmp(plat_attrs.attribute("ini_state").as_string(), "stop") == 0 ?
+    plat_ini_x = plat_attrs.at("ini_x").get<int>();
+    plat_ini_y = plat_attrs.at("ini_y").get<int>();
+    plat_width = plat_attrs.at("width").get<int>();
+    plat_height = plat_attrs.at("height").get<int>();
+    plat_visible = plat_attrs.at("visible").get<int>();
+    plat_recursive = plat_attrs.at("recursive").get<int>();
+    plat_one_use = plat_attrs.at("one_use").get<int>();
+    const std::string initial_state = plat_attrs.at("ini_state").get<std::string>();
+    plat_ini_state = initial_state == "stop" ?
                        OBJ_STATE_STOP :
                        OBJ_STATE_MOVING;
-    printf(" - File = %s\n", plat_attrs.attribute("file").as_string());
+    const std::string definition_file = plat_attrs.at("definition").get<std::string>();
+    printf(" - File = %s\n", definition_file.c_str());
     printf(" - ini_x = %d\n", plat_ini_x);
     printf(" - ini_y = %d\n", plat_ini_y);
     printf(" - width = %d\n", plat_width);
@@ -248,10 +193,10 @@ void World::InitializePlatforms(const char* file) {
     printf(" - visible = %d\n", plat_visible);
     printf(" - recursive = %d\n", plat_recursive);
     printf(" - one_use = %d\n", plat_one_use);
-    printf(" - ini_state = %s\n", plat_attrs.attribute("ini_state").as_string());
+    printf(" - ini_state = %s\n", initial_state.c_str());
 
     // Create platform
-    Platform* world_platform = new Platform(plat_attrs.attribute("file").as_string(),
+    Platform* world_platform = new Platform(definition_file.c_str(),
                                             platform_id,
                                             plat_ini_state,
                                             plat_ini_x,
@@ -265,32 +210,33 @@ void World::InitializePlatforms(const char* file) {
     printf(" - actions:\n");
     num_actions = 0;
     // Second, get actions
-    pugi::xml_node actions = plat.child("actions");
-    for (pugi::xml_node action = actions.first_child();
-         action;
-         action = action.next_sibling()) {
-      RequireXmlAttributes(action, file,
-                           {"direction", "desp", "wait", "speed", "cond"});
+    const nlohmann::json& action_value = plat->at("actions").at("action");
+    nlohmann::json actions = action_value.is_array()
+                                 ? action_value
+                                 : nlohmann::json::array({action_value});
+    for (nlohmann::json::const_iterator action = actions.begin();
+         action != actions.end(); ++action) {
       printf("\t - action %d:\n", num_actions);
-      if (strcmp(action.attribute("direction").as_string(), "stop") == 0) {
+      const std::string action_direction_name = action->at("direction").get<std::string>();
+      if (action_direction_name == "stop") {
         action_direction = OBJ_DIR_STOP;
-      } else if (strcmp(action.attribute("direction").as_string(), "right") == 0) {
+      } else if (action_direction_name == "right") {
         action_direction = OBJ_DIR_RIGHT;
-      } else if (strcmp(action.attribute("direction").as_string(), "left") == 0) {
+      } else if (action_direction_name == "left") {
         action_direction = OBJ_DIR_LEFT;
-      } else if (strcmp(action.attribute("direction").as_string(), "up") == 0) {
+      } else if (action_direction_name == "up") {
         action_direction = OBJ_DIR_UP;
-      } else if (strcmp(action.attribute("direction").as_string(), "down") == 0) {
+      } else if (action_direction_name == "down") {
         action_direction = OBJ_DIR_DOWN;
       } else {
         throw DataLoadError(std::string("Invalid '") + file +
                             "': incorrect platform action direction");
       }
-      action_desp = action.attribute("desp").as_int();
-      action_wait = action.attribute("wait").as_int();
-      action_speed = action.attribute("speed").as_float();      
-      action_cond = action.attribute("cond").as_int();
-      printf("\t\t - direction=%s\n", action.attribute("direction").as_string());
+      action_desp = action->at("desp").get<int>();
+      action_wait = action->at("wait").get<int>();
+      action_speed = action->at("speed").get<float>();
+      action_cond = action->at("cond").get<int>();
+      printf("\t\t - direction=%s\n", action_direction_name.c_str());
       printf("\t\t - desp=%d\n", action_desp);
       printf("\t\t - wait=%d\n", action_wait);
       printf("\t\t - speed=%f\n", action_speed);
@@ -325,36 +271,29 @@ void World::InitializeHazards(const char* file) {
   bool  action_deactivate;
   int   action_cond;
   int   num_actions;  
-  pugi::xml_document hazard_file;
 
   printf("---------------------------\n");
   printf("| Initializing hazards    |\n");
   printf("---------------------------\n");
 
-  LoadReferencedData(hazard_file, file);
-  RequireXmlChild(hazard_file, "hazards", file);
-  
-  for (pugi::xml_node hazard = hazard_file.child("hazards").first_child();
-       hazard;
-       hazard = hazard.next_sibling()) {
-    RequireXmlAttributes(hazard, file, {"id"});
-    pugi::xml_node hazard_attrs = RequireXmlChild(hazard, "attributes", file);
-    RequireXmlAttributes(hazard_attrs, file,
-                         {"file", "ini_x", "ini_y", "width", "height",
-                          "trigger", "stop_inactive"});
+  const nlohmann::json& hazard_data = GetLevelEntities("hazards");
+  for (nlohmann::json::const_iterator hazard = hazard_data.begin();
+       hazard != hazard_data.end(); ++hazard) {
+    const nlohmann::json& hazard_attrs = hazard->at("attributes");
     // First read attributes
-    hazard_id = hazard.attribute("id").as_int();
+    hazard_id = hazard->at("id").get<int>();
     printf("Hazard id = %d\n", hazard_id);
 
-    hazard_ini_x                = hazard_attrs.attribute("ini_x").as_int();
-    hazard_ini_y                = hazard_attrs.attribute("ini_y").as_int();
-    hazard_width                = hazard_attrs.attribute("width").as_int();
-    hazard_height               = hazard_attrs.attribute("height").as_int();
-    hazard_trigger              = hazard_attrs.attribute("trigger").as_bool();
-    hazard_stop_inactive        = hazard_attrs.attribute("stop_inactive").as_bool();
+    hazard_ini_x = hazard_attrs.at("ini_x").get<int>();
+    hazard_ini_y = hazard_attrs.at("ini_y").get<int>();
+    hazard_width = hazard_attrs.at("width").get<int>();
+    hazard_height = hazard_attrs.at("height").get<int>();
+    hazard_trigger = hazard_attrs.at("trigger").get<int>() != 0;
+    hazard_stop_inactive = hazard_attrs.at("stop_inactive").get<int>() != 0;
 
 
-    printf(" - File = %s\n",          hazard_attrs.attribute("file").as_string());
+    const std::string definition_file = hazard_attrs.at("definition").get<std::string>();
+    printf(" - File = %s\n", definition_file.c_str());
     printf(" - ini_x = %d\n",         hazard_ini_x);
     printf(" - ini_y = %d\n",         hazard_ini_y);
     printf(" - width = %d\n",         hazard_width);
@@ -363,7 +302,7 @@ void World::InitializeHazards(const char* file) {
     printf(" - stop_inactive = %d\n", hazard_stop_inactive);
 
     // Create hazard
-    Hazard* world_hazard = new Hazard(hazard_attrs.attribute("file").as_string(),
+    Hazard* world_hazard = new Hazard(definition_file.c_str(),
                                       hazard_id,
                                       hazard_ini_x,
                                       hazard_ini_y,
@@ -375,36 +314,37 @@ void World::InitializeHazards(const char* file) {
     printf(" - actions:\n");
     num_actions = 0;
     // Second, get actions
-    pugi::xml_node actions = hazard.child("actions");
-    for (pugi::xml_node action = actions.first_child();
-         action;
-         action = action.next_sibling()) {
-      RequireXmlAttributes(action, file,
-                           {"direction", "desp", "wait", "speed", "cond"});
+    const nlohmann::json& action_value = hazard->at("actions").at("action");
+    nlohmann::json actions = action_value.is_array()
+                                 ? action_value
+                                 : nlohmann::json::array({action_value});
+    for (nlohmann::json::const_iterator action = actions.begin();
+         action != actions.end(); ++action) {
       printf("\t - action %d:\n", num_actions);
       action_deactivate = false;
-      if (strcmp(action.attribute("direction").as_string(), "stop") == 0) {
+      const std::string action_direction_name = action->at("direction").get<std::string>();
+      if (action_direction_name == "stop") {
         action_direction = OBJ_DIR_STOP;
-      } else if (strcmp(action.attribute("direction").as_string(), "right") == 0) {
+      } else if (action_direction_name == "right") {
         action_direction = OBJ_DIR_RIGHT;
-      } else if (strcmp(action.attribute("direction").as_string(), "left") == 0) {
+      } else if (action_direction_name == "left") {
         action_direction = OBJ_DIR_LEFT;
-      } else if (strcmp(action.attribute("direction").as_string(), "up") == 0) {
+      } else if (action_direction_name == "up") {
         action_direction = OBJ_DIR_UP;
-      } else if (strcmp(action.attribute("direction").as_string(), "down") == 0) {
+      } else if (action_direction_name == "down") {
         action_direction = OBJ_DIR_DOWN;
-      } else if (strcmp(action.attribute("direction").as_string(), "deactivate") == 0) {
+      } else if (action_direction_name == "deactivate") {
         action_direction = OBJ_DIR_STOP;
         action_deactivate = true;
       } else {
         throw DataLoadError(std::string("Invalid '") + file +
                             "': incorrect hazard action direction");
       }
-      action_desp = action.attribute("desp").as_int();
-      action_wait = action.attribute("wait").as_int();
-      action_speed = action.attribute("speed").as_float();
-      action_cond = action.attribute("cond").as_int();
-      printf("\t\t - direction=%s\n", action.attribute("direction").as_string());
+      action_desp = action->at("desp").get<int>();
+      action_wait = action->at("wait").get<int>();
+      action_speed = action->at("speed").get<float>();
+      action_cond = action->at("cond").get<int>();
+      printf("\t\t - direction=%s\n", action_direction_name.c_str());
       printf("\t\t - deactivate=%d\n", (int)action_deactivate);
       printf("\t\t - desp=%d\n", action_desp);
       printf("\t\t - wait=%d\n", action_wait);
@@ -432,32 +372,26 @@ void World::InitializeItems(const char* file, SoundHandler* sound_handler) {
   int item_ini_y;
   int item_width;
   int item_height;  
-  pugi::xml_document item_file;
 
   printf("---------------------------\n");
   printf("| Initializing items      |\n");
   printf("---------------------------\n");
 
-  LoadReferencedData(item_file, file);
-  RequireXmlChild(item_file, "items", file);
- 
-  for (pugi::xml_node item = item_file.child("items").first_child();
-       item;
-       item = item.next_sibling()) {
-    RequireXmlAttributes(item, file, {"id"});
-    pugi::xml_node item_attrs = RequireXmlChild(item, "attributes", file);
-    RequireXmlAttributes(item_attrs, file,
-                         {"file", "ini_x", "ini_y", "width", "height"});
+  const nlohmann::json& item_data = GetLevelEntities("items");
+  for (nlohmann::json::const_iterator item = item_data.begin();
+       item != item_data.end(); ++item) {
+    const nlohmann::json& item_attrs = item->at("attributes");
     // First read attributes
-    item_id = item.attribute("id").as_int();
+    item_id = item->at("id").get<int>();
     printf("Item id = %d\n", item_id);
 
-    item_ini_x  = item_attrs.attribute("ini_x").as_int();
-    item_ini_y  = item_attrs.attribute("ini_y").as_int();
-    item_width  = item_attrs.attribute("width").as_int();
-    item_height = item_attrs.attribute("height").as_int();
+    item_ini_x  = item_attrs.at("ini_x").get<int>();
+    item_ini_y  = item_attrs.at("ini_y").get<int>();
+    item_width  = item_attrs.at("width").get<int>();
+    item_height = item_attrs.at("height").get<int>();
 
-    printf(" - File = %s\n", item_attrs.attribute("file").as_string());
+    const std::string definition_file = item_attrs.at("definition").get<std::string>();
+    printf(" - File = %s\n", definition_file.c_str());
     printf(" - ini_x = %d\n", item_ini_x);
     printf(" - ini_y = %d\n", item_ini_y);
     printf(" - width = %d\n", item_width);
@@ -465,7 +399,7 @@ void World::InitializeItems(const char* file, SoundHandler* sound_handler) {
 
     // Create item
     Item* world_item = new Item(item_id);
-    world_item->Init(item_attrs.attribute("file").as_string(),
+    world_item->Init(definition_file.c_str(),
                      item_ini_x, item_ini_y,
                      item_width, item_height,
                      true, true,
@@ -487,34 +421,27 @@ void World::InitializeDynamicBackObjects(const char* file) {
   int dyn_obj_width;
   int dyn_obj_height;
   int dyn_obj_skip_num_anims;
-  pugi::xml_document dyn_obj_file;
 
   printf("------------------------------------------\n");
   printf("| Initializing dynamic backgound objects |\n");
   printf("------------------------------------------\n");
 
-  LoadReferencedData(dyn_obj_file, file);
-  RequireXmlChild(dyn_obj_file, "anim_objects", file);
- 
-  for (pugi::xml_node dyn_obj = dyn_obj_file.child("anim_objects").first_child();
-       dyn_obj;
-       dyn_obj = dyn_obj.next_sibling()) {
-    RequireXmlAttributes(dyn_obj, file, {"id"});
-    pugi::xml_node dyn_obj_attrs = RequireXmlChild(dyn_obj, "attributes", file);
-    RequireXmlAttributes(dyn_obj_attrs, file,
-                         {"file", "ini_x", "ini_y", "width", "height",
-                          "skip_num_anims"});
+  const nlohmann::json& background_data = GetLevelEntities("backgroundObjects");
+  for (nlohmann::json::const_iterator dyn_obj = background_data.begin();
+       dyn_obj != background_data.end(); ++dyn_obj) {
+    const nlohmann::json& dyn_obj_attrs = dyn_obj->at("attributes");
     // First read attributes
-    dyn_obj_id = dyn_obj.attribute("id").as_int();
+    dyn_obj_id = dyn_obj->at("id").get<int>();
     printf("Dynamic object id = %d\n", dyn_obj_id);
 
-    dyn_obj_ini_x                = dyn_obj_attrs.attribute("ini_x").as_int();
-    dyn_obj_ini_y                = dyn_obj_attrs.attribute("ini_y").as_int();
-    dyn_obj_width                = dyn_obj_attrs.attribute("width").as_int();
-    dyn_obj_height               = dyn_obj_attrs.attribute("height").as_int();
-    dyn_obj_skip_num_anims       = dyn_obj_attrs.attribute("skip_num_anims").as_int();
+    dyn_obj_ini_x = dyn_obj_attrs.at("ini_x").get<int>();
+    dyn_obj_ini_y = dyn_obj_attrs.at("ini_y").get<int>();
+    dyn_obj_width = dyn_obj_attrs.at("width").get<int>();
+    dyn_obj_height = dyn_obj_attrs.at("height").get<int>();
+    dyn_obj_skip_num_anims = dyn_obj_attrs.at("skip_num_anims").get<int>();
 
-    printf(" - File = %s\n", dyn_obj_attrs.attribute("file").as_string());
+    const std::string definition_file = dyn_obj_attrs.at("definition").get<std::string>();
+    printf(" - File = %s\n", definition_file.c_str());
     printf(" - ini_x = %d\n", dyn_obj_ini_x);
     printf(" - ini_y = %d\n", dyn_obj_ini_y);
     printf(" - width = %d\n", dyn_obj_width);
@@ -523,7 +450,7 @@ void World::InitializeDynamicBackObjects(const char* file) {
 
     // Create dyn_obj
     StaticObject* world_dyn_obj = new StaticObject(dyn_obj_id);
-    world_dyn_obj->Init(dyn_obj_attrs.attribute("file").as_string(),
+    world_dyn_obj->Init(definition_file.c_str(),
                         dyn_obj_ini_x, dyn_obj_ini_y,
                         dyn_obj_width, dyn_obj_height,
                         dyn_obj_skip_num_anims);
@@ -541,34 +468,27 @@ void World::InitializeBlocks(const char* file) {
   int  block_width;
   int  block_height;
   bool block_exploits;
-  pugi::xml_document block_file;
 
   printf("------------------------------\n");
   printf("| Initializing block objects |\n");
   printf("-----------------------------\n");
 
-  LoadReferencedData(block_file, file);
-  RequireXmlChild(block_file, "blocks", file);
- 
-  for (pugi::xml_node block = block_file.child("blocks").first_child();
-       block;
-       block = block.next_sibling()) {
-    RequireXmlAttributes(block, file, {"id"});
-    pugi::xml_node block_attrs = RequireXmlChild(block, "attributes", file);
-    RequireXmlAttributes(block_attrs, file,
-                         {"file", "ini_x", "ini_y", "width", "height",
-                          "exploits"});
+  const nlohmann::json& block_data = GetLevelEntities("blocks");
+  for (nlohmann::json::const_iterator block = block_data.begin();
+       block != block_data.end(); ++block) {
+    const nlohmann::json& block_attrs = block->at("attributes");
     // First read attributes
-    block_id = block.attribute("id").as_int();
+    block_id = block->at("id").get<int>();
     printf("Block object id = %d\n", block_id);
 
-    block_ini_x                = block_attrs.attribute("ini_x").as_int();
-    block_ini_y                = block_attrs.attribute("ini_y").as_int();
-    block_width                = block_attrs.attribute("width").as_int();
-    block_height               = block_attrs.attribute("height").as_int();
-    block_exploits             = block_attrs.attribute("exploits").as_bool();
+    block_ini_x = block_attrs.at("ini_x").get<int>();
+    block_ini_y = block_attrs.at("ini_y").get<int>();
+    block_width = block_attrs.at("width").get<int>();
+    block_height = block_attrs.at("height").get<int>();
+    block_exploits = block_attrs.at("exploits").get<int>() != 0;
 
-    printf(" - File = %s\n", block_attrs.attribute("file").as_string());
+    const std::string definition_file = block_attrs.at("definition").get<std::string>();
+    printf(" - File = %s\n", definition_file.c_str());
     printf(" - ini_x = %d\n", block_ini_x);
     printf(" - ini_y = %d\n", block_ini_y);
     printf(" - width = %d\n", block_width);
@@ -577,7 +497,7 @@ void World::InitializeBlocks(const char* file) {
 
     // Create block
     Block* world_block = new Block(block_id);
-    world_block->Init(block_attrs.attribute("file").as_string(),
+    world_block->Init(definition_file.c_str(),
                       block_ini_x, block_ini_y,
                       block_width, block_height,
                       block_exploits);
@@ -597,41 +517,34 @@ void World::InitializeCheckpoints(const char* file) {
   int pl_x;
   int pl_y;
   int pl_face;
-  pugi::xml_document chk_file;
   vector<vector<int> > nxt_chks;
 
   printf("------------------------------------\n");
   printf("| Initializing checkpoints objects |\n");
   printf("------------------------------------\n");
 
-  LoadReferencedData(chk_file, file);
-  pugi::xml_node checkpoints_root =
-      RequireXmlChild(chk_file, "checkpoints", file);
-  if (CountXmlChildren(checkpoints_root) == 0) {
+  const nlohmann::json& checkpoint_data = GetLevelEntities("checkpoints");
+  if (checkpoint_data.empty()) {
     throw DataLoadError(std::string("Invalid '") + file +
                         "': at least one checkpoint is required");
   }
  
-  for (pugi::xml_node chk = chk_file.child("checkpoints").first_child();
-       chk;
-       chk = chk.next_sibling()) {
-    RequireXmlAttributes(chk, file,
-                         {"id", "chk_x", "chk_y", "chk_width", "chk_height",
-                          "pl_x", "pl_y", "pl_face"});
-    RequireXmlAttributePresent(chk, "nxt_chks", file);
+  for (nlohmann::json::const_iterator chk = checkpoint_data.begin();
+       chk != checkpoint_data.end(); ++chk) {
     // First read attributes
-    chk_id = chk.attribute("id").as_int();
+    chk_id = chk->at("id").get<int>();
     printf("Checkpoint id = %d\n", chk_id);
     
-    chk_x      = chk.attribute("chk_x").as_int();
-    chk_y      = chk.attribute("chk_y").as_int();
-    chk_width  = chk.attribute("chk_width").as_int();
-    chk_height = chk.attribute("chk_height").as_int();
-    pl_x       = chk.attribute("pl_x").as_int();
-    pl_y       = chk.attribute("pl_y").as_int();
-    if (strcmp(chk.attribute("pl_face").as_string(), "right") == 0) {
+    chk_x      = chk->at("chk_x").get<int>();
+    chk_y      = chk->at("chk_y").get<int>();
+    chk_width  = chk->at("chk_width").get<int>();
+    chk_height = chk->at("chk_height").get<int>();
+    pl_x       = chk->at("pl_x").get<int>();
+    pl_y       = chk->at("pl_y").get<int>();
+    const std::string player_face = chk->at("pl_face").get<std::string>();
+    if (player_face == "right") {
       pl_face = CHAR_DIR_RIGHT;
-    } else if (strcmp(chk.attribute("pl_face").as_string(), "left") == 0) {
+    } else if (player_face == "left") {
       pl_face = CHAR_DIR_LEFT;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
@@ -639,20 +552,8 @@ void World::InitializeCheckpoints(const char* file) {
                           std::to_string(chk_id));
     }
 
-    string nxt_chks_str(chk.attribute("nxt_chks").as_string());
-    vector<int> nxt_chks_int;
-
-    stringstream ss(nxt_chks_str);
-    string item;    
-    while (getline(ss, item, ',')) {
-      try {
-        nxt_chks_int.push_back(stoi(item));
-      } catch (const std::exception&) {
-        throw DataLoadError(std::string("Invalid '") + file +
-                            "': checkpoint " + std::to_string(chk_id) +
-                            " contains a non-numeric link");
-      }
-    }
+    vector<int> nxt_chks_int =
+        chk->at("nxt_chks").get<vector<int> >();
     nxt_chks.push_back(nxt_chks_int);
 
     printf(" - chk_x = %d\n", chk_x);
@@ -721,39 +622,32 @@ void World::InitializeTriggers(const char* file) {
   bool target_trigger;
   bool target_trigger_cond;
   int  num_targets;
-  pugi::xml_document trig_file;
 
   printf("---------------------------\n");
   printf("| Initializing triggers   |\n");
   printf("---------------------------\n");
 
-  LoadReferencedData(trig_file, file);
-  RequireXmlChild(trig_file, "triggers", file);
-  
-  for (pugi::xml_node trig = trig_file.child("triggers").first_child();
-       trig;
-       trig = trig.next_sibling()) {
-    RequireXmlAttributes(trig, file, {"id"});
-    pugi::xml_node trig_attrs = RequireXmlChild(trig, "attributes", file);
-    RequireXmlAttributes(trig_attrs, file,
-                         {"x", "y", "width", "height", "recursive",
-                          "action", "face"});
+  const nlohmann::json& trigger_data = GetLevelEntities("triggers");
+  for (nlohmann::json::const_iterator trig = trigger_data.begin();
+       trig != trigger_data.end(); ++trig) {
+    const nlohmann::json& trig_attrs = trig->at("attributes");
     // First read attributes
-    trig_id = trig.attribute("id").as_int();
+    trig_id = trig->at("id").get<int>();
     printf("Trigger id = %d\n", trig_id);
 
-    trig_x         = trig_attrs.attribute("x").as_int();
-    trig_y         = trig_attrs.attribute("y").as_int();
-    trig_width     = trig_attrs.attribute("width").as_int();
-    trig_height    = trig_attrs.attribute("height").as_int();
-    trig_recursive = trig_attrs.attribute("recursive").as_bool();
-    if ((strcmp(trig_attrs.attribute("action").as_string(), "enters")) == 0) {
+    trig_x = trig_attrs.at("x").get<int>();
+    trig_y = trig_attrs.at("y").get<int>();
+    trig_width = trig_attrs.at("width").get<int>();
+    trig_height = trig_attrs.at("height").get<int>();
+    trig_recursive = trig_attrs.at("recursive").get<int>() != 0;
+    const std::string trigger_action = trig_attrs.at("action").get<std::string>();
+    if (trigger_action == "enters") {
       trig_action = ACTION_EVENT_ENTERS;
-    } else if ((strcmp(trig_attrs.attribute("action").as_string(), "stays")) == 0) {
+    } else if (trigger_action == "stays") {
       trig_action = ACTION_EVENT_STAYS;
-    } else if ((strcmp(trig_attrs.attribute("action").as_string(), "exits")) == 0) {
+    } else if (trigger_action == "exits") {
       trig_action = ACTION_EVENT_EXITS;
-    } else if ((strcmp(trig_attrs.attribute("action").as_string(), "hits")) == 0) {
+    } else if (trigger_action == "hits") {
       trig_action = ACTION_EVENT_HITS;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
@@ -761,11 +655,12 @@ void World::InitializeTriggers(const char* file) {
                           std::to_string(trig_id));
     }
 
-    if ((strcmp(trig_attrs.attribute("face").as_string(), "any")) == 0) {
+    const std::string trigger_face = trig_attrs.at("face").get<std::string>();
+    if (trigger_face == "any") {
       trig_face = ACTION_FACE_ANY;
-    } else if ((strcmp(trig_attrs.attribute("face").as_string(), "right")) == 0) {
+    } else if (trigger_face == "right") {
       trig_face = ACTION_FACE_RIGHT;
-    } else if ((strcmp(trig_attrs.attribute("face").as_string(), "left")) == 0) {
+    } else if (trigger_face == "left") {
       trig_face = ACTION_FACE_LEFT;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
@@ -794,29 +689,30 @@ void World::InitializeTriggers(const char* file) {
     printf(" - targets:\n");
     num_targets = 0;
     // Second, get targets
-    pugi::xml_node targets = trig.child("targets");
-    for (pugi::xml_node target = targets.first_child();
-         target;
-         target = target.next_sibling()) {
-      RequireXmlAttributes(target, file,
-                           {"type", "id", "delay", "trigger", "trigger_cond"});
+    const nlohmann::json& target_value = trig->at("targets").at("target");
+    nlohmann::json targets = target_value.is_array()
+                                 ? target_value
+                                 : nlohmann::json::array({target_value});
+    for (nlohmann::json::const_iterator target = targets.begin();
+         target != targets.end(); ++target) {
       printf("\t - target %d:\n", num_targets);
-      if (strcmp(target.attribute("type").as_string(), "platform") == 0) {
+      const std::string target_type_name = target->at("type").get<std::string>();
+      if (target_type_name == "platform") {
         target_type = OBJ_PLATFORM;
-      } else if (strcmp(target.attribute("type").as_string(), "laser") == 0) {
+      } else if (target_type_name == "laser") {
         target_type = OBJ_LASER;
-      } else if (strcmp(target.attribute("type").as_string(), "hazard") == 0) {
+      } else if (target_type_name == "hazard") {
         target_type = OBJ_HAZARD;
       } else {
         throw DataLoadError(std::string("Invalid '") + file +
                             "': incorrect target type for trigger " +
                             std::to_string(trig_id));
       }
-      target_id = target.attribute("id").as_int();
-      target_delay = target.attribute("delay").as_int();
-      target_trigger = target.attribute("trigger").as_bool();
-      target_trigger_cond = target.attribute("trigger_cond").as_bool();
-      printf("\t\t - type=%s\n", target.attribute("type").as_string());
+      target_id = target->at("id").get<int>();
+      target_delay = target->at("delay").get<int>();
+      target_trigger = target->at("trigger").get<int>() != 0;
+      target_trigger_cond = target->at("trigger_cond").get<int>() != 0;
+      printf("\t\t - type=%s\n", target_type_name.c_str());
       printf("\t\t - id=%d\n", target_id);
       printf("\t\t - delay=%d\n", target_delay);
       printf("\t\t - trigger=%d\n", target_trigger);
@@ -861,49 +757,43 @@ void World::InitializeLasers(const char* file) {
   bool  laser_onehot;
   int   laser_direction;
   int   laser_default_trigger;
-  pugi::xml_document laser_file;  
 
   printf("------------------------------\n");
   printf("| Initializing laser objects |\n");
   printf("------------------------------\n");
 
-  LoadReferencedData(laser_file, file);
-  RequireXmlChild(laser_file, "lasers", file);
- 
-  for (pugi::xml_node laser = laser_file.child("lasers").first_child();
-       laser;
-       laser = laser.next_sibling()) {
-    RequireXmlAttributes(laser, file,
-                         {"id", "file", "x", "y", "bb_x", "bb_y",
-                          "bb_width", "bb_height", "type", "speed",
-                          "recursive", "default_trigger", "direction"});
+  const nlohmann::json& laser_data = GetLevelEntities("lasers");
+  for (nlohmann::json::const_iterator laser = laser_data.begin();
+       laser != laser_data.end(); ++laser) {
     // First read attributes
-    laser_id = laser.attribute("id").as_int();
+    laser_id = laser->at("id").get<int>();
     printf("Laser id = %d\n", laser_id);
     
-    laser_x         = laser.attribute("x").as_int();
-    laser_y         = laser.attribute("y").as_int();
-    laser_bb_x      = laser.attribute("bb_x").as_int();
-    laser_bb_y      = laser.attribute("bb_y").as_int();
-    laser_bb_width  = laser.attribute("bb_width").as_int();
-    laser_bb_height = laser.attribute("bb_height").as_int();
-    if (strcmp(laser.attribute("type").as_string(), "horizontal") == 0) {
+    laser_x = laser->at("x").get<int>();
+    laser_y = laser->at("y").get<int>();
+    laser_bb_x = laser->at("bb_x").get<int>();
+    laser_bb_y = laser->at("bb_y").get<int>();
+    laser_bb_width = laser->at("bb_width").get<int>();
+    laser_bb_height = laser->at("bb_height").get<int>();
+    const std::string laser_type_name = laser->at("type").get<std::string>();
+    if (laser_type_name == "horizontal") {
       laser_type = LASER_TYPE_HORIZONTAL;
-    } else if (strcmp(laser.attribute("type").as_string(), "vertical") == 0) {
+    } else if (laser_type_name == "vertical") {
       laser_type = LASER_TYPE_VERTICAL;
-    } else if (strcmp(laser.attribute("type").as_string(), "diagonal") == 0) {
+    } else if (laser_type_name == "diagonal") {
       laser_type = LASER_TYPE_DIAGONAL;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
                           "': incorrect type for laser " +
                           std::to_string(laser_id));
     }
-    laser_speed = laser.attribute("speed").as_float();
-    laser_onehot = !laser.attribute("recursive").as_bool();
-    laser_default_trigger = laser.attribute("default_trigger").as_int();
-    if (strcmp(laser.attribute("direction").as_string(), "right") == 0) {
+    laser_speed = laser->at("speed").get<float>();
+    laser_onehot = laser->at("recursive").get<int>() == 0;
+    laser_default_trigger = laser->at("default_trigger").get<int>();
+    const std::string laser_direction_name = laser->at("direction").get<std::string>();
+    if (laser_direction_name == "right") {
       laser_direction = OBJ_DIR_RIGHT;
-    } else if (strcmp(laser.attribute("direction").as_string(), "left") == 0) {
+    } else if (laser_direction_name == "left") {
       laser_direction = OBJ_DIR_LEFT;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
@@ -923,7 +813,8 @@ void World::InitializeLasers(const char* file) {
     printf(" - default_trigger = %d\n", laser_default_trigger);
 
     // Create checkpoint
-    Laser* world_laser = new Laser(laser.attribute("file").as_string(),
+    const std::string definition_file = laser->at("definition").get<std::string>();
+    Laser* world_laser = new Laser(definition_file.c_str(),
                                    laser_id,
                                    laser_x, laser_y,
                                    laser_bb_x, laser_bb_y,
@@ -956,63 +847,56 @@ void World::InitializeEnemies(const char* file) {
   int   enemy_ia_orig_y;
   int   enemy_ia_limit_x;
   int   enemy_ia_limit_y;
-  pugi::xml_document enemy_file;
 
   printf("------------------------------------\n");
   printf("| Initializing enemies             |\n");
   printf("------------------------------------\n");
 
-  LoadReferencedData(enemy_file, file);
-  RequireXmlChild(enemy_file, "enemies", file);
- 
-  for (pugi::xml_node enemy = enemy_file.child("enemies").first_child();
-       enemy;
-       enemy = enemy.next_sibling()) {
-    RequireXmlAttributes(enemy, file,
-                         {"id", "file", "x", "y", "bb_x", "bb_y",
-                          "bb_width", "bb_height", "speed_x", "speed_y",
-                          "direction", "ia_type", "ia_random",
-                          "ia_randomness", "ia_block_steps", "ia_orig_x",
-                          "ia_orig_y", "ia_limit_x", "ia_limit_y"});
+  const nlohmann::json& enemy_data = GetLevelEntities("enemies");
+  for (nlohmann::json::const_iterator enemy = enemy_data.begin();
+       enemy != enemy_data.end(); ++enemy) {
     // First read attributes
-    enemy_id = enemy.attribute("id").as_int();
+    enemy_id = enemy->at("id").get<int>();
     printf("Enemy id = %d\n", enemy_id);
     
-    enemy_x         = enemy.attribute("x").as_int();
-    enemy_y         = enemy.attribute("y").as_int();
-    enemy_bb_x      = enemy.attribute("bb_x").as_int();
-    enemy_bb_y      = enemy.attribute("bb_y").as_int();
-    enemy_bb_width  = enemy.attribute("bb_width").as_int();
-    enemy_bb_height = enemy.attribute("bb_height").as_int();
-    enemy_speed_x   = enemy.attribute("speed_x").as_float();
-    enemy_speed_y   = enemy.attribute("speed_y").as_float();
-    if (strcmp(enemy.attribute("direction").as_string(), "right") == 0) {
+    enemy_x = enemy->at("x").get<int>();
+    enemy_y = enemy->at("y").get<int>();
+    enemy_bb_x = enemy->at("bb_x").get<int>();
+    enemy_bb_y = enemy->at("bb_y").get<int>();
+    enemy_bb_width = enemy->at("bb_width").get<int>();
+    enemy_bb_height = enemy->at("bb_height").get<int>();
+    enemy_speed_x = enemy->at("speed_x").get<float>();
+    enemy_speed_y = enemy->at("speed_y").get<float>();
+    const std::string enemy_direction_name = enemy->at("direction").get<std::string>();
+    if (enemy_direction_name == "right") {
       enemy_direction = CHAR_DIR_RIGHT;
-    } else if (strcmp(enemy.attribute("direction").as_string(), "left") == 0) {
+    } else if (enemy_direction_name == "left") {
       enemy_direction = CHAR_DIR_LEFT;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
                           "': incorrect direction for enemy " +
                           std::to_string(enemy_id));
     }
-    if (strcmp(enemy.attribute("ia_type").as_string(), "walker") == 0) {
+    const std::string ai_type = enemy->at("ia_type").get<std::string>();
+    if (ai_type == "walker") {
       enemy_ia_type = ENEMY_IA_WALKER;
-    } else if (strcmp(enemy.attribute("ia_type").as_string(), "chaser") == 0) {
+    } else if (ai_type == "chaser") {
       enemy_ia_type = ENEMY_IA_CHASER;
     } else {
       throw DataLoadError(std::string("Invalid '") + file +
                           "': incorrect AI type for enemy " +
                           std::to_string(enemy_id));
     }
-    enemy_ia_random      = enemy.attribute("ia_random").as_bool();
-    enemy_ia_randomness  = enemy.attribute("ia_randomness").as_int();
-    enemy_ia_block_steps = enemy.attribute("ia_block_steps").as_int();
-    enemy_ia_orig_x      = enemy.attribute("ia_orig_x").as_int();
-    enemy_ia_orig_y      = enemy.attribute("ia_orig_y").as_int();
-    enemy_ia_limit_x     = enemy.attribute("ia_limit_x").as_int();
-    enemy_ia_limit_y     = enemy.attribute("ia_limit_y").as_int();
+    enemy_ia_random = enemy->at("ia_random").get<int>() != 0;
+    enemy_ia_randomness = enemy->at("ia_randomness").get<int>();
+    enemy_ia_block_steps = enemy->at("ia_block_steps").get<int>();
+    enemy_ia_orig_x = enemy->at("ia_orig_x").get<int>();
+    enemy_ia_orig_y = enemy->at("ia_orig_y").get<int>();
+    enemy_ia_limit_x = enemy->at("ia_limit_x").get<int>();
+    enemy_ia_limit_y = enemy->at("ia_limit_y").get<int>();
 
-    printf(" - file = %s\n", enemy.attribute("file").as_string());
+    const std::string definition_file = enemy->at("definition").get<std::string>();
+    printf(" - file = %s\n", definition_file.c_str());
     printf(" - x = %d\n", enemy_x);
     printf(" - y = %d\n", enemy_y);
     printf(" - bb_x = %d\n", enemy_bb_x);
@@ -1032,7 +916,7 @@ void World::InitializeEnemies(const char* file) {
     printf(" - ia_limit_y = %d\n", enemy_ia_limit_y);
 
     // Create enemy
-    Enemy* world_enemy = new Enemy(enemy.attribute("file").as_string(),
+    Enemy* world_enemy = new Enemy(definition_file.c_str(),
                                    enemy_id,
                                    enemy_x, enemy_y,
                                    enemy_bb_x, enemy_bb_y, enemy_bb_width, enemy_bb_height,
@@ -1051,29 +935,22 @@ void World::InitializeCameraViews(const char* file) {
   int left_up_y;
   int right_down_x;
   int right_down_y;
-  pugi::xml_document view_file;
 
   printf("------------------------------------\n");
   printf("| Initializing camera views        |\n");
   printf("------------------------------------\n");
 
-  LoadReferencedData(view_file, file);
-  RequireXmlChild(view_file, "views", file);
- 
-  for (pugi::xml_node view = view_file.child("views").first_child();
-       view;
-       view = view.next_sibling()) {
-    RequireXmlAttributes(view, file,
-                         {"id", "left_up_x", "left_up_y", "right_down_x",
-                          "right_down_y"});
+  const nlohmann::json& view_data = GetLevelEntities("cameraViews");
+  for (nlohmann::json::const_iterator view = view_data.begin();
+       view != view_data.end(); ++view) {
     // First read attributes
-    view_id = view.attribute("id").as_int();
+    view_id = view->at("id").get<int>();
     printf("View id = %d\n", view_id);
     
-    left_up_x    = view.attribute("left_up_x").as_int();
-    left_up_y    = view.attribute("left_up_y").as_int();
-    right_down_x = view.attribute("right_down_x").as_int();
-    right_down_y = view.attribute("right_down_y").as_int();
+    left_up_x = view->at("left_up_x").get<int>();
+    left_up_y = view->at("left_up_y").get<int>();
+    right_down_x = view->at("right_down_x").get<int>();
+    right_down_y = view->at("right_down_y").get<int>();
 
     printf(" - left_up_x = %d\n", left_up_x);
     printf(" - left_up_y = %d\n", left_up_y);
@@ -1342,7 +1219,7 @@ bool World::CreateNewShoot(int x, int y, int direction) {
   bool created = false;
   // Allow only one shoot to be created right now
   if (!shoot_exists) {
-    Shoot* shoot = new Shoot("../designs/shoot/shoot.xml", x, y, 12, 6, direction);
+    Shoot* shoot = new Shoot(GetProjectileDefinition("shoot").c_str(), x, y, 12, 6, direction);
     objects.push_back(shoot);
     shoot_exists = true;
     created = true;
@@ -1356,7 +1233,7 @@ bool World::CreateNewBomb(int x, int y, int direction) {
   // Allow only one bomb to be created right now
   if (!bomb_exists) {    
     printf("CreateNewBomb x=%d, y=%d\n", x, y);
-    Bomb* shoot = new Bomb("../designs/bomb/bomb.xml", x, y - 1, 25, 22, direction);
+    Bomb* shoot = new Bomb(GetProjectileDefinition("bomb").c_str(), x, y - 1, 25, 22, direction);
     // REVISIT: not sure why height is 16. May it be 17?
     shoot->SetBoundingBox(8, 10, 10, 13);
     objects.push_back(shoot);

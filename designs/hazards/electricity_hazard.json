@@ -1,0 +1,40 @@
+{
+  "kind": "object",
+  "name": "electricity_hazard",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/hazards/hazards.png",
+        "speed": 2,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 17,
+            "height": 6
+          },
+          {
+            "x": 19,
+            "y": 1,
+            "width": 17,
+            "height": 6
+          },
+          {
+            "x": 37,
+            "y": 1,
+            "width": 17,
+            "height": 6
+          },
+          {
+            "x": 55,
+            "y": 1,
+            "width": 17,
+            "height": 6
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -13,7 +13,7 @@ def main():
         project_root,
         Path("maps/level1/Map1_prueba.tmx"),
         Path("levels/level1"),
-        Path("characters/rick.xml"),
+        Path("characters/rick.json"),
     )
     committed = json.loads((project_root / "levels/level1/level.json").read_text())
     if committed != expected:
@@ -23,7 +23,7 @@ def main():
     for name, values in expected["map"]["layers"].items():
         if len(values) != cell_count:
             raise SystemExit(f"layer {name} contains {len(values)}, expected {cell_count}")
-    print("Canonical level package matches all legacy sources")
+    print("Canonical level package matches all JSON sources and the imported TMX map")
 
 
 if __name__ == "__main__":

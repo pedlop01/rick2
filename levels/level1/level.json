@@ -122428,7 +122428,6 @@
       {
         "id": 0,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 800,
           "ini_y": 1656,
           "width": 24,
@@ -122436,7 +122435,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122474,7 +122474,6 @@
       {
         "id": 1,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 868,
           "ini_y": 1240,
           "width": 24,
@@ -122482,7 +122481,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122513,7 +122513,6 @@
       {
         "id": 2,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 968,
           "ini_y": 992,
           "width": 24,
@@ -122521,7 +122520,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122545,7 +122545,6 @@
       {
         "id": 3,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 704,
           "ini_y": 1208,
           "width": 24,
@@ -122553,7 +122552,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122577,7 +122577,6 @@
       {
         "id": 4,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 544,
           "ini_y": 1464,
           "width": 24,
@@ -122585,7 +122584,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "moving"
+          "ini_state": "moving",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122623,7 +122623,6 @@
       {
         "id": 5,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 448,
           "ini_y": 1696,
           "width": 24,
@@ -122631,7 +122630,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "moving"
+          "ini_state": "moving",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122655,7 +122655,6 @@
       {
         "id": 6,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 320,
           "ini_y": 1696,
           "width": 24,
@@ -122663,7 +122662,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "moving"
+          "ini_state": "moving",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122687,7 +122687,6 @@
       {
         "id": 7,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 288,
           "ini_y": 1560,
           "width": 24,
@@ -122695,7 +122694,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122733,7 +122733,6 @@
       {
         "id": 8,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 452,
           "ini_y": 1480,
           "width": 24,
@@ -122741,7 +122740,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122779,7 +122779,6 @@
       {
         "id": 9,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 388,
           "ini_y": 1304,
           "width": 24,
@@ -122787,7 +122786,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 1,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": {
@@ -122802,7 +122802,6 @@
       {
         "id": 10,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 480,
           "ini_y": 1336,
           "width": 24,
@@ -122810,7 +122809,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122848,7 +122848,6 @@
       {
         "id": 11,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 388,
           "ini_y": 952,
           "width": 24,
@@ -122856,7 +122855,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122894,7 +122894,6 @@
       {
         "id": 12,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 352,
           "ini_y": 888,
           "width": 24,
@@ -122902,7 +122901,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 1,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": {
@@ -122917,7 +122917,6 @@
       {
         "id": 13,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 576,
           "ini_y": 952,
           "width": 24,
@@ -122925,7 +122924,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -122956,7 +122956,6 @@
       {
         "id": 14,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 544,
           "ini_y": 664,
           "width": 24,
@@ -122964,7 +122963,8 @@
           "visible": 1,
           "recursive": 1,
           "one_use": 0,
-          "ini_state": "moving"
+          "ini_state": "moving",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -123016,7 +123016,6 @@
       {
         "id": 15,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 580,
           "ini_y": 344,
           "width": 24,
@@ -123024,7 +123023,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -123062,7 +123062,6 @@
       {
         "id": 16,
         "attributes": {
-          "file": "../designs/platforms/platforms.xml",
           "ini_x": 548,
           "ini_y": 280,
           "width": 24,
@@ -123070,7 +123069,8 @@
           "visible": 1,
           "recursive": 0,
           "one_use": 0,
-          "ini_state": "stop"
+          "ini_state": "stop",
+          "definition": "designs/platforms/platforms"
         },
         "actions": {
           "action": [
@@ -123103,181 +123103,181 @@
       {
         "id": 0,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 836,
           "ini_y": 2015,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 1,
         "attributes": {
-          "file": "../designs/items/shoots.xml",
           "ini_x": 892,
           "ini_y": 2015,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/shoots"
         }
       },
       {
         "id": 2,
         "attributes": {
-          "file": "../designs/items/bombs.xml",
           "ini_x": 948,
           "ini_y": 2015,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bombs"
         }
       },
       {
         "id": 3,
         "attributes": {
-          "file": "../designs/items/shoots.xml",
           "ini_x": 948,
           "ini_y": 1607,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/shoots"
         }
       },
       {
         "id": 4,
         "attributes": {
-          "file": "../designs/items/bombs.xml",
           "ini_x": 1068,
           "ini_y": 1351,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bombs"
         }
       },
       {
         "id": 5,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 1132,
           "ini_y": 1447,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 6,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 1196,
           "ini_y": 1415,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 7,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 1228,
           "ini_y": 1351,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 8,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 972,
           "ini_y": 1319,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 9,
         "attributes": {
-          "file": "../designs/items/bombs.xml",
           "ini_x": 548,
           "ini_y": 1543,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bombs"
         }
       },
       {
         "id": 10,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 34,
           "ini_y": 1636,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 11,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 172,
           "ini_y": 1670,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 12,
         "attributes": {
-          "file": "../designs/items/bonus.xml",
           "ini_x": 204,
           "ini_y": 1598,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bonus"
         }
       },
       {
         "id": 13,
         "attributes": {
-          "file": "../designs/items/shoots.xml",
           "ini_x": 100,
           "ini_y": 1566,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/shoots"
         }
       },
       {
         "id": 14,
         "attributes": {
-          "file": "../designs/items/bombs.xml",
           "ini_x": 332,
           "ini_y": 1383,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bombs"
         }
       },
       {
         "id": 15,
         "attributes": {
-          "file": "../designs/items/shoots.xml",
           "ini_x": 716,
           "ini_y": 775,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/shoots"
         }
       },
       {
         "id": 16,
         "attributes": {
-          "file": "../designs/items/bombs.xml",
           "ini_x": 684,
           "ini_y": 615,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/bombs"
         }
       },
       {
         "id": 17,
         "attributes": {
-          "file": "../designs/items/shoots.xml",
           "ini_x": 684,
           "ini_y": 423,
           "width": 20,
-          "height": 18
+          "height": 18,
+          "definition": "designs/items/shoots"
         }
       }
     ],
@@ -123285,353 +123285,353 @@
       {
         "id": 1,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 608,
           "ini_y": 1752,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 2,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 912,
           "ini_y": 1760,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 3,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 960,
           "ini_y": 1496,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 4,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 1152,
           "ini_y": 1368,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 5,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 944,
           "ini_y": 1280,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 6,
         "attributes": {
-          "file": "../designs/backgrounds/level1_biglight.xml",
           "ini_x": 464,
           "ini_y": 1408,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_biglight"
         }
       },
       {
         "id": 7,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 904,
           "ini_y": 1776,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 8,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 912,
           "ini_y": 1752,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 9,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 1176,
           "ini_y": 1384,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 10,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 936,
           "ini_y": 1296,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 11,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 944,
           "ini_y": 1272,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 12,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 464,
           "ini_y": 1400,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 13,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 456,
           "ini_y": 1424,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 14,
         "attributes": {
-          "file": "../designs/backgrounds/level1_smalllight.xml",
           "ini_x": 632,
           "ini_y": 1768,
           "width": 8,
           "height": 8,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_smalllight"
         }
       },
       {
         "id": 15,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 836,
           "ini_y": 1216,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 16,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 836,
           "ini_y": 1224,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 17,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 930,
           "ini_y": 1216,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 1
+          "skip_num_anims": 1,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 18,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 930,
           "ini_y": 1224,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 3
+          "skip_num_anims": 3,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 19,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 354,
           "ini_y": 1440,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 20,
         "attributes": {
-          "file": "../designs/backgrounds/level1_liquid.xml",
           "ini_x": 354,
           "ini_y": 1448,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_liquid"
         }
       },
       {
         "id": 21,
         "attributes": {
-          "file": "../designs/backgrounds/level1_water.xml",
           "ini_x": 616,
           "ini_y": 64,
           "width": 16,
           "height": 24,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_water"
         }
       },
       {
         "id": 22,
         "attributes": {
-          "file": "../designs/backgrounds/level1_water.xml",
           "ini_x": 616,
           "ini_y": 88,
           "width": 16,
           "height": 24,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_water"
         }
       },
       {
         "id": 23,
         "attributes": {
-          "file": "../designs/backgrounds/level1_water.xml",
           "ini_x": 648,
           "ini_y": 64,
           "width": 16,
           "height": 24,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_water"
         }
       },
       {
         "id": 24,
         "attributes": {
-          "file": "../designs/backgrounds/level1_water.xml",
           "ini_x": 648,
           "ini_y": 88,
           "width": 16,
           "height": 24,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_water"
         }
       },
       {
         "id": 25,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 616,
           "ini_y": 952,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 26,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 616,
           "ini_y": 968,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 1
+          "skip_num_anims": 1,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 27,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 648,
           "ini_y": 952,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 2
+          "skip_num_anims": 2,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 28,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 648,
           "ini_y": 968,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 3
+          "skip_num_anims": 3,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 29,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 392,
           "ini_y": 824,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 30,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 392,
           "ini_y": 840,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 31,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 392,
           "ini_y": 856,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       },
       {
         "id": 32,
         "attributes": {
-          "file": "../designs/backgrounds/level1_lighttiles.xml",
           "ini_x": 392,
           "ini_y": 872,
           "width": 16,
           "height": 16,
-          "skip_num_anims": 0
+          "skip_num_anims": 0,
+          "definition": "designs/backgrounds/level1_lighttiles"
         }
       }
     ],
@@ -123639,89 +123639,89 @@
       {
         "id": 0,
         "attributes": {
-          "file": "../designs/blocks/level1_bigblock.xml",
           "ini_x": 736,
           "ini_y": 2011,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_bigblock"
         }
       },
       {
         "id": 1,
         "attributes": {
-          "file": "../designs/blocks/level1_smallblock.xml",
           "ini_x": 896,
           "ini_y": 1411,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_smallblock"
         }
       },
       {
         "id": 2,
         "attributes": {
-          "file": "../designs/blocks/level1_smallblock.xml",
           "ini_x": 944,
           "ini_y": 1411,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_smallblock"
         }
       },
       {
         "id": 3,
         "attributes": {
-          "file": "../designs/blocks/level1_bigblock.xml",
           "ini_x": 512,
           "ini_y": 1699,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_bigblock"
         }
       },
       {
         "id": 4,
         "attributes": {
-          "file": "../designs/blocks/level1_bigblock.xml",
           "ini_x": 256,
           "ini_y": 1667,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_bigblock"
         }
       },
       {
         "id": 5,
         "attributes": {
-          "file": "../designs/blocks/level1_smallblock.xml",
           "ini_x": 320,
           "ini_y": 1315,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_smallblock"
         }
       },
       {
         "id": 6,
         "attributes": {
-          "file": "../designs/blocks/level1_smallblock.xml",
           "ini_x": 416,
           "ini_y": 1315,
           "width": 24,
           "height": 21,
-          "exploits": 0
+          "exploits": 0,
+          "definition": "designs/blocks/level1_smallblock"
         }
       },
       {
         "id": 7,
         "attributes": {
-          "file": "../designs/blocks/level1_smallblock.xml",
           "ini_x": 640,
           "ini_y": 707,
           "width": 24,
           "height": 21,
-          "exploits": 1
+          "exploits": 1,
+          "definition": "designs/blocks/level1_smallblock"
         }
       }
     ],
@@ -123729,13 +123729,13 @@
       {
         "id": 0,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 592,
           "ini_y": 1787,
           "width": 24,
           "height": 12,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -123773,13 +123773,13 @@
       {
         "id": 1,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 808,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123794,13 +123794,13 @@
       {
         "id": 2,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 296,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123815,13 +123815,13 @@
       {
         "id": 3,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 313,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123836,13 +123836,13 @@
       {
         "id": 4,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 330,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123857,13 +123857,13 @@
       {
         "id": 5,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 347,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123878,13 +123878,13 @@
       {
         "id": 6,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 364,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123899,13 +123899,13 @@
       {
         "id": 7,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 381,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123920,13 +123920,13 @@
       {
         "id": 8,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 398,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123941,13 +123941,13 @@
       {
         "id": 9,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 415,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123962,13 +123962,13 @@
       {
         "id": 10,
         "attributes": {
-          "file": "../designs/hazards/electricity_hazard.xml",
           "ini_x": 432,
           "ini_y": 1744,
           "width": 17,
           "height": 6,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/electricity_hazard"
         },
         "actions": {
           "action": {
@@ -123983,13 +123983,13 @@
       {
         "id": 11,
         "attributes": {
-          "file": "../designs/hazards/vapor_hazard.xml",
           "ini_x": 400,
           "ini_y": 1436,
           "width": 24,
           "height": 11,
           "trigger": 0,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/vapor_hazard"
         },
         "actions": {
           "action": {
@@ -124004,13 +124004,13 @@
       {
         "id": 12,
         "attributes": {
-          "file": "../designs/hazards/vapor_hazard.xml",
           "ini_x": 336,
           "ini_y": 924,
           "width": 24,
           "height": 11,
           "trigger": 0,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/vapor_hazard"
         },
         "actions": {
           "action": {
@@ -124025,13 +124025,13 @@
       {
         "id": 13,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 584,
           "ini_y": 1068,
           "width": 24,
           "height": 12,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -124069,13 +124069,13 @@
       {
         "id": 14,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 584,
           "ini_y": 492,
           "width": 24,
           "height": 12,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -124099,13 +124099,13 @@
       {
         "id": 15,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 608,
           "ini_y": 492,
           "width": 24,
           "height": 12,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -124129,13 +124129,13 @@
       {
         "id": 16,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 592,
           "ini_y": 1532,
           "width": 24,
           "height": 12,
           "trigger": 0,
-          "stop_inactive": 1
+          "stop_inactive": 1,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -124173,13 +124173,13 @@
       {
         "id": 17,
         "attributes": {
-          "file": "../designs/hazards/wave_hazard.xml",
           "ini_x": 664,
           "ini_y": 1596,
           "width": 24,
           "height": 12,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/wave_hazard"
         },
         "actions": {
           "action": [
@@ -124217,13 +124217,13 @@
       {
         "id": 18,
         "attributes": {
-          "file": "../designs/hazards/cube_hazard.xml",
           "ini_x": 436,
           "ini_y": 1123,
           "width": 16,
           "height": 21,
           "trigger": 0,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/cube_hazard"
         },
         "actions": {
           "action": [
@@ -124247,13 +124247,13 @@
       {
         "id": 19,
         "attributes": {
-          "file": "../designs/hazards/cube_hazard.xml",
           "ini_x": 426,
           "ini_y": 867,
           "width": 16,
           "height": 21,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/cube_hazard"
         },
         "actions": {
           "action": [
@@ -124291,13 +124291,13 @@
       {
         "id": 20,
         "attributes": {
-          "file": "../designs/hazards/cube_hazard.xml",
           "ini_x": 577,
           "ini_y": 1635,
           "width": 16,
           "height": 21,
           "trigger": 1,
-          "stop_inactive": 0
+          "stop_inactive": 0,
+          "definition": "designs/hazards/cube_hazard"
         },
         "actions": {
           "action": [
@@ -124357,7 +124357,10 @@
         "pl_x": 264,
         "pl_y": 2000,
         "pl_face": "right",
-        "nxt_chks": "1,2"
+        "nxt_chks": [
+          1,
+          2
+        ]
       },
       {
         "id": 1,
@@ -124368,7 +124371,9 @@
         "pl_x": 760,
         "pl_y": 2000,
         "pl_face": "left",
-        "nxt_chks": 2
+        "nxt_chks": [
+          2
+        ]
       },
       {
         "id": 2,
@@ -124379,7 +124384,10 @@
         "pl_x": 780,
         "pl_y": 1790,
         "pl_face": "right",
-        "nxt_chks": "3,4"
+        "nxt_chks": [
+          3,
+          4
+        ]
       },
       {
         "id": 3,
@@ -124390,7 +124398,9 @@
         "pl_x": 876,
         "pl_y": 1408,
         "pl_face": "left",
-        "nxt_chks": 4
+        "nxt_chks": [
+          4
+        ]
       },
       {
         "id": 4,
@@ -124401,7 +124411,9 @@
         "pl_x": 746,
         "pl_y": 1048,
         "pl_face": "left",
-        "nxt_chks": 5
+        "nxt_chks": [
+          5
+        ]
       },
       {
         "id": 5,
@@ -124412,7 +124424,10 @@
         "pl_x": 482,
         "pl_y": 1692,
         "pl_face": "left",
-        "nxt_chks": "6,7"
+        "nxt_chks": [
+          6,
+          7
+        ]
       },
       {
         "id": 6,
@@ -124423,7 +124438,9 @@
         "pl_x": 240,
         "pl_y": 1660,
         "pl_face": "right",
-        "nxt_chks": 7
+        "nxt_chks": [
+          7
+        ]
       },
       {
         "id": 7,
@@ -124434,12 +124451,11 @@
         "pl_x": 502,
         "pl_y": 948,
         "pl_face": "right",
-        "nxt_chks": ""
+        "nxt_chks": []
       }
     ],
     "lasers": [
       {
-        "file": "../designs/lasers/laser_diagonal.xml",
         "id": 0,
         "x": 300,
         "y": 1911,
@@ -124451,10 +124467,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_diagonal"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 1,
         "x": 320,
         "y": 1913,
@@ -124466,10 +124482,10 @@
         "recursive": 0,
         "speed": 8,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 2,
         "x": 352,
         "y": 1913,
@@ -124481,10 +124497,10 @@
         "recursive": 0,
         "speed": 8,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 3,
         "x": 384,
         "y": 1913,
@@ -124496,10 +124512,10 @@
         "recursive": 0,
         "speed": 8,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 4,
         "x": 416,
         "y": 1913,
@@ -124511,10 +124527,10 @@
         "recursive": 0,
         "speed": 8,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 5,
         "x": 448,
         "y": 1913,
@@ -124526,10 +124542,10 @@
         "recursive": 0,
         "speed": 8,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_diagonal.xml",
         "id": 6,
         "x": 554,
         "y": 1911,
@@ -124541,10 +124557,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_diagonal"
       },
       {
-        "file": "../designs/lasers/laser_diagonal.xml",
         "id": 7,
         "x": 692,
         "y": 1911,
@@ -124556,10 +124572,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_diagonal"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 8,
         "x": 736,
         "y": 1785,
@@ -124571,10 +124587,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_diagonal.xml",
         "id": 9,
         "x": 940,
         "y": 1463,
@@ -124586,10 +124602,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_diagonal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 10,
         "x": 802,
         "y": 1530,
@@ -124601,10 +124617,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 11,
         "x": 802,
         "y": 1625,
@@ -124616,10 +124632,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 12,
         "x": 966,
         "y": 1209,
@@ -124631,10 +124647,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 13,
         "x": 898,
         "y": 1050,
@@ -124646,10 +124662,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 14,
         "x": 966,
         "y": 1050,
@@ -124661,10 +124677,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 15,
         "x": 966,
         "y": 1018,
@@ -124676,10 +124692,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 16,
         "x": 550,
         "y": 1113,
@@ -124691,10 +124707,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 17,
         "x": 710,
         "y": 1369,
@@ -124706,10 +124722,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 18,
         "x": 546,
         "y": 1369,
@@ -124721,10 +124737,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 19,
         "x": 710,
         "y": 1464,
@@ -124736,10 +124752,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 20,
         "x": 354,
         "y": 1529,
@@ -124751,10 +124767,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 21,
         "x": 454,
         "y": 1529,
@@ -124766,10 +124782,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 22,
         "x": 352,
         "y": 1210,
@@ -124781,10 +124797,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 23,
         "x": 384,
         "y": 1210,
@@ -124796,10 +124812,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 24,
         "x": 416,
         "y": 1210,
@@ -124811,10 +124827,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 25,
         "x": 448,
         "y": 1210,
@@ -124826,10 +124842,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_vertical.xml",
         "id": 26,
         "x": 480,
         "y": 1210,
@@ -124841,10 +124857,10 @@
         "recursive": 0,
         "speed": 3,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_vertical"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 27,
         "x": 711,
         "y": 825,
@@ -124856,10 +124872,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 28,
         "x": 711,
         "y": 570,
@@ -124871,10 +124887,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 29,
         "x": 711,
         "y": 378,
@@ -124886,10 +124902,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 30,
         "x": 710,
         "y": 186,
@@ -124901,10 +124917,10 @@
         "recursive": 0,
         "speed": 4,
         "direction": "left",
-        "default_trigger": 1
+        "default_trigger": 1,
+        "definition": "designs/lasers/laser_horizontal"
       },
       {
-        "file": "../designs/lasers/laser_horizontal.xml",
         "id": 31,
         "x": 545,
         "y": 154,
@@ -124916,7 +124932,8 @@
         "recursive": 0,
         "speed": 4,
         "direction": "right",
-        "default_trigger": 0
+        "default_trigger": 0,
+        "definition": "designs/lasers/laser_horizontal"
       }
     ],
     "triggers": [
@@ -125917,7 +125934,6 @@
     "enemies": [
       {
         "id": 0,
-        "file": "../characters/robot_simple.xml",
         "x": 610,
         "y": 1848,
         "bb_x": 5,
@@ -125934,11 +125950,11 @@
         "ia_orig_x": 532,
         "ia_orig_y": 1820,
         "ia_limit_x": 200,
-        "ia_limit_y": 220
+        "ia_limit_y": 220,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 1,
-        "file": "../characters/robot_simple.xml",
         "x": 864,
         "y": 1784,
         "bb_x": 5,
@@ -125955,11 +125971,11 @@
         "ia_orig_x": 832,
         "ia_orig_y": 1688,
         "ia_limit_x": 160,
-        "ia_limit_y": 160
+        "ia_limit_y": 160,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 2,
-        "file": "../characters/robot_simple.xml",
         "x": 914,
         "y": 1688,
         "bb_x": 5,
@@ -125976,11 +125992,11 @@
         "ia_orig_x": 832,
         "ia_orig_y": 1688,
         "ia_limit_x": 160,
-        "ia_limit_y": 160
+        "ia_limit_y": 160,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 3,
-        "file": "../characters/robot_mini.xml",
         "x": 804,
         "y": 1570,
         "bb_x": 5,
@@ -125997,11 +126013,11 @@
         "ia_orig_x": 802,
         "ia_orig_y": 1570,
         "ia_limit_x": 80,
-        "ia_limit_y": 20
+        "ia_limit_y": 20,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 4,
-        "file": "../characters/robot_simple.xml",
         "x": 874,
         "y": 1314,
         "bb_x": 5,
@@ -126018,11 +126034,11 @@
         "ia_orig_x": 872,
         "ia_orig_y": 1314,
         "ia_limit_x": 96,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 5,
-        "file": "../characters/robot_advanced.xml",
         "x": 802,
         "y": 1272,
         "bb_x": 5,
@@ -126039,11 +126055,11 @@
         "ia_orig_x": 802,
         "ia_orig_y": 1272,
         "ia_limit_x": 96,
-        "ia_limit_y": 256
+        "ia_limit_y": 256,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 6,
-        "file": "../characters/robot_simple.xml",
         "x": 802,
         "y": 1212,
         "bb_x": 5,
@@ -126060,11 +126076,11 @@
         "ia_orig_x": 802,
         "ia_orig_y": 1212,
         "ia_limit_x": 56,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 7,
-        "file": "../characters/robot_mini.xml",
         "x": 878,
         "y": 1120,
         "bb_x": 5,
@@ -126081,11 +126097,11 @@
         "ia_orig_x": 878,
         "ia_orig_y": 1120,
         "ia_limit_x": 96,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 8,
-        "file": "../characters/robot_mini.xml",
         "x": 782,
         "y": 1054,
         "bb_x": 5,
@@ -126102,11 +126118,11 @@
         "ia_orig_x": 782,
         "ia_orig_y": 1054,
         "ia_limit_x": 48,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 9,
-        "file": "../characters/robot_mini.xml",
         "x": 642,
         "y": 1180,
         "bb_x": 5,
@@ -126123,11 +126139,11 @@
         "ia_orig_x": 642,
         "ia_orig_y": 1180,
         "ia_limit_x": 48,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 10,
-        "file": "../characters/robot_advanced.xml",
         "x": 596,
         "y": 1304,
         "bb_x": 5,
@@ -126144,11 +126160,11 @@
         "ia_orig_x": 546,
         "ia_orig_y": 1304,
         "ia_limit_x": 208,
-        "ia_limit_y": 96
+        "ia_limit_y": 96,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 11,
-        "file": "../characters/robot_simple.xml",
         "x": 570,
         "y": 1532,
         "bb_x": 5,
@@ -126165,11 +126181,11 @@
         "ia_orig_x": 570,
         "ia_orig_y": 1532,
         "ia_limit_x": 128,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 12,
-        "file": "../characters/robot_advanced.xml",
         "x": 544,
         "y": 1692,
         "bb_x": 5,
@@ -126186,11 +126202,11 @@
         "ia_orig_x": 544,
         "ia_orig_y": 1692,
         "ia_limit_x": 128,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 13,
-        "file": "../characters/robot_simple.xml",
         "x": 324,
         "y": 1598,
         "bb_x": 5,
@@ -126207,11 +126223,11 @@
         "ia_orig_x": 324,
         "ia_orig_y": 1598,
         "ia_limit_x": 128,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 14,
-        "file": "../characters/robot_advanced.xml",
         "x": 290,
         "y": 1372,
         "bb_x": 5,
@@ -126228,11 +126244,11 @@
         "ia_orig_x": 282,
         "ia_orig_y": 1372,
         "ia_limit_x": 152,
-        "ia_limit_y": 96
+        "ia_limit_y": 96,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 15,
-        "file": "../characters/robot_mini.xml",
         "x": 302,
         "y": 1110,
         "bb_x": 5,
@@ -126249,11 +126265,11 @@
         "ia_orig_x": 302,
         "ia_orig_y": 1110,
         "ia_limit_x": 112,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 16,
-        "file": "../characters/robot_mini.xml",
         "x": 568,
         "y": 962,
         "bb_x": 5,
@@ -126270,11 +126286,11 @@
         "ia_orig_x": 546,
         "ia_orig_y": 954,
         "ia_limit_x": 196,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 17,
-        "file": "../characters/robot_mini.xml",
         "x": 612,
         "y": 962,
         "bb_x": 5,
@@ -126291,11 +126307,11 @@
         "ia_orig_x": 546,
         "ia_orig_y": 954,
         "ia_limit_x": 196,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 18,
-        "file": "../characters/robot_advanced.xml",
         "x": 698,
         "y": 898,
         "bb_x": 5,
@@ -126312,11 +126328,11 @@
         "ia_orig_x": 536,
         "ia_orig_y": 894,
         "ia_limit_x": 196,
-        "ia_limit_y": 96
+        "ia_limit_y": 96,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 19,
-        "file": "../characters/robot_simple.xml",
         "x": 676,
         "y": 828,
         "bb_x": 5,
@@ -126333,11 +126349,11 @@
         "ia_orig_x": 0,
         "ia_orig_y": 0,
         "ia_limit_x": 0,
-        "ia_limit_y": 0
+        "ia_limit_y": 0,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 20,
-        "file": "../characters/robot_advanced.xml",
         "x": 584,
         "y": 644,
         "bb_x": 5,
@@ -126354,11 +126370,11 @@
         "ia_orig_x": 542,
         "ia_orig_y": 632,
         "ia_limit_x": 132,
-        "ia_limit_y": 132
+        "ia_limit_y": 132,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 21,
-        "file": "../characters/robot_mini.xml",
         "x": 566,
         "y": 544,
         "bb_x": 5,
@@ -126375,11 +126391,11 @@
         "ia_orig_x": 566,
         "ia_orig_y": 544,
         "ia_limit_x": 64,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       },
       {
         "id": 22,
-        "file": "../characters/robot_simple.xml",
         "x": 586,
         "y": 256,
         "bb_x": 5,
@@ -126396,11 +126412,11 @@
         "ia_orig_x": 586,
         "ia_orig_y": 256,
         "ia_limit_x": 180,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_simple"
       },
       {
         "id": 23,
-        "file": "../characters/robot_advanced.xml",
         "x": 572,
         "y": 160,
         "bb_x": 5,
@@ -126417,11 +126433,11 @@
         "ia_orig_x": 542,
         "ia_orig_y": 148,
         "ia_limit_x": 200,
-        "ia_limit_y": 200
+        "ia_limit_y": 200,
+        "definition": "characters/robot_advanced"
       },
       {
         "id": 24,
-        "file": "../characters/robot_mini.xml",
         "x": 644,
         "y": 228,
         "bb_x": 5,
@@ -126438,7 +126454,8 @@
         "ia_orig_x": 638,
         "ia_orig_y": 228,
         "ia_limit_x": 60,
-        "ia_limit_y": 32
+        "ia_limit_y": 32,
+        "definition": "characters/robot_mini"
       }
     ],
     "cameraViews": [
@@ -126480,10 +126497,14 @@
     ]
   },
   "player": {
-    "definition": "../characters/rick.xml"
+    "definition": "characters/rick"
+  },
+  "projectiles": {
+    "shoot": "designs/shoot/shoot",
+    "bomb": "designs/bomb/bomb"
   },
   "definitions": {
-    "../designs/platforms/platforms.xml": {
+    "designs/platforms/platforms": {
       "kind": "object",
       "name": "platform",
       "states": [
@@ -126521,7 +126542,7 @@
         }
       ]
     },
-    "../designs/items/bonus.xml": {
+    "designs/items/bonus": {
       "kind": "object",
       "name": "bonus",
       "states": [
@@ -126617,7 +126638,7 @@
         }
       ]
     },
-    "../designs/items/shoots.xml": {
+    "designs/items/shoots": {
       "kind": "object",
       "name": "shoots",
       "states": [
@@ -126695,7 +126716,7 @@
         }
       ]
     },
-    "../designs/items/bombs.xml": {
+    "designs/items/bombs": {
       "kind": "object",
       "name": "bombs",
       "states": [
@@ -126773,7 +126794,7 @@
         }
       ]
     },
-    "../designs/backgrounds/level1_biglight.xml": {
+    "designs/backgrounds/level1_biglight": {
       "kind": "object",
       "name": "biglight",
       "states": [
@@ -126835,7 +126856,7 @@
         }
       ]
     },
-    "../designs/backgrounds/level1_smalllight.xml": {
+    "designs/backgrounds/level1_smalllight": {
       "kind": "object",
       "name": "smalllights",
       "states": [
@@ -126891,7 +126912,7 @@
         }
       ]
     },
-    "../designs/backgrounds/level1_liquid.xml": {
+    "designs/backgrounds/level1_liquid": {
       "kind": "object",
       "name": "liquid",
       "states": [
@@ -126941,7 +126962,7 @@
         }
       ]
     },
-    "../designs/backgrounds/level1_water.xml": {
+    "designs/backgrounds/level1_water": {
       "kind": "object",
       "name": "water",
       "states": [
@@ -126997,7 +127018,7 @@
         }
       ]
     },
-    "../designs/backgrounds/level1_lighttiles.xml": {
+    "designs/backgrounds/level1_lighttiles": {
       "kind": "object",
       "name": "tilelights",
       "states": [
@@ -127053,7 +127074,7 @@
         }
       ]
     },
-    "../designs/blocks/level1_bigblock.xml": {
+    "designs/blocks/level1_bigblock": {
       "kind": "object",
       "name": "level1_bigblock",
       "states": [
@@ -127131,7 +127152,7 @@
         }
       ]
     },
-    "../designs/blocks/level1_smallblock.xml": {
+    "designs/blocks/level1_smallblock": {
       "kind": "object",
       "name": "level1_smallblock",
       "states": [
@@ -127209,7 +127230,7 @@
         }
       ]
     },
-    "../designs/hazards/wave_hazard.xml": {
+    "designs/hazards/wave_hazard": {
       "kind": "object",
       "name": "wave_hazard",
       "states": [
@@ -127283,7 +127304,7 @@
         }
       ]
     },
-    "../designs/hazards/electricity_hazard.xml": {
+    "designs/hazards/electricity_hazard": {
       "kind": "object",
       "name": "electricity_hazard",
       "states": [
@@ -127323,7 +127344,7 @@
         }
       ]
     },
-    "../designs/hazards/vapor_hazard.xml": {
+    "designs/hazards/vapor_hazard": {
       "kind": "object",
       "name": "wave_hazard",
       "states": [
@@ -127391,7 +127412,7 @@
         }
       ]
     },
-    "../designs/hazards/cube_hazard.xml": {
+    "designs/hazards/cube_hazard": {
       "kind": "object",
       "name": "cube",
       "states": [
@@ -127441,7 +127462,7 @@
         }
       ]
     },
-    "../designs/lasers/laser_diagonal.xml": {
+    "designs/lasers/laser_diagonal": {
       "kind": "object",
       "name": "horizontal_laser",
       "states": [
@@ -127519,7 +127540,7 @@
         }
       ]
     },
-    "../designs/lasers/laser_vertical.xml": {
+    "designs/lasers/laser_vertical": {
       "kind": "object",
       "name": "horizontal_laser",
       "states": [
@@ -127597,7 +127618,7 @@
         }
       ]
     },
-    "../designs/lasers/laser_horizontal.xml": {
+    "designs/lasers/laser_horizontal": {
       "kind": "object",
       "name": "horizontal_laser",
       "states": [
@@ -127675,7 +127696,7 @@
         }
       ]
     },
-    "../characters/robot_simple.xml": {
+    "characters/robot_simple": {
       "kind": "character",
       "name": "robot_simple",
       "states": [
@@ -127849,7 +127870,7 @@
         }
       ]
     },
-    "../characters/robot_mini.xml": {
+    "characters/robot_mini": {
       "kind": "character",
       "name": "robot_advanced",
       "states": [
@@ -128035,7 +128056,7 @@
         }
       ]
     },
-    "../characters/robot_advanced.xml": {
+    "characters/robot_advanced": {
       "kind": "character",
       "name": "robot_advanced",
       "states": [
@@ -128209,7 +128230,7 @@
         }
       ]
     },
-    "../characters/rick.xml": {
+    "characters/rick": {
       "kind": "character",
       "name": "rick",
       "states": [
@@ -128401,7 +128422,7 @@
         }
       ]
     },
-    "../designs/shoot/shoot.xml": {
+    "designs/shoot/shoot": {
       "kind": "object",
       "name": "shoot",
       "states": [
@@ -128445,7 +128466,7 @@
         }
       ]
     },
-    "../designs/bomb/bomb.xml": {
+    "designs/bomb/bomb": {
       "kind": "object",
       "name": "bomb",
       "states": [

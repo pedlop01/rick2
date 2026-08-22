@@ -1,0 +1,680 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.entities",
+  "group": "platforms",
+  "entities": [
+    {
+      "id": 0,
+      "attributes": {
+        "ini_x": 800,
+        "ini_y": 1656,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 50,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 50,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "attributes": {
+        "ini_x": 868,
+        "ini_y": 1240,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 10,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "attributes": {
+        "ini_x": 968,
+        "ini_y": 992,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "left",
+            "desp": 48,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 48,
+            "wait": 0,
+            "speed": 4,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "attributes": {
+        "ini_x": 704,
+        "ini_y": 1208,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "up",
+            "desp": 128,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 128,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "attributes": {
+        "ini_x": 544,
+        "ini_y": 1464,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "moving",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "up",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "attributes": {
+        "ini_x": 448,
+        "ini_y": 1696,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "moving",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "left",
+            "desp": 128,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 128,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "attributes": {
+        "ini_x": 320,
+        "ini_y": 1696,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "moving",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "left",
+            "desp": 32,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "right",
+            "desp": 32,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "attributes": {
+        "ini_x": 288,
+        "ini_y": 1560,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "attributes": {
+        "ini_x": 452,
+        "ini_y": 1480,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "attributes": {
+        "ini_x": 388,
+        "ini_y": 1304,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 1,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": {
+          "direction": "down",
+          "desp": 728,
+          "wait": 0,
+          "speed": 6,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "attributes": {
+        "ini_x": 480,
+        "ini_y": 1336,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "up",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "attributes": {
+        "ini_x": 388,
+        "ini_y": 952,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "down",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 96,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "attributes": {
+        "ini_x": 352,
+        "ini_y": 888,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 1,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": {
+          "direction": "up",
+          "desp": 40,
+          "wait": 0,
+          "speed": 2,
+          "cond": 0
+        }
+      }
+    },
+    {
+      "id": 13,
+      "attributes": {
+        "ini_x": 576,
+        "ini_y": 952,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "attributes": {
+        "ini_x": 544,
+        "ini_y": 664,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 1,
+        "one_use": 0,
+        "ini_state": "moving",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 2
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 1
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "up",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 2
+          },
+          {
+            "direction": "down",
+            "desp": 64,
+            "wait": 0,
+            "speed": 2,
+            "cond": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "attributes": {
+        "ini_x": 580,
+        "ini_y": 344,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "right",
+            "desp": 64,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "left",
+            "desp": 64,
+            "wait": 0,
+            "speed": 1,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "attributes": {
+        "ini_x": 548,
+        "ini_y": 280,
+        "width": 24,
+        "height": 8,
+        "visible": 1,
+        "recursive": 0,
+        "one_use": 0,
+        "ini_state": "stop",
+        "definition": "designs/platforms/platforms"
+      },
+      "actions": {
+        "action": [
+          {
+            "direction": "up",
+            "desp": 32,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          },
+          {
+            "direction": "stop",
+            "desp": 0,
+            "wait": 40,
+            "speed": 0,
+            "cond": 0
+          },
+          {
+            "direction": "down",
+            "desp": 32,
+            "wait": 0,
+            "speed": 2,
+            "cond": 0
+          }
+        ]
+      }
+    }
+  ]
+}

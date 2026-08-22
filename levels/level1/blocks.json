@@ -1,0 +1,95 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.entities",
+  "group": "blocks",
+  "entities": [
+    {
+      "id": 0,
+      "attributes": {
+        "ini_x": 736,
+        "ini_y": 2011,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_bigblock"
+      }
+    },
+    {
+      "id": 1,
+      "attributes": {
+        "ini_x": 896,
+        "ini_y": 1411,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_smallblock"
+      }
+    },
+    {
+      "id": 2,
+      "attributes": {
+        "ini_x": 944,
+        "ini_y": 1411,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_smallblock"
+      }
+    },
+    {
+      "id": 3,
+      "attributes": {
+        "ini_x": 512,
+        "ini_y": 1699,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_bigblock"
+      }
+    },
+    {
+      "id": 4,
+      "attributes": {
+        "ini_x": 256,
+        "ini_y": 1667,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_bigblock"
+      }
+    },
+    {
+      "id": 5,
+      "attributes": {
+        "ini_x": 320,
+        "ini_y": 1315,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_smallblock"
+      }
+    },
+    {
+      "id": 6,
+      "attributes": {
+        "ini_x": 416,
+        "ini_y": 1315,
+        "width": 24,
+        "height": 21,
+        "exploits": 0,
+        "definition": "designs/blocks/level1_smallblock"
+      }
+    },
+    {
+      "id": 7,
+      "attributes": {
+        "ini_x": 640,
+        "ini_y": 707,
+        "width": 24,
+        "height": 21,
+        "exploits": 1,
+        "definition": "designs/blocks/level1_smallblock"
+      }
+    }
+  ]
+}

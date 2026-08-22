@@ -4,7 +4,7 @@
   "title": "Rick2 canonical level package",
   "type": "object",
   "additionalProperties": false,
-  "required": ["formatVersion", "kind", "id", "map", "entities", "player", "definitions", "audio"],
+  "required": ["formatVersion", "kind", "id", "map", "entities", "player", "projectiles", "definitions", "audio"],
   "properties": {
     "formatVersion": { "const": 1 },
     "kind": { "const": "rick2.level" },
@@ -16,6 +16,15 @@
       "additionalProperties": false,
       "required": ["definition"],
       "properties": { "definition": { "$ref": "#/$defs/nonEmptyString" } }
+    },
+    "projectiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shoot", "bomb"],
+      "properties": {
+        "shoot": { "$ref": "#/$defs/nonEmptyString" },
+        "bomb": { "$ref": "#/$defs/nonEmptyString" }
+      }
     },
     "definitions": {
       "type": "object",

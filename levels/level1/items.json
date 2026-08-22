@@ -1,0 +1,187 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.entities",
+  "group": "items",
+  "entities": [
+    {
+      "id": 0,
+      "attributes": {
+        "ini_x": 836,
+        "ini_y": 2015,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 1,
+      "attributes": {
+        "ini_x": 892,
+        "ini_y": 2015,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/shoots"
+      }
+    },
+    {
+      "id": 2,
+      "attributes": {
+        "ini_x": 948,
+        "ini_y": 2015,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bombs"
+      }
+    },
+    {
+      "id": 3,
+      "attributes": {
+        "ini_x": 948,
+        "ini_y": 1607,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/shoots"
+      }
+    },
+    {
+      "id": 4,
+      "attributes": {
+        "ini_x": 1068,
+        "ini_y": 1351,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bombs"
+      }
+    },
+    {
+      "id": 5,
+      "attributes": {
+        "ini_x": 1132,
+        "ini_y": 1447,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 6,
+      "attributes": {
+        "ini_x": 1196,
+        "ini_y": 1415,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 7,
+      "attributes": {
+        "ini_x": 1228,
+        "ini_y": 1351,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 8,
+      "attributes": {
+        "ini_x": 972,
+        "ini_y": 1319,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 9,
+      "attributes": {
+        "ini_x": 548,
+        "ini_y": 1543,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bombs"
+      }
+    },
+    {
+      "id": 10,
+      "attributes": {
+        "ini_x": 34,
+        "ini_y": 1636,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 11,
+      "attributes": {
+        "ini_x": 172,
+        "ini_y": 1670,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 12,
+      "attributes": {
+        "ini_x": 204,
+        "ini_y": 1598,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bonus"
+      }
+    },
+    {
+      "id": 13,
+      "attributes": {
+        "ini_x": 100,
+        "ini_y": 1566,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/shoots"
+      }
+    },
+    {
+      "id": 14,
+      "attributes": {
+        "ini_x": 332,
+        "ini_y": 1383,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bombs"
+      }
+    },
+    {
+      "id": 15,
+      "attributes": {
+        "ini_x": 716,
+        "ini_y": 775,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/shoots"
+      }
+    },
+    {
+      "id": 16,
+      "attributes": {
+        "ini_x": 684,
+        "ini_y": 615,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/bombs"
+      }
+    },
+    {
+      "id": 17,
+      "attributes": {
+        "ini_x": 684,
+        "ini_y": 423,
+        "width": 20,
+        "height": 18,
+        "definition": "designs/items/shoots"
+      }
+    }
+  ]
+}

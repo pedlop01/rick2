@@ -1,0 +1,42 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.entities",
+  "group": "cameraViews",
+  "entities": [
+    {
+      "id": 0,
+      "left_up_x": 0,
+      "left_up_y": 1528,
+      "right_down_x": 256,
+      "right_down_y": 1760
+    },
+    {
+      "id": 1,
+      "left_up_x": 256,
+      "left_up_y": 824,
+      "right_down_x": 512,
+      "right_down_y": 2040
+    },
+    {
+      "id": 2,
+      "left_up_x": 512,
+      "left_up_y": 0,
+      "right_down_x": 768,
+      "right_down_y": 2040
+    },
+    {
+      "id": 3,
+      "left_up_x": 768,
+      "left_up_y": 920,
+      "right_down_x": 1024,
+      "right_down_y": 2040
+    },
+    {
+      "id": 4,
+      "left_up_x": 956,
+      "left_up_y": 1291,
+      "right_down_x": 1280,
+      "right_down_y": 1528
+    }
+  ]
+}

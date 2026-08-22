@@ -9,16 +9,16 @@ import xml.etree.ElementTree as ET
 
 FORMAT_VERSION = 1
 ENTITY_FILES = {
-    "platforms": "platforms.xml",
-    "items": "items.xml",
-    "backgroundObjects": "anim_tiles.xml",
-    "blocks": "blocks.xml",
-    "hazards": "hazards.xml",
-    "checkpoints": "checkpoints.xml",
-    "lasers": "lasers.xml",
-    "triggers": "triggers.xml",
-    "enemies": "enemies.xml",
-    "cameraViews": "camera_views.xml",
+    "platforms": "platforms.json",
+    "items": "items.json",
+    "backgroundObjects": "anim_tiles.json",
+    "blocks": "blocks.json",
+    "hazards": "hazards.json",
+    "checkpoints": "checkpoints.json",
+    "lasers": "lasers.json",
+    "triggers": "triggers.json",
+    "enemies": "enemies.json",
+    "cameraViews": "camera_views.json",
 }
 
 
@@ -51,25 +51,15 @@ def xml_element(element):
 
 
 def animation_definition(path, project_root):
-    root = ET.parse(project_root / path).getroot()
-    states = []
-    for state in root.find("states"):
-        animation = state.find("animation")
-        states.append({
-            "name": state.attrib["name"],
-            "id": int(state.attrib["id"]),
-            "animation": {
-                "bitmap": animation.attrib["bitmap"],
-                "speed": int(animation.attrib["speed"]),
-                "sprites": [attributes(sprite) for sprite in animation],
-            },
-        })
-    return {"kind": root.tag, "name": root.attrib["name"], "states": states}
+    return json.loads((project_root / path).read_text(encoding="utf-8"))
+
+
+def definition_id(path):
+    return Path(path.removeprefix("../")).with_suffix("").as_posix()
 
 
 def entity_group(path):
-    root = ET.parse(path).getroot()
-    return [xml_element(element) for element in root]
+    return json.loads(path.read_text(encoding="utf-8"))["entities"]
 
 
 def layer(map_root, name):
@@ -94,21 +84,24 @@ def convert(project_root, tmx_path, level_dir, player_path):
         group = entity_group(project_root / level_dir / filename)
         entities[group_name] = group
         for entity in group:
-            definition_path = entity.get("file")
-            if definition_path is None and isinstance(entity.get("attributes"), dict):
-                definition_path = entity["attributes"].get("file")
-            if definition_path and definition_path not in definitions:
-                definitions[definition_path] = animation_definition(
-                    definition_path.removeprefix("../"), project_root
-                )
+            attrs = entity.get("attributes") if isinstance(entity.get("attributes"), dict) else entity
+            key = attrs.get("definition")
+            if key:
+                if key not in definitions:
+                    definitions[key] = animation_definition(
+                        Path(key + ".json"), project_root
+                    )
 
-    player_key = "../" + player_path.as_posix()
+    player_key = player_path.with_suffix("").as_posix()
     definitions[player_key] = animation_definition(player_path, project_root)
-    for definition_path in ("../designs/shoot/shoot.xml",
-                            "../designs/bomb/bomb.xml"):
-        definitions[definition_path] = animation_definition(
-            definition_path.removeprefix("../"), project_root
+    projectile_definitions = {}
+    for definition_path in (Path("designs/shoot/shoot.json"),
+                            Path("designs/bomb/bomb.json")):
+        key = definition_path.with_suffix("").as_posix()
+        definitions[key] = animation_definition(
+            definition_path, project_root
         )
+        projectile_definitions[Path(definition_path).stem] = key
 
     return {
         "formatVersion": FORMAT_VERSION,
@@ -134,6 +127,7 @@ def convert(project_root, tmx_path, level_dir, player_path):
         },
         "entities": entities,
         "player": {"definition": player_key},
+        "projectiles": projectile_definitions,
         "definitions": definitions,
         "audio": {
             "music": ["../music/level1.ogg"],
@@ -151,7 +145,7 @@ def main():
     parser.add_argument("--project-root", type=Path, default=Path(__file__).parents[1])
     parser.add_argument("--tmx", type=Path, default=Path("maps/level1/Map1_prueba.tmx"))
     parser.add_argument("--level-dir", type=Path, default=Path("levels/level1"))
-    parser.add_argument("--player", type=Path, default=Path("characters/rick.xml"))
+    parser.add_argument("--player", type=Path, default=Path("characters/rick.json"))
     parser.add_argument("--output", type=Path, default=Path("levels/level1/level.json"))
     args = parser.parse_args()
     package = convert(args.project_root, args.tmx, args.level_dir, args.player)

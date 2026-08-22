@@ -1,0 +1,108 @@
+{
+  "kind": "object",
+  "name": "bomb",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/bomb/bomb.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_MOVING",
+      "id": 15,
+      "animation": {
+        "bitmap": "../designs/bomb/bomb.png",
+        "speed": 11,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 26,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 51,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 76,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 101,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 101,
+            "y": 1,
+            "width": 24,
+            "height": 22
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_DYING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../designs/bomb/bomb.png",
+        "speed": 4,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 24,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 26,
+            "y": 24,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 51,
+            "y": 24,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 76,
+            "y": 24,
+            "width": 24,
+            "height": 22
+          },
+          {
+            "x": 101,
+            "y": 24,
+            "width": 24,
+            "height": 22
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "kind": "object",
+  "name": "biglight",
+  "states": [
+    {
+      "name": "OBJ_STATE_STOP",
+      "id": 0,
+      "animation": {
+        "bitmap": "../designs/backgrounds/level1_background.png",
+        "speed": 0,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          }
+        ]
+      }
+    },
+    {
+      "name": "OBJ_STATE_MOVING",
+      "id": 1,
+      "animation": {
+        "bitmap": "../designs/backgrounds/level1_background.png",
+        "speed": 4,
+        "sprites": [
+          {
+            "x": 1,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          },
+          {
+            "x": 10,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          },
+          {
+            "x": 19,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          },
+          {
+            "x": 28,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          },
+          {
+            "x": 37,
+            "y": 1,
+            "width": 8,
+            "height": 8
+          }
+        ]
+      }
+    }
+  ]
+}
