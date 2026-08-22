@@ -32,6 +32,58 @@ comprobación para desarrollar, validar y hacer commits incrementales.
 | 14 | Migrar XML/TMX disperso a un formato JSON canónico y versionado | Alta | 7 | Completada | Existe JSON Schema, `formatVersion`, conversor desde los datos actuales y cargador JSON nativo; ninguna clase del runtime depende de PugiXML ni de archivos XML/TMX; el nivel 1 migrado conserva su contenido y comportamiento. |
 | 15 | Corregir el crash al morir por un láser | Crítica | 0 | Completada | La muerte causada por el láser de la primera escalera completa la animación y el respawn sin crash; el reset de láseres no restaura valores indeterminados y pasa las comprobaciones con optimización y sanitizers. |
 
+## Rick2 Engine: editor web y runtime reutilizable
+
+La segunda fase parte del formato JSON canónico ya consumido por el juego. El
+primer objetivo es un editor de niveles útil para el runtime C++ actual. La
+previsualización jugable en navegador y la generalización como motor se harán
+después, sin bloquear la creación de nuevos niveles.
+
+La aplicación se distribuirá como archivos estáticos y podrá abrirse localmente
+sin servidor. El build agrupará JavaScript y CSS para evitar dependencias de CDN
+y problemas de módulos al usar `file://`. Canvas 2D será la base inicial: encaja
+con los mapas de tiles y sprites del juego y mantiene el proyecto ligero.
+
+### Política de sincronización entre juego y engine
+
+El juego C++ seguirá evolucionando durante el desarrollo del editor. Desde el
+inicio de Rick2 Engine, cualquier cambio del juego que afecte al paquete JSON,
+entidades, propiedades, assets, unidades, validaciones o comportamiento
+previsualizado debe incluir en la misma unidad de trabajo:
+
+1. La actualización del modelo, editor y runtime web que resulte aplicable.
+2. La actualización del schema, migración y documentación del formato cuando
+   cambie el contrato de datos.
+3. Una prueba de compatibilidad que abra y reexporte los proyectos existentes
+   sin pérdidas inesperadas.
+4. Una anotación explícita cuando una función nueva del juego todavía no pueda
+   editarse o previsualizarse, registrada como tarea bloqueante y no como deuda
+   implícita.
+
+Una tarea que cambie capacidades compartidas no se considerará completada si el
+juego y Rick2 Engine quedan en versiones incompatibles. Mientras el runtime web
+no exista, se actualizarán como mínimo el modelo del editor, sus validaciones y
+la representación visual correspondiente.
+
+| # | Mejora | Prioridad | Dependencias | Estado | Criterio de aceptación y comprobación |
+|---:|---|---|---|---|---|
+| 16 | Especificar la arquitectura y el formato de proyecto del editor | Crítica | 14 | Pendiente | Se documentan módulos, flujo de datos y límites entre editor, formato y runtime; se decide un proyecto portable con JSON y assets, importable/exportable sin servidor; quedan catalogados todos los elementos editables del nivel 1. |
+| 17 | Crear el esqueleto de la aplicación web estática | Crítica | 16 | Pendiente | Existe un build reproducible que genera una aplicación autocontenida abrible mediante `file://`; incluye layout base, barra de herramientas, paneles y manejo visible de errores, sin CDN ni backend. |
+| 18 | Implementar apertura, guardado e intercambio de proyectos | Crítica | 16, 17 | Pendiente | Se puede abrir un paquete portable, resolver sus assets, crear un proyecto vacío y exportarlo de nuevo; se ofrece ZIP/descarga como vía universal y acceso a directorio cuando el navegador lo permita; ningún cambio se pierde sin aviso. |
+| 19 | Compartir y aplicar el contrato JSON versionado | Crítica | 16, 18 | Pendiente | El editor valida contra el schema canónico, muestra errores con ubicación y no exporta datos incompatibles; las versiones futuras tienen un punto explícito de migración; las reglas comunes no se duplican manualmente y CI detecta incompatibilidades entre juego y editor. |
+| 20 | Renderizar el mapa y navegar por el lienzo | Alta | 17, 18, 19 | Pendiente | Canvas muestra tiles, front tiles, colisiones y fondo con orden correcto; zoom, desplazamiento, rejilla y visibilidad de capas funcionan con mapas del tamaño del nivel 1 de forma fluida. |
+| 21 | Añadir herramientas de edición de tiles y capas | Alta | 20 | Pendiente | Selector de tileset, lápiz, borrador, relleno y selección modifican la capa activa; las coordenadas y GID respetan el schema; copiar, cortar y pegar no corrompen los límites del mapa. |
+| 22 | Editar entidades y sus propiedades | Alta | 20, 19 | Pendiente | Se pueden crear, seleccionar, mover, duplicar y borrar plataformas, objetos, hazards, bloques, láseres, enemigos e ítems; un inspector tipado edita únicamente propiedades válidas. |
+| 23 | Editar relaciones y zonas de gameplay | Alta | 22 | Pendiente | Checkpoints, triggers, targets, vistas de cámara, bounding boxes, rutas, límites de IA y acciones se editan visualmente; referencias inexistentes o ciclos no permitidos se detectan antes de exportar. |
+| 24 | Gestionar assets, definiciones y animaciones | Alta | 18, 19, 22 | Pendiente | Se importan tilesets, sprites y audio; pueden definirse estados, frames y `frameDurationTicks`, con previsualización de animaciones; IDs, nombres, dimensiones y rutas duplicadas o inválidas generan diagnósticos claros. |
+| 25 | Incorporar historial, portapapeles y recuperación local | Alta | 21, 22, 23, 24 | Pendiente | Todas las operaciones editables ofrecen undo/redo; hay indicador de cambios, confirmación al cerrar y recuperación local mediante IndexedDB; un guardado confirmado establece un nuevo punto limpio. |
+| 26 | Añadir validación integral y diagnóstico visual | Alta | 21, 23, 24 | Pendiente | Antes de exportar se comprueban schema, assets, GID, referencias, geometría y parámetros de gameplay; los errores se listan y llevan al elemento o celda afectada; las advertencias no bloqueantes se distinguen de los errores. |
+| 27 | Crear una previsualización fiel dentro del editor | Media | 23, 24, 26 | Pendiente | Se previsualizan capas, colisiones, cámara, animaciones, movimientos, triggers y zonas sin modificar el documento; play/pause/step y reinicio producen resultados deterministas con el timestep de 50 Hz. |
+| 28 | Asegurar accesibilidad, atajos y rendimiento del editor | Media | 20, 25, 26 | Pendiente | Atajos y foco no interfieren con formularios; las herramientas principales pueden usarse con teclado; mapas grandes mantienen interacción fluida y las operaciones costosas informan progreso o se ejecutan fuera del hilo de UI. |
+| 29 | Automatizar pruebas, empaquetado y publicación estática | Alta | 17-28 | Pendiente | Pruebas unitarias cubren modelo, comandos, conversión y validación; pruebas de integración abren, editan y reexportan el nivel 1 sin diferencias inesperadas; CI verifica la compatibilidad juego/engine, genera un artefacto estático versionado y documenta su uso offline. |
+| 30 | Portar el runtime jugable a JavaScript | Media | 27, 29 | Pendiente | El navegador carga el mismo paquete que C++, ejecuta movimiento, colisiones, IA, triggers, cámara, audio y ciclo de vidas con comportamiento comparable; editor y runtime comparten modelo y reloj, sin una segunda variante del formato. |
+| 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30 | Pendiente | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
+
 ## Orden recomendado
 
 Las tareas se ejecutarán inicialmente en este orden:
@@ -49,6 +101,17 @@ Las tareas se ejecutarán inicialmente en este orden:
 11. Tarea 11: caché de assets.
 12. Tarea 13: modo de depuración separado.
 
+### Orden recomendado para Rick2 Engine
+
+1. Tarea 16: cerrar arquitectura, alcance y formato portable antes de elegir librerías.
+2. Tareas 17-19: aplicación offline, ciclo de archivos y contrato de datos.
+3. Tareas 20-21: primer editor útil para pintar mapas.
+4. Tareas 22-24: entidades, relaciones, assets y animaciones.
+5. Tareas 25-26: seguridad de edición y validación integral.
+6. Tareas 27-29: previsualización, experiencia de uso, pruebas y distribución.
+7. Tarea 30: runtime completo en navegador sobre el mismo formato.
+8. Tarea 31: generalización del núcleo una vez comprobado con el juego real.
+
 El orden puede ajustarse si una prueba revela un bloqueo, pero cada cambio debe
 mantener el juego ejecutable.
 
@@ -63,6 +126,8 @@ Para cada tarea:
 5. Probar manualmente el nivel 1 cuando el cambio afecte al comportamiento.
 6. Cambiar el estado a `En revisión` y revisar conjuntamente el resultado.
 7. Tras la validación, marcarla `Completada` y crear un commit dedicado.
+8. Si cambia una capacidad compartida con Rick2 Engine, aplicar la política de
+   sincronización y comprobar ambos consumidores antes de cerrar la tarea.
 
 Para la tarea 0, antes de modificar código se guardarán el comando exacto, la
 salida del fallo y un backtrace. Se probará una compilación limpia y otra con
