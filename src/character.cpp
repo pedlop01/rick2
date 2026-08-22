@@ -98,8 +98,7 @@ Character::Character(const char* file) {
   camera = nullptr;
 
   // Initialize animations
-  pugi::xml_parse_result result = character_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(character_file, file);
   ValidateAnimationXml(character_file, "character", file);
 
   // REVISIT: states are taking in order from the file. It would be better to find

@@ -9,9 +9,14 @@ SoundHandler::~SoundHandler() {
 }
 
 void SoundHandler::InitializeSounds() {
-  music[0] = al_load_sample("../music/level1.ogg");
+  const std::vector<std::string>& configured_music = GetLevelMusicFiles();
+  const std::vector<std::string>& configured_effects = GetLevelEffectFiles();
+  const char* music_file = configured_music.empty()
+                               ? "../music/level1.ogg"
+                               : configured_music[0].c_str();
+  music[0] = al_load_sample(music_file);
   if (!music[0]) {
-    throw DataLoadError("Cannot load audio '../music/level1.ogg'");
+    throw DataLoadError(std::string("Cannot load audio '") + music_file + "'");
   }
   music_instance[0] = al_create_sample_instance(music[0]);
   if (!music_instance[0] ||
@@ -20,22 +25,21 @@ void SoundHandler::InitializeSounds() {
     throw DataLoadError("Cannot create the music playback instance");
   }
 
-  fx[FX_WALK] = al_load_sample("../fx/walk.wav");
-  fx[FX_SHOT] = al_load_sample("../fx/zap.wav");
-  fx[FX_BOMB] = al_load_sample("../fx/kickbomb.wav");
-  fx[FX_SCREAM] = al_load_sample("../fx/waaaaaa1.wav");
-  fx[FX_BONUS] = al_load_sample("../fx/bonus.wav");
-  fx[FX_RING] = al_load_sample("../fx/ring.wav");
-  fx[FX_EXPLOSION] = al_load_sample("../fx/explosion.wav");
-
   const char* fx_files[] = {"../fx/walk.wav", "../fx/zap.wav",
                             "../fx/kickbomb.wav", "../fx/waaaaaa1.wav",
                             "../fx/bonus.wav", "../fx/ring.wav",
                             "../fx/explosion.wav"};
+  if (!configured_effects.empty() && configured_effects.size() != 7) {
+    throw DataLoadError("Level audio must define exactly 7 sound effects");
+  }
   for (int index = FX_WALK; index <= FX_EXPLOSION; ++index) {
+    const char* effect_file = configured_effects.empty()
+                                  ? fx_files[index]
+                                  : configured_effects[index].c_str();
+    fx[index] = al_load_sample(effect_file);
     if (!fx[index]) {
       throw DataLoadError(std::string("Cannot load audio '") +
-                          fx_files[index] + "'");
+                          effect_file + "'");
     }
   }
 }

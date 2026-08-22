@@ -9,6 +9,7 @@
 
 #include "rick_params.h"
 #include "data_loading.h"
+#include "json_level_loader.h"
 
 #define NUM_SONGS  1
 #define NUM_FXS   16

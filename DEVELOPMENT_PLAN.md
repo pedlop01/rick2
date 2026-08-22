@@ -29,7 +29,7 @@ comprobación para desarrollar, validar y hacer commits incrementales.
 | 11 | Incorporar una caché de recursos gráficos y de audio | Media | 6, 7 | Pendiente | Una ruta se carga una sola vez y se comparte con propiedad segura; existen métricas o pruebas que confirman que no se duplican bitmaps. |
 | 12 | Expresar duraciones y velocidades independientemente del framerate | Alta | 1 | Pendiente | Animaciones, IA, triggers, muerte y efectos mantienen su duración al variar los FPS de renderizado; valores temporales tienen unidades documentadas. |
 | 13 | Separar herramientas de depuración de las reglas del juego | Media | 1 | Pendiente | Coordenadas del ratón, bounding boxes y activaciones de prueba se controlan mediante un modo de depuración y no alteran una partida normal. |
-| 14 | Migrar XML/TMX disperso a un formato JSON canónico y versionado | Alta | 7 | Pendiente | Existe JSON Schema, `formatVersion`, conversor desde los datos actuales y cargador JSON; el nivel 1 migrado conserva su contenido y comportamiento. |
+| 14 | Migrar XML/TMX disperso a un formato JSON canónico y versionado | Alta | 7 | Completada | Existe JSON Schema, `formatVersion`, conversor desde los datos actuales y cargador JSON; el nivel 1 migrado conserva su contenido y comportamiento. |
 | 15 | Corregir el crash al morir por un láser | Crítica | 0 | Completada | La muerte causada por el láser de la primera escalera completa la animación y el respawn sin crash; el reset de láseres no restaura valores indeterminados y pasa las comprobaciones con optimización y sanitizers. |
 
 ## Orden recomendado

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rick2.example/schema/level.schema.json",
+  "title": "Rick2 canonical level package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "kind", "id", "map", "entities", "player", "definitions", "audio"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "kind": { "const": "rick2.level" },
+    "id": { "$ref": "#/$defs/nonEmptyString" },
+    "map": { "$ref": "#/$defs/map" },
+    "entities": { "$ref": "#/$defs/entities" },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": { "definition": { "$ref": "#/$defs/nonEmptyString" } }
+    },
+    "definitions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/animationDefinition" }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["music", "effects"],
+      "properties": {
+        "music": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "positiveInteger": { "type": "integer", "minimum": 1 },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "tileWidth", "tileHeight", "tileset", "layers"],
+      "properties": {
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" },
+        "tileWidth": { "$ref": "#/$defs/positiveInteger" },
+        "tileHeight": { "$ref": "#/$defs/positiveInteger" },
+        "tileset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["image", "tileCount", "columns", "imageWidth", "imageHeight"],
+          "properties": {
+            "image": { "$ref": "#/$defs/nonEmptyString" },
+            "tileCount": { "$ref": "#/$defs/positiveInteger" },
+            "columns": { "$ref": "#/$defs/positiveInteger" },
+            "imageWidth": { "$ref": "#/$defs/positiveInteger" },
+            "imageHeight": { "$ref": "#/$defs/positiveInteger" }
+          }
+        },
+        "layers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tiles", "frontTiles", "collisions"],
+          "properties": {
+            "tiles": { "$ref": "#/$defs/tileLayer" },
+            "frontTiles": { "$ref": "#/$defs/tileLayer" },
+            "collisions": { "$ref": "#/$defs/tileLayer" }
+          }
+        }
+      }
+    },
+    "tileLayer": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platforms", "items", "backgroundObjects", "blocks", "hazards", "checkpoints", "lasers", "triggers", "enemies", "cameraViews"],
+      "properties": {
+        "platforms": { "$ref": "#/$defs/entityArray" },
+        "items": { "$ref": "#/$defs/entityArray" },
+        "backgroundObjects": { "$ref": "#/$defs/entityArray" },
+        "blocks": { "$ref": "#/$defs/entityArray" },
+        "hazards": { "$ref": "#/$defs/entityArray" },
+        "checkpoints": { "$ref": "#/$defs/entityArray" },
+        "lasers": { "$ref": "#/$defs/entityArray" },
+        "triggers": { "$ref": "#/$defs/entityArray" },
+        "enemies": { "$ref": "#/$defs/entityArray" },
+        "cameraViews": { "$ref": "#/$defs/entityArray" }
+      }
+    },
+    "entityArray": { "type": "array", "items": { "type": "object" } },
+    "animationDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "states"],
+      "properties": {
+        "kind": { "enum": ["object", "character"] },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "id", "animation"],
+            "properties": {
+              "name": { "$ref": "#/$defs/nonEmptyString" },
+              "id": { "type": "integer", "minimum": 0 },
+              "animation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["bitmap", "speed", "sprites"],
+                "properties": {
+                  "bitmap": { "$ref": "#/$defs/nonEmptyString" },
+                  "speed": { "type": "integer", "minimum": 0 },
+                  "sprites": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["x", "y", "width", "height"],
+                      "properties": {
+                        "x": { "type": "integer", "minimum": 0 },
+                        "y": { "type": "integer", "minimum": 0 },
+                        "width": { "$ref": "#/$defs/positiveInteger" },
+                        "height": { "$ref": "#/$defs/positiveInteger" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

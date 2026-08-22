@@ -19,8 +19,7 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   char aux_file[100];
   char tileset_file[100];
 
-  pugi::xml_parse_result result = world_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadWorldData(world_file, file);
 
   pugi::xml_node map = RequireXmlChild(world_file, "map", file);
 
@@ -60,7 +59,11 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   }
 
   sprintf(aux_file, "%s", file);
-  sprintf(tileset_file, "%s/%s", chopToDirectory(aux_file).c_str(), tileset.attribute("name").as_string());
+  if (IsJsonLevelFile(file)) {
+    sprintf(tileset_file, "%s", tileset.attribute("name").as_string());
+  } else {
+    sprintf(tileset_file, "%s/%s", chopToDirectory(aux_file).c_str(), tileset.attribute("name").as_string());
+  }
 
   printf("Tileset file = %s\n", tileset_file);
 
@@ -212,8 +215,7 @@ void World::InitializePlatforms(const char* file) {
   printf("| Initializing platforms  |\n");
   printf("---------------------------\n");
 
-  pugi::xml_parse_result result = plat_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(plat_file, file);
   RequireXmlChild(plat_file, "platforms", file);
   
   for (pugi::xml_node plat = plat_file.child("platforms").first_child();
@@ -329,8 +331,7 @@ void World::InitializeHazards(const char* file) {
   printf("| Initializing hazards    |\n");
   printf("---------------------------\n");
 
-  pugi::xml_parse_result result = hazard_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(hazard_file, file);
   RequireXmlChild(hazard_file, "hazards", file);
   
   for (pugi::xml_node hazard = hazard_file.child("hazards").first_child();
@@ -437,8 +438,7 @@ void World::InitializeItems(const char* file, SoundHandler* sound_handler) {
   printf("| Initializing items      |\n");
   printf("---------------------------\n");
 
-  pugi::xml_parse_result result = item_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(item_file, file);
   RequireXmlChild(item_file, "items", file);
  
   for (pugi::xml_node item = item_file.child("items").first_child();
@@ -493,8 +493,7 @@ void World::InitializeDynamicBackObjects(const char* file) {
   printf("| Initializing dynamic backgound objects |\n");
   printf("------------------------------------------\n");
 
-  pugi::xml_parse_result result = dyn_obj_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(dyn_obj_file, file);
   RequireXmlChild(dyn_obj_file, "anim_objects", file);
  
   for (pugi::xml_node dyn_obj = dyn_obj_file.child("anim_objects").first_child();
@@ -548,8 +547,7 @@ void World::InitializeBlocks(const char* file) {
   printf("| Initializing block objects |\n");
   printf("-----------------------------\n");
 
-  pugi::xml_parse_result result = block_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(block_file, file);
   RequireXmlChild(block_file, "blocks", file);
  
   for (pugi::xml_node block = block_file.child("blocks").first_child();
@@ -606,8 +604,7 @@ void World::InitializeCheckpoints(const char* file) {
   printf("| Initializing checkpoints objects |\n");
   printf("------------------------------------\n");
 
-  pugi::xml_parse_result result = chk_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(chk_file, file);
   pugi::xml_node checkpoints_root =
       RequireXmlChild(chk_file, "checkpoints", file);
   if (CountXmlChildren(checkpoints_root) == 0) {
@@ -730,8 +727,7 @@ void World::InitializeTriggers(const char* file) {
   printf("| Initializing triggers   |\n");
   printf("---------------------------\n");
 
-  pugi::xml_parse_result result = trig_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(trig_file, file);
   RequireXmlChild(trig_file, "triggers", file);
   
   for (pugi::xml_node trig = trig_file.child("triggers").first_child();
@@ -871,8 +867,7 @@ void World::InitializeLasers(const char* file) {
   printf("| Initializing laser objects |\n");
   printf("------------------------------\n");
 
-  pugi::xml_parse_result result = laser_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(laser_file, file);
   RequireXmlChild(laser_file, "lasers", file);
  
   for (pugi::xml_node laser = laser_file.child("lasers").first_child();
@@ -967,8 +962,7 @@ void World::InitializeEnemies(const char* file) {
   printf("| Initializing enemies             |\n");
   printf("------------------------------------\n");
 
-  pugi::xml_parse_result result = enemy_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(enemy_file, file);
   RequireXmlChild(enemy_file, "enemies", file);
  
   for (pugi::xml_node enemy = enemy_file.child("enemies").first_child();
@@ -1063,8 +1057,7 @@ void World::InitializeCameraViews(const char* file) {
   printf("| Initializing camera views        |\n");
   printf("------------------------------------\n");
 
-  pugi::xml_parse_result result = view_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(view_file, file);
   RequireXmlChild(view_file, "views", file);
  
   for (pugi::xml_node view = view_file.child("views").first_child();

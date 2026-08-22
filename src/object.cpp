@@ -185,8 +185,7 @@ void Object::Init(const char* file,
   initial_speed_y = speed_y;
 
   // Read animations
-  pugi::xml_parse_result result = obj_file.load_file(file);
-  RequireXmlDocument(result, file);
+  LoadReferencedData(obj_file, file);
   ValidateAnimationXml(obj_file, "object", file);
 
   printf("- Initializing object:\n");

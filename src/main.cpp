@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 
   // Game initializations
   try {
-    map_level1 = new World("../maps/level1/Map1_prueba.tmx", &sound_handler, false);
+    map_level1 = new World("../levels/level1/level.json", &sound_handler, false);
     camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1, bitmap);
     player = new Player("../characters/rick.xml");
     player->RegisterCamera(&camera);

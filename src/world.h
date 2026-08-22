@@ -29,6 +29,7 @@
 #include "sound_handler.h"
 #include "tile_bounds.h"
 #include "data_loading.h"
+#include "json_level_loader.h"
 
 using namespace std;
 
