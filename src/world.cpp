@@ -20,19 +20,44 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   char tileset_file[100];
 
   pugi::xml_parse_result result = world_file.load_file(file);
+  RequireXmlDocument(result, file);
 
-  if(!result) {
-      printf("Error: loading world data\n");      
-  }  
+  pugi::xml_node map = RequireXmlChild(world_file, "map", file);
 
-  pugi::xml_node map = world_file.child("map");
+  map_width = RequirePositiveXmlInt(map, "width", file);
+  map_height = RequirePositiveXmlInt(map, "height", file);
+  tileset_width = RequirePositiveXmlInt(map, "tilewidth", file);
+  tileset_height = RequirePositiveXmlInt(map, "tileheight", file);
 
-  map_width = map.attribute("width").as_int();
-  map_height = map.attribute("height").as_int();
-  tileset_width = map.attribute("tilewidth").as_int();
-  tileset_height = map.attribute("tileheight").as_int();
+  pugi::xml_node tileset = RequireXmlChild(map, "tileset", file);
+  RequireXmlAttribute(tileset, "name", file);
+  RequirePositiveXmlInt(tileset, "tilecount", file);
+  RequirePositiveXmlInt(tileset, "columns", file);
+  RequirePositiveXmlInt(tileset, "tilewidth", file);
+  RequirePositiveXmlInt(tileset, "tileheight", file);
 
-  pugi::xml_node tileset = world_file.child("map").child("tileset");
+  pugi::xml_node tiles_layer =
+      map.find_child_by_attribute("layer", "name", "Tiles");
+  pugi::xml_node front_layer =
+      map.find_child_by_attribute("layer", "name", "FrontTiles");
+  pugi::xml_node collision_layer =
+      map.find_child_by_attribute("layer", "name", "Collisions");
+  if (!tiles_layer || !front_layer || !collision_layer) {
+    throw DataLoadError(std::string("Invalid '") + file +
+                        "': required layers are Tiles, FrontTiles and Collisions");
+  }
+  pugi::xml_node xml_tile = RequireXmlChild(tiles_layer, "data", file);
+  pugi::xml_node xml_tile_front = RequireXmlChild(front_layer, "data", file);
+  pugi::xml_node xml_tile_prop = RequireXmlChild(collision_layer, "data", file);
+  const unsigned int expected_tiles =
+      static_cast<unsigned int>(map_width * map_height);
+  if (CountXmlChildren(xml_tile) != expected_tiles ||
+      CountXmlChildren(xml_tile_front) != expected_tiles ||
+      CountXmlChildren(xml_tile_prop) != expected_tiles) {
+    throw DataLoadError(std::string("Invalid '") + file +
+                        "': every required layer must contain exactly " +
+                        std::to_string(expected_tiles) + " tiles");
+  }
 
   sprintf(aux_file, "%s", file);
   sprintf(tileset_file, "%s/%s", chopToDirectory(aux_file).c_str(), tileset.attribute("name").as_string());
@@ -41,7 +66,8 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 
   world_image = al_load_bitmap(tileset_file);
   if (!world_image) {
-    printf("Error: failed to load tileset\n");    
+    throw DataLoadError(std::string("Cannot load tileset bitmap '") +
+                        tileset_file + "'");
   }
 
   // Set transparent color for tileset
@@ -70,10 +96,6 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   // First initialize tiles
   // Tile properties is a layer of same size as tiles, so we can reuse the for stament
   // for both of them. REVISIT: add check to verify they have same size?
-  pugi::xml_node xml_tile       = world_file.child("map").find_child_by_attribute("layer", "name", "Tiles").child("data");
-  pugi::xml_node xml_tile_front = world_file.child("map").find_child_by_attribute("layer", "name", "FrontTiles").child("data");
-  pugi::xml_node xml_tile_prop  = world_file.child("map").find_child_by_attribute("layer", "name", "Collisions").child("data");
-
   int x = 0;
   int y = 0;
   pugi::xml_node prop       = xml_tile_prop.first_child();
@@ -191,19 +213,21 @@ void World::InitializePlatforms(const char* file) {
   printf("---------------------------\n");
 
   pugi::xml_parse_result result = plat_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world platform data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(plat_file, "platforms", file);
   
   for (pugi::xml_node plat = plat_file.child("platforms").first_child();
        plat;
        plat = plat.next_sibling()) {
+    RequireXmlAttributes(plat, file, {"id"});
+    pugi::xml_node plat_attrs = RequireXmlChild(plat, "attributes", file);
+    RequireXmlAttributes(plat_attrs, file,
+                         {"file", "ini_x", "ini_y", "width", "height",
+                          "visible", "recursive", "one_use", "ini_state"});
     // First read attributes
     platform_id = plat.attribute("id").as_int();
     printf("Platform id = %d\n", platform_id);
 
-    pugi::xml_node plat_attrs = plat.child("attributes");
     plat_ini_x = plat_attrs.attribute("ini_x").as_int();
     plat_ini_y = plat_attrs.attribute("ini_y").as_int();
     plat_width = plat_attrs.attribute("width").as_int();
@@ -243,6 +267,8 @@ void World::InitializePlatforms(const char* file) {
     for (pugi::xml_node action = actions.first_child();
          action;
          action = action.next_sibling()) {
+      RequireXmlAttributes(action, file,
+                           {"direction", "desp", "wait", "speed", "cond"});
       printf("\t - action %d:\n", num_actions);
       if (strcmp(action.attribute("direction").as_string(), "stop") == 0) {
         action_direction = OBJ_DIR_STOP;
@@ -254,6 +280,9 @@ void World::InitializePlatforms(const char* file) {
         action_direction = OBJ_DIR_UP;
       } else if (strcmp(action.attribute("direction").as_string(), "down") == 0) {
         action_direction = OBJ_DIR_DOWN;
+      } else {
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': incorrect platform action direction");
       }
       action_desp = action.attribute("desp").as_int();
       action_wait = action.attribute("wait").as_int();
@@ -301,19 +330,21 @@ void World::InitializeHazards(const char* file) {
   printf("---------------------------\n");
 
   pugi::xml_parse_result result = hazard_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world hazard data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(hazard_file, "hazards", file);
   
   for (pugi::xml_node hazard = hazard_file.child("hazards").first_child();
        hazard;
        hazard = hazard.next_sibling()) {
+    RequireXmlAttributes(hazard, file, {"id"});
+    pugi::xml_node hazard_attrs = RequireXmlChild(hazard, "attributes", file);
+    RequireXmlAttributes(hazard_attrs, file,
+                         {"file", "ini_x", "ini_y", "width", "height",
+                          "trigger", "stop_inactive"});
     // First read attributes
     hazard_id = hazard.attribute("id").as_int();
     printf("Hazard id = %d\n", hazard_id);
 
-    pugi::xml_node hazard_attrs = hazard.child("attributes");
     hazard_ini_x                = hazard_attrs.attribute("ini_x").as_int();
     hazard_ini_y                = hazard_attrs.attribute("ini_y").as_int();
     hazard_width                = hazard_attrs.attribute("width").as_int();
@@ -347,6 +378,8 @@ void World::InitializeHazards(const char* file) {
     for (pugi::xml_node action = actions.first_child();
          action;
          action = action.next_sibling()) {
+      RequireXmlAttributes(action, file,
+                           {"direction", "desp", "wait", "speed", "cond"});
       printf("\t - action %d:\n", num_actions);
       action_deactivate = false;
       if (strcmp(action.attribute("direction").as_string(), "stop") == 0) {
@@ -362,6 +395,9 @@ void World::InitializeHazards(const char* file) {
       } else if (strcmp(action.attribute("direction").as_string(), "deactivate") == 0) {
         action_direction = OBJ_DIR_STOP;
         action_deactivate = true;
+      } else {
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': incorrect hazard action direction");
       }
       action_desp = action.attribute("desp").as_int();
       action_wait = action.attribute("wait").as_int();
@@ -402,19 +438,20 @@ void World::InitializeItems(const char* file, SoundHandler* sound_handler) {
   printf("---------------------------\n");
 
   pugi::xml_parse_result result = item_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world items data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(item_file, "items", file);
  
   for (pugi::xml_node item = item_file.child("items").first_child();
        item;
        item = item.next_sibling()) {
+    RequireXmlAttributes(item, file, {"id"});
+    pugi::xml_node item_attrs = RequireXmlChild(item, "attributes", file);
+    RequireXmlAttributes(item_attrs, file,
+                         {"file", "ini_x", "ini_y", "width", "height"});
     // First read attributes
     item_id = item.attribute("id").as_int();
     printf("Item id = %d\n", item_id);
 
-    pugi::xml_node item_attrs = item.child("attributes");
     item_ini_x  = item_attrs.attribute("ini_x").as_int();
     item_ini_y  = item_attrs.attribute("ini_y").as_int();
     item_width  = item_attrs.attribute("width").as_int();
@@ -457,19 +494,21 @@ void World::InitializeDynamicBackObjects(const char* file) {
   printf("------------------------------------------\n");
 
   pugi::xml_parse_result result = dyn_obj_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world dynamic background objects data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(dyn_obj_file, "anim_objects", file);
  
   for (pugi::xml_node dyn_obj = dyn_obj_file.child("anim_objects").first_child();
        dyn_obj;
        dyn_obj = dyn_obj.next_sibling()) {
+    RequireXmlAttributes(dyn_obj, file, {"id"});
+    pugi::xml_node dyn_obj_attrs = RequireXmlChild(dyn_obj, "attributes", file);
+    RequireXmlAttributes(dyn_obj_attrs, file,
+                         {"file", "ini_x", "ini_y", "width", "height",
+                          "skip_num_anims"});
     // First read attributes
     dyn_obj_id = dyn_obj.attribute("id").as_int();
     printf("Dynamic object id = %d\n", dyn_obj_id);
 
-    pugi::xml_node dyn_obj_attrs = dyn_obj.child("attributes");
     dyn_obj_ini_x                = dyn_obj_attrs.attribute("ini_x").as_int();
     dyn_obj_ini_y                = dyn_obj_attrs.attribute("ini_y").as_int();
     dyn_obj_width                = dyn_obj_attrs.attribute("width").as_int();
@@ -510,19 +549,21 @@ void World::InitializeBlocks(const char* file) {
   printf("-----------------------------\n");
 
   pugi::xml_parse_result result = block_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world block objects data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(block_file, "blocks", file);
  
   for (pugi::xml_node block = block_file.child("blocks").first_child();
        block;
        block = block.next_sibling()) {
+    RequireXmlAttributes(block, file, {"id"});
+    pugi::xml_node block_attrs = RequireXmlChild(block, "attributes", file);
+    RequireXmlAttributes(block_attrs, file,
+                         {"file", "ini_x", "ini_y", "width", "height",
+                          "exploits"});
     // First read attributes
     block_id = block.attribute("id").as_int();
     printf("Block object id = %d\n", block_id);
 
-    pugi::xml_node block_attrs = block.child("attributes");
     block_ini_x                = block_attrs.attribute("ini_x").as_int();
     block_ini_y                = block_attrs.attribute("ini_y").as_int();
     block_width                = block_attrs.attribute("width").as_int();
@@ -566,14 +607,21 @@ void World::InitializeCheckpoints(const char* file) {
   printf("------------------------------------\n");
 
   pugi::xml_parse_result result = chk_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world checkpoints data\n");
+  RequireXmlDocument(result, file);
+  pugi::xml_node checkpoints_root =
+      RequireXmlChild(chk_file, "checkpoints", file);
+  if (CountXmlChildren(checkpoints_root) == 0) {
+    throw DataLoadError(std::string("Invalid '") + file +
+                        "': at least one checkpoint is required");
   }
  
   for (pugi::xml_node chk = chk_file.child("checkpoints").first_child();
        chk;
        chk = chk.next_sibling()) {
+    RequireXmlAttributes(chk, file,
+                         {"id", "chk_x", "chk_y", "chk_width", "chk_height",
+                          "pl_x", "pl_y", "pl_face"});
+    RequireXmlAttributePresent(chk, "nxt_chks", file);
     // First read attributes
     chk_id = chk.attribute("id").as_int();
     printf("Checkpoint id = %d\n", chk_id);
@@ -589,8 +637,9 @@ void World::InitializeCheckpoints(const char* file) {
     } else if (strcmp(chk.attribute("pl_face").as_string(), "left") == 0) {
       pl_face = CHAR_DIR_LEFT;
     } else {
-      printf("Error: incorrect player direction for checkpoint\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect player direction for checkpoint " +
+                          std::to_string(chk_id));
     }
 
     string nxt_chks_str(chk.attribute("nxt_chks").as_string());
@@ -599,7 +648,13 @@ void World::InitializeCheckpoints(const char* file) {
     stringstream ss(nxt_chks_str);
     string item;    
     while (getline(ss, item, ',')) {
-       nxt_chks_int.push_back(stoi(item));
+      try {
+        nxt_chks_int.push_back(stoi(item));
+      } catch (const std::exception&) {
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': checkpoint " + std::to_string(chk_id) +
+                            " contains a non-numeric link");
+      }
     }
     nxt_chks.push_back(nxt_chks_int);
 
@@ -639,8 +694,9 @@ void World::InitializeCheckpoints(const char* file) {
       }
       // If not found then return an error
       if (!found) {
-        printf("Error: link checkpoint broken for chk_id=%d\n", num_chk);
-        exit(-1);
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': broken checkpoint link for checkpoint " +
+                            std::to_string(num_chk));
       }
     }
     num_chk++;
@@ -675,20 +731,21 @@ void World::InitializeTriggers(const char* file) {
   printf("---------------------------\n");
 
   pugi::xml_parse_result result = trig_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world trigger data\n");
-    exit(-1);
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(trig_file, "triggers", file);
   
   for (pugi::xml_node trig = trig_file.child("triggers").first_child();
        trig;
        trig = trig.next_sibling()) {
+    RequireXmlAttributes(trig, file, {"id"});
+    pugi::xml_node trig_attrs = RequireXmlChild(trig, "attributes", file);
+    RequireXmlAttributes(trig_attrs, file,
+                         {"x", "y", "width", "height", "recursive",
+                          "action", "face"});
     // First read attributes
     trig_id = trig.attribute("id").as_int();
     printf("Trigger id = %d\n", trig_id);
 
-    pugi::xml_node trig_attrs = trig.child("attributes");
     trig_x         = trig_attrs.attribute("x").as_int();
     trig_y         = trig_attrs.attribute("y").as_int();
     trig_width     = trig_attrs.attribute("width").as_int();
@@ -703,8 +760,9 @@ void World::InitializeTriggers(const char* file) {
     } else if ((strcmp(trig_attrs.attribute("action").as_string(), "hits")) == 0) {
       trig_action = ACTION_EVENT_HITS;
     } else {
-      printf("Error: wrong action type for trigger!\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect action for trigger " +
+                          std::to_string(trig_id));
     }
 
     if ((strcmp(trig_attrs.attribute("face").as_string(), "any")) == 0) {
@@ -714,8 +772,9 @@ void World::InitializeTriggers(const char* file) {
     } else if ((strcmp(trig_attrs.attribute("face").as_string(), "left")) == 0) {
       trig_face = ACTION_FACE_LEFT;
     } else {
-      printf("Error: wrong action face for trigger!\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect face for trigger " +
+                          std::to_string(trig_id));
     }
     
     printf(" - x = %d\n",      trig_x);
@@ -743,6 +802,8 @@ void World::InitializeTriggers(const char* file) {
     for (pugi::xml_node target = targets.first_child();
          target;
          target = target.next_sibling()) {
+      RequireXmlAttributes(target, file,
+                           {"type", "id", "delay", "trigger", "trigger_cond"});
       printf("\t - target %d:\n", num_targets);
       if (strcmp(target.attribute("type").as_string(), "platform") == 0) {
         target_type = OBJ_PLATFORM;
@@ -751,8 +812,9 @@ void World::InitializeTriggers(const char* file) {
       } else if (strcmp(target.attribute("type").as_string(), "hazard") == 0) {
         target_type = OBJ_HAZARD;
       } else {
-        printf("Error: wrong target id in trigger definiton!\n");
-        exit(-1);
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': incorrect target type for trigger " +
+                            std::to_string(trig_id));
       }
       target_id = target.attribute("id").as_int();
       target_delay = target.attribute("delay").as_int();
@@ -773,8 +835,9 @@ void World::InitializeTriggers(const char* file) {
         target_ptr = (Object*)GetHazard(target_id);
 
       if (target_ptr == nullptr) {
-        printf("Error: trying to associate an invalid target for this trigger!\n");
-        exit(-1);
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': trigger " + std::to_string(trig_id) +
+                            " references a missing target");
       }
 
       world_trigger->AddTarget(target_ptr, target_delay, target_trigger, target_trigger_cond);
@@ -809,14 +872,16 @@ void World::InitializeLasers(const char* file) {
   printf("------------------------------\n");
 
   pugi::xml_parse_result result = laser_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world lasers data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(laser_file, "lasers", file);
  
   for (pugi::xml_node laser = laser_file.child("lasers").first_child();
        laser;
        laser = laser.next_sibling()) {
+    RequireXmlAttributes(laser, file,
+                         {"id", "file", "x", "y", "bb_x", "bb_y",
+                          "bb_width", "bb_height", "type", "speed",
+                          "recursive", "default_trigger", "direction"});
     // First read attributes
     laser_id = laser.attribute("id").as_int();
     printf("Laser id = %d\n", laser_id);
@@ -834,8 +899,9 @@ void World::InitializeLasers(const char* file) {
     } else if (strcmp(laser.attribute("type").as_string(), "diagonal") == 0) {
       laser_type = LASER_TYPE_DIAGONAL;
     } else {
-      printf("Error: incorrect type for laser\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect type for laser " +
+                          std::to_string(laser_id));
     }
     laser_speed = laser.attribute("speed").as_float();
     laser_onehot = !laser.attribute("recursive").as_bool();
@@ -845,8 +911,9 @@ void World::InitializeLasers(const char* file) {
     } else if (strcmp(laser.attribute("direction").as_string(), "left") == 0) {
       laser_direction = OBJ_DIR_LEFT;
     } else {
-      printf("Error: incorrect direction for laser\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect direction for laser " +
+                          std::to_string(laser_id));
     }
     printf(" - x = %d\n", laser_x);
     printf(" - y = %d\n", laser_y);
@@ -901,14 +968,18 @@ void World::InitializeEnemies(const char* file) {
   printf("------------------------------------\n");
 
   pugi::xml_parse_result result = enemy_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world enemies data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(enemy_file, "enemies", file);
  
   for (pugi::xml_node enemy = enemy_file.child("enemies").first_child();
        enemy;
        enemy = enemy.next_sibling()) {
+    RequireXmlAttributes(enemy, file,
+                         {"id", "file", "x", "y", "bb_x", "bb_y",
+                          "bb_width", "bb_height", "speed_x", "speed_y",
+                          "direction", "ia_type", "ia_random",
+                          "ia_randomness", "ia_block_steps", "ia_orig_x",
+                          "ia_orig_y", "ia_limit_x", "ia_limit_y"});
     // First read attributes
     enemy_id = enemy.attribute("id").as_int();
     printf("Enemy id = %d\n", enemy_id);
@@ -926,16 +997,18 @@ void World::InitializeEnemies(const char* file) {
     } else if (strcmp(enemy.attribute("direction").as_string(), "left") == 0) {
       enemy_direction = CHAR_DIR_LEFT;
     } else {
-      printf("Error: incorrect direction for enemy\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect direction for enemy " +
+                          std::to_string(enemy_id));
     }
     if (strcmp(enemy.attribute("ia_type").as_string(), "walker") == 0) {
       enemy_ia_type = ENEMY_IA_WALKER;
     } else if (strcmp(enemy.attribute("ia_type").as_string(), "chaser") == 0) {
       enemy_ia_type = ENEMY_IA_CHASER;
     } else {
-      printf("Error: incorrect ia type for enemy\n");
-      exit(-1);
+      throw DataLoadError(std::string("Invalid '") + file +
+                          "': incorrect AI type for enemy " +
+                          std::to_string(enemy_id));
     }
     enemy_ia_random      = enemy.attribute("ia_random").as_bool();
     enemy_ia_randomness  = enemy.attribute("ia_randomness").as_int();
@@ -991,14 +1064,15 @@ void World::InitializeCameraViews(const char* file) {
   printf("------------------------------------\n");
 
   pugi::xml_parse_result result = view_file.load_file(file);
-
-  if(!result) {
-    printf("Error: loading world camera view data\n");
-  }
+  RequireXmlDocument(result, file);
+  RequireXmlChild(view_file, "views", file);
  
   for (pugi::xml_node view = view_file.child("views").first_child();
        view;
        view = view.next_sibling()) {
+    RequireXmlAttributes(view, file,
+                         {"id", "left_up_x", "left_up_y", "right_down_x",
+                          "right_down_y"});
     // First read attributes
     view_id = view.attribute("id").as_int();
     printf("View id = %d\n", view_id);

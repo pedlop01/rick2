@@ -10,12 +10,15 @@ SoundHandler::~SoundHandler() {
 
 void SoundHandler::InitializeSounds() {
   music[0] = al_load_sample("../music/level1.ogg");
-  //if(!music[0]) {
-  //  printf("Error: failed loading music!\n");
-  //  exit(-1);
-  //}
+  if (!music[0]) {
+    throw DataLoadError("Cannot load audio '../music/level1.ogg'");
+  }
   music_instance[0] = al_create_sample_instance(music[0]);
-  al_attach_sample_instance_to_mixer(music_instance[0], al_get_default_mixer());
+  if (!music_instance[0] ||
+      !al_attach_sample_instance_to_mixer(music_instance[0],
+                                          al_get_default_mixer())) {
+    throw DataLoadError("Cannot create the music playback instance");
+  }
 
   fx[FX_WALK] = al_load_sample("../fx/walk.wav");
   fx[FX_SHOT] = al_load_sample("../fx/zap.wav");
@@ -24,6 +27,17 @@ void SoundHandler::InitializeSounds() {
   fx[FX_BONUS] = al_load_sample("../fx/bonus.wav");
   fx[FX_RING] = al_load_sample("../fx/ring.wav");
   fx[FX_EXPLOSION] = al_load_sample("../fx/explosion.wav");
+
+  const char* fx_files[] = {"../fx/walk.wav", "../fx/zap.wav",
+                            "../fx/kickbomb.wav", "../fx/waaaaaa1.wav",
+                            "../fx/bonus.wav", "../fx/ring.wav",
+                            "../fx/explosion.wav"};
+  for (int index = FX_WALK; index <= FX_EXPLOSION; ++index) {
+    if (!fx[index]) {
+      throw DataLoadError(std::string("Cannot load audio '") +
+                          fx_files[index] + "'");
+    }
+  }
 }
 
 void SoundHandler::PlayMusic(int id) {

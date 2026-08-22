@@ -28,6 +28,7 @@
 #include "character.h"
 #include "sound_handler.h"
 #include "tile_bounds.h"
+#include "data_loading.h"
 
 using namespace std;
 

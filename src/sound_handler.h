@@ -8,6 +8,7 @@
 #include <allegro5/allegro_acodec.h>
 
 #include "rick_params.h"
+#include "data_loading.h"
 
 #define NUM_SONGS  1
 #define NUM_FXS   16

@@ -71,3 +71,11 @@ g++ -std=c++11 tests/tile_bounds_test.cpp \
   -o /tmp/rick2-tile-bounds-test
 /tmp/rick2-tile-bounds-test
 ```
+
+The data-loading regression test covers missing, malformed and incomplete XML:
+
+```sh
+g++ -std=c++11 tests/data_loading_test.cpp src/pugixml.cpp \
+  -o /tmp/rick2-data-loading-test
+/tmp/rick2-data-loading-test
+```

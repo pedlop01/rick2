@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
   ALLEGRO_EVENT_QUEUE*   event_queue = NULL;
   ALLEGRO_SAMPLE*        sample      = NULL;
   ALLEGRO_MOUSE_STATE    mouse_state;
-  World*                 map_level1;
-  Player*                player;
+  World*                 map_level1 = nullptr;
+  Player*                player = nullptr;
   Keyboard               keyboard;
   Camera                 camera;
   Timer                  timer;
@@ -122,15 +122,22 @@ int main(int argc, char *argv[]) {
   al_register_event_source(event_queue, al_get_keyboard_event_source());
 
   // Game initializations
-  map_level1 = new World("../maps/level1/Map1_prueba.tmx", &sound_handler, false);
-  camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1, bitmap);
-  player = new Player("../characters/rick.xml");
-  player->RegisterCamera(&camera);
-  player->RegisterSoundHandler(&sound_handler);
+  try {
+    map_level1 = new World("../maps/level1/Map1_prueba.tmx", &sound_handler, false);
+    camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1, bitmap);
+    player = new Player("../characters/rick.xml");
+    player->RegisterCamera(&camera);
+    player->RegisterSoundHandler(&sound_handler);
 
-  // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
-  sound_handler.InitializeSounds();
-  sound_handler.PlayMusic(0);
+    // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
+    sound_handler.InitializeSounds();
+    sound_handler.PlayMusic(0);
+  } catch (const DataLoadError& error) {
+    fprintf(stderr, "Game data error: %s\n", error.what());
+    delete player;
+    delete map_level1;
+    return -1;
+  }
 
   // Start the fixed 50 Hz simulation clock after loading all resources.
   timer.StartCounter();

@@ -186,9 +186,8 @@ void Object::Init(const char* file,
 
   // Read animations
   pugi::xml_parse_result result = obj_file.load_file(file);
-  if(!result) {
-      printf("Error: loading character data from file = %s, description = %s\n", file, result.description());
-  }
+  RequireXmlDocument(result, file);
+  ValidateAnimationXml(obj_file, "object", file);
 
   printf("- Initializing object:\n");
   // Iterate over states
@@ -204,7 +203,9 @@ void Object::Init(const char* file,
     printf("\tAnimation %d: file = %s, speed = %d\n", num_anims, animation.attribute("bitmap").as_string(), animation.attribute("speed").as_int());
     ALLEGRO_BITMAP* obj_bitmap = al_load_bitmap(animation.attribute("bitmap").as_string());
     if (!obj_bitmap) {
-      printf("Error: failed to load animation bitmap\n");
+      throw DataLoadError(std::string("Cannot load animation bitmap '") +
+                          animation.attribute("bitmap").as_string() +
+                          "' referenced by '" + file + "'");
     }
     Animation* obj_anim = new Animation(obj_bitmap, animation.attribute("speed").as_int());
     int num_sprites = 0;
@@ -223,6 +224,10 @@ void Object::Init(const char* file,
       // Set transparent color
       al_convert_mask_to_alpha(obj_bitmap, al_map_rgb(255,0,255));
       ALLEGRO_BITMAP* sprite_bitmap = al_create_sub_bitmap(obj_bitmap, sprite_x, sprite_y, sprite_width, sprite_height);
+      if (!sprite_bitmap) {
+        throw DataLoadError(std::string("Invalid sprite rectangle in '") +
+                            file + "'");
+      }
 
       obj_anim->AddSprite(sprite_bitmap,
                           sprite_x,

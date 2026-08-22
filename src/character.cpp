@@ -99,9 +99,8 @@ Character::Character(const char* file) {
 
   // Initialize animations
   pugi::xml_parse_result result = character_file.load_file(file);
-  if(!result) {
-      printf("Error: loading character data from file = %s, description = %s\n", file, result.description());
-  }
+  RequireXmlDocument(result, file);
+  ValidateAnimationXml(character_file, "character", file);
 
   // REVISIT: states are taking in order from the file. It would be better to find
   // a way to insert them by id instead. However, giving an id to the xml
@@ -119,7 +118,9 @@ Character::Character(const char* file) {
     printf("\tAnimation %d: file = %s, speed = %d\n", num_anims, animation.attribute("bitmap").as_string(), animation.attribute("speed").as_int());
     ALLEGRO_BITMAP* anim_bitmap = al_load_bitmap(animation.attribute("bitmap").as_string());
     if (!anim_bitmap) {
-      printf("Error: failed to load animation bitmap\n");
+      throw DataLoadError(std::string("Cannot load animation bitmap '") +
+                          animation.attribute("bitmap").as_string() +
+                          "' referenced by '" + file + "'");
     }
     Animation* player_anim = new Animation(anim_bitmap, animation.attribute("speed").as_int());
     int num_sprites = 0;
@@ -137,6 +138,10 @@ Character::Character(const char* file) {
                                                                          sprite_height);
 
       ALLEGRO_BITMAP* sprite_bitmap = al_create_sub_bitmap(anim_bitmap, sprite_x, sprite_y, sprite_width, sprite_height);
+      if (!sprite_bitmap) {
+        throw DataLoadError(std::string("Invalid sprite rectangle in '") +
+                            file + "'");
+      }
       al_convert_mask_to_alpha(sprite_bitmap, al_map_rgb(255,0,255));
 
       player_anim->AddSprite(sprite_bitmap,
