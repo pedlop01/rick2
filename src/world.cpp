@@ -3,6 +3,7 @@
 #include "world.h" // class's header file
 #include "trigger.h"
 #include "enemy.h"
+#include "container_utils.h"
 
 // class constructor
 World::World()
@@ -1114,21 +1115,42 @@ void World::WorldStep(Character* player) {
     }
   }
 
-  // Blocks
-  //printf("[WorldStep] Moving blocks...\n");
-  for (list<Block*>::iterator it = blocks.begin() ; it != blocks.end(); ++it) {
-    Block* block = *it;
-    if (block->GetState() == OBJ_STATE_DEAD) {
-      delete block;
-      it = blocks.erase(it);
-    } else if (block->GetActive()) {
-      block->ObjectStep(this, player);
+  // Remove dead blocks before stepping survivors. EraseAndDisposeIf keeps the
+  // iterator returned by erase(), including when consecutive elements die.
+  EraseAndDisposeIf(
+      blocks,
+      [](Block* block) { return block->GetState() == OBJ_STATE_DEAD; },
+      [](Block* block) { delete block; });
+
+  for (list<Block*>::iterator it = blocks.begin(); it != blocks.end(); ++it) {
+    if ((*it)->GetActive()) {
+      (*it)->ObjectStep(this, player);
     }
   }
 
-  // Global objects
-  //printf("[WorldStep] Moving global objects...\n");
-  for (list<Object*>::iterator it = objects.begin() ; it != objects.end(); ++it) {
+  // Items, shots and bombs are the transient object types. Other object types
+  // are referenced by triggers and must not be removed without unlinking them.
+  EraseAndDisposeIf(
+      objects,
+      [](Object* object) {
+        if (object->GetState() != OBJ_STATE_DEAD) {
+          return false;
+        }
+        return object->GetType() == OBJ_ITEM ||
+               object->GetType() == OBJ_SHOOT ||
+               object->GetType() == OBJ_BOMB;
+      },
+      [this](Object* object) {
+        if (object->GetType() == OBJ_SHOOT) {
+          shoot_exists = false;
+        } else if (object->GetType() == OBJ_BOMB) {
+          bomb_exists = false;
+        }
+        delete object;
+      });
+
+  // Step surviving global objects.
+  for (list<Object*>::iterator it = objects.begin(); it != objects.end(); ++it) {
     Object* object = *it;
 
     // REVISIT: to trigger some events. Remove this code
@@ -1138,26 +1160,8 @@ void World::WorldStep(Character* player) {
     }
 
     if (object->GetState() == OBJ_STATE_DEAD) {
-      //printf("[WorldStep] Object dead %d\n", object->GetId());
-      // REVISIT: need to add STATIC OBJECT here? Same for other objects that may persists (LASER)
-      switch (object->GetType()) {
-        case OBJ_ITEM:
-          delete ((Item*)object);
-          break;
-        case OBJ_SHOOT:
-          delete ((Shoot*)object);
-          shoot_exists = false;
-          break;
-        case OBJ_BOMB:
-          delete ((Bomb*)object);
-          bomb_exists = false;
-          break;
-        default:
-          printf("[WARNING] Unknown object type to be deleted in World!\n");
-          break;
-      }
-      it = objects.erase(it);                            // Remove element if it is dead.
-      //printf("[WorldStep] Removed object from object list\n");
+      printf("[WARNING] Persistent object %d reached the dead state and was not removed\n",
+             object->GetId());
     } else if (object->GetActive()) {
       //printf("Object active id = %d, type = %d\n", object->GetId(), object->GetType());
       switch (object->GetType()) {

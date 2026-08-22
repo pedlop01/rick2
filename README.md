@@ -53,3 +53,12 @@ g++ -std=c++11 -pthread tests/timer_test.cpp src/timer.cpp \
   -o /tmp/rick2-timer-test
 /tmp/rick2-timer-test
 ```
+
+The container-removal regression test verifies consecutive and final-element
+erasure:
+
+```sh
+g++ -std=c++11 tests/container_utils_test.cpp \
+  -o /tmp/rick2-container-utils-test
+/tmp/rick2-container-utils-test
+```
