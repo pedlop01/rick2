@@ -19,6 +19,7 @@ Camera::Camera() {
   screen = 0;
   current_camera_view = 0;
   prev_camera_view = 0;
+  debug_overlays = false;
 }
 
 Camera::~Camera() {
@@ -220,7 +221,7 @@ void Camera::DrawBackObjects(World* world, Character* player, ALLEGRO_FONT *font
                        object->GetX() - GetPosX(),
                        object->GetY() - GetPosY(),
                        object->GetCurrentAnimationBitmapAttributes());
-#ifdef SHOW_BOUNDING_BOXES
+        if (debug_overlays) {
         char buffer[30];
         sprintf(buffer, "%d", object->GetId());
         al_draw_text(font,
@@ -229,7 +230,7 @@ void Camera::DrawBackObjects(World* world, Character* player, ALLEGRO_FONT *font
                      object->GetY() - GetPosY(),
                      ALLEGRO_ALIGN_LEFT,
                      buffer);
-#endif
+        }
       }
     }
   }
@@ -251,7 +252,7 @@ void Camera::DrawFrontObjects(World* world, Character* player, ALLEGRO_FONT *fon
                        object->GetX() - GetPosX(),
                        object->GetY() - GetPosY(),
                        object->GetCurrentAnimationBitmapAttributes());
-#ifdef SHOW_BOUNDING_BOXES
+        if (debug_overlays) {
         char buffer[30];
         sprintf(buffer, "%d", object->GetTypeId());
         al_draw_text(font,
@@ -270,7 +271,7 @@ void Camera::DrawFrontObjects(World* world, Character* player, ALLEGRO_FONT *fon
                           object->GetX() + object->GetBBX() + (object->GetBBWidth() - 1) + 1 - GetPosX() + 1,
                           object->GetY() + object->GetBBY() + (object->GetBBHeight() - 1) + 1 - GetPosY() + 1,
                           al_map_rgb(0xFF, 0x0F, 0x0F), 1.0);
-#endif
+        }
       }
     }
   }
@@ -286,7 +287,7 @@ void Camera::DrawPlayer(World* world, Character* player, ALLEGRO_FONT *font) {
                  player->GetPosX() - GetPosX(),
                  player->GetPosY() - GetPosY(),
                  player->GetCurrentAnimationBitmapAttributes());
-#ifdef SHOW_BOUNDING_BOXES
+  if (debug_overlays) {
   // Draw the player in front of back tiles
   al_draw_rectangle(player->GetPosX() - GetPosX() + 1,
                     player->GetPosY() - GetPosY() + 1,
@@ -305,7 +306,7 @@ void Camera::DrawPlayer(World* world, Character* player, ALLEGRO_FONT *font) {
                     player->GetPosX() + player->GetBBX() + player->GetBBWidth() - 1 - GetPosX() + 1,
                     player->GetPosY() + player->GetBBY() + player->GetBBHeight() - 1 - GetPosY() + 1,
                     al_map_rgb(0xAF, 0xAF, 0xAF), 1.0);
-#endif
+  }
 }
 
 void Camera::DrawPlayerDying(World* world, Character* player, ALLEGRO_FONT *font) {
@@ -335,7 +336,7 @@ void Camera::DrawPlatforms(World* world, Character* player, ALLEGRO_FONT *font) 
                    platform->GetX() - GetPosX(),
                    platform->GetY() - GetPosY(),
                    platform->GetCurrentAnimationBitmapAttributes());
-#ifdef SHOW_BOUNDING_BOXES
+    if (debug_overlays) {
     char buffer[30];
     sprintf(buffer, "%d", platform->GetTypeId());
     al_draw_text(font,
@@ -344,7 +345,7 @@ void Camera::DrawPlatforms(World* world, Character* player, ALLEGRO_FONT *font) 
                  platform->GetY() - GetPosY(),
                  ALLEGRO_ALIGN_LEFT,
                  buffer);
-#endif
+    }
   }
 }
 
@@ -363,7 +364,7 @@ void Camera::DrawBlocks(World* world, Character* player, ALLEGRO_FONT *font) {
 }
 
 void Camera::DrawCheckpoints(World* world, Character* player, ALLEGRO_FONT *font) {
-#ifdef SHOW_BOUNDING_BOXES
+  if (!debug_overlays) return;
   list<Checkpoint*>* checkpoints = world->GetCheckpoints();
   for (list<Checkpoint*>::iterator it = checkpoints->begin(); it != checkpoints->end(); it++) {
     Checkpoint* checkpoint = *it;
@@ -379,11 +380,10 @@ void Camera::DrawCheckpoints(World* world, Character* player, ALLEGRO_FONT *font
                     world->GetCurrentCheckpoint()->GetChkX() + world->GetCurrentCheckpoint()->GetChkWidth() - GetPosX() + 1,
                     world->GetCurrentCheckpoint()->GetChkY() + world->GetCurrentCheckpoint()->GetChkHeight() - GetPosY() + 1,
                     al_map_rgb(0x0, 0xFF, 0xFF), 1.0);
-#endif
 }
 
 void Camera::DrawTriggers(World* world, Character* player, ALLEGRO_FONT *font) {
-#ifdef SHOW_BOUNDING_BOXES
+  if (!debug_overlays) return;
   list<Trigger*>* triggers = world->GetTriggers();
   for (list<Trigger*>::iterator it = triggers->begin(); it != triggers->end(); it++) {
     Trigger* trigger = *it;
@@ -401,7 +401,6 @@ void Camera::DrawTriggers(World* world, Character* player, ALLEGRO_FONT *font) {
                  ALLEGRO_ALIGN_LEFT,
                  buffer);
   }
-#endif
 }
 
 void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
@@ -427,7 +426,7 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
                               enemy->GetPosY() - GetPosY(),
                               enemy->GetCurrentAnimationBitmapAttributes());
       }
-#ifdef SHOW_BOUNDING_BOXES
+      if (debug_overlays) {
       // Draw the enemy in front of back tiles
       al_draw_rectangle(enemy->GetPosX() - GetPosX() + 1,
                         enemy->GetPosY() - GetPosY() + 1,
@@ -462,13 +461,13 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
                           enemy->GetEnemyIA()->GetOrigY() + enemy->GetEnemyIA()->GetLimitY() - 1 - GetPosY() + 1,
                           al_map_rgb(0xAD, 0x00, 0xF6), 1.0);
       }
-#endif
+      }
     }
   }
 }
 
 void Camera::DrawCameraViews(World* world, Character* player, ALLEGRO_FONT *font) {
-#ifdef SHOW_BOUNDING_BOXES
+  if (!debug_overlays) return;
   vector<CameraView*>* camera_views = world->GetCameraViews();
   for (vector<CameraView*>::iterator it = camera_views->begin(); it != camera_views->end(); it++) {
     CameraView* view = *it;
@@ -478,7 +477,6 @@ void Camera::DrawCameraViews(World* world, Character* player, ALLEGRO_FONT *font
                       view->GetRightDownY() - GetPosY() + 1,
                       al_map_rgb(0xFF, 0xFF, 0xFF), 4.0);
   }
-#endif
 }
 
 void Camera::DrawScreen(World* world, Character* player, ALLEGRO_FONT *font) {

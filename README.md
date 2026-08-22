@@ -125,6 +125,25 @@ g++ -std=c++11 tests/resource_cache_test.cpp src/resource_cache.cpp \
 /tmp/rick2-resource-cache-test
 ```
 
+Debug overlays are disabled during normal play. Start the game with `--debug`
+to draw collision boxes, checkpoints, triggers, camera views and entity IDs.
+While this mode is active, holding the left mouse button prints its correctly
+scaled world coordinates:
+
+```sh
+cd bin
+./rick2 --debug
+./rick2 --debug ../levels/level1/level.json
+```
+
+The command-line mode has a standalone parsing check:
+
+```sh
+g++ -std=c++11 tests/runtime_options_test.cpp \
+  -o /tmp/rick2-runtime-options-test
+/tmp/rick2-runtime-options-test
+```
+
 The format and versioning policy are documented in `docs/LEVEL_FORMAT.md`; its
 machine-readable contract is `schema/level.schema.json`. Building requires the
 header-only `nlohmann/json` library (`nlohmann-json3-dev` on Debian/Ubuntu).

@@ -20,6 +20,7 @@
 #include "object.h"
 #include "platform.h"
 #include "sound_handler.h"
+#include "runtime_options.h"
 
 using namespace std;
 
@@ -47,6 +48,7 @@ class ResourceCacheGuard {
 
 int main(int argc, char *argv[]) {
   std::string level_file;
+  RuntimeOptions options;
   const bool resource_check = getenv("RICK2_RESOURCE_CHECK") != nullptr;
   const char* smoke_ticks_value = getenv("RICK2_SMOKE_TEST_TICKS");
   const unsigned int smoke_tick_limit = smoke_ticks_value
@@ -59,7 +61,6 @@ int main(int argc, char *argv[]) {
   unique_ptr<ALLEGRO_BITMAP, void(*)(ALLEGRO_BITMAP*)> bitmap(nullptr, al_destroy_bitmap);
   unique_ptr<ALLEGRO_FONT, void(*)(ALLEGRO_FONT*)> font(nullptr, al_destroy_font);
   unique_ptr<ALLEGRO_EVENT_QUEUE, void(*)(ALLEGRO_EVENT_QUEUE*)> event_queue(nullptr, al_destroy_event_queue);
-  ALLEGRO_MOUSE_STATE    mouse_state;
   Keyboard               keyboard;
   Camera                 camera;
   Timer                  timer;
@@ -69,18 +70,19 @@ int main(int argc, char *argv[]) {
   unique_ptr<Player>     player;
 
 
-  // Check arguments
-  if(argc > 2) {
-    printf("Usage: %s [level.json]\n", argv[0]);
-    exit(-1);
-  }
-
   try {
-    level_file = argc == 2 ? argv[1] :
-                            GetInitialLevelFromGamePackage("../game.json");
+    options = ParseRuntimeOptions(argc, argv);
+    if (options.show_help) {
+      printf("Usage: %s [--debug] [level.json]\n", argv[0]);
+      return 0;
+    }
+    level_file = options.level_file.empty()
+                     ? GetInitialLevelFromGamePackage("../game.json")
+                     : options.level_file;
     LoadLevelPackage(level_file.c_str());
   } catch (const std::exception& error) {
-    fprintf(stderr, "Game data error: %s\n", error.what());
+    fprintf(stderr, "Startup error: %s\nUsage: %s [--debug] [level.json]\n",
+            error.what(), argv[0]);
     return -1;
   }
   const ViewportConfig& display_config = GetDisplayConfig();
@@ -98,8 +100,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  if(!al_install_mouse()) {
-    printf("Error: failed to initialize keyboard!\n");
+  if(options.debug && !al_install_mouse()) {
+    printf("Error: failed to initialize mouse!\n");
     return -1;
   }
 
@@ -176,6 +178,7 @@ int main(int argc, char *argv[]) {
     camera.InitCamera(camera_config.x, camera_config.y,
                       camera_config.width, camera_config.height,
                       world.get(), bitmap.get());
+    camera.SetDebugOverlays(options.debug);
     player.reset(new Player(GetPlayerDefinition().c_str()));
     player->RegisterCamera(&camera);
     player->RegisterSoundHandler(&sound_handler);
@@ -215,10 +218,17 @@ int main(int argc, char *argv[]) {
 
     keyboard.ReadKeyboard(event_queue.get());
     
-    // REVISIT: added mouse to combine creation with main game
-    al_get_mouse_state(&mouse_state);
-    if (mouse_state.buttons & 1)
-      printf("Mouse coord x = %d, y = %d\n", camera.GetPosX() + mouse_state.x/2, camera.GetPosY() + mouse_state.y/2);
+    if (options.debug) {
+      ALLEGRO_MOUSE_STATE mouse_state;
+      al_get_mouse_state(&mouse_state);
+      if (mouse_state.buttons & 1) {
+        const int world_x = camera.GetPosX() +
+            mouse_state.x * camera.GetPixelsWidth() / display_config.width;
+        const int world_y = camera.GetPosY() +
+            mouse_state.y * camera.GetPixelsHeight() / display_config.height;
+        printf("Mouse world coordinates: x=%d, y=%d\n", world_x, world_y);
+      }
+    }
 
     if(keyboard.PressedESC())   { return 0; }
 

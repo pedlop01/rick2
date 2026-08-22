@@ -46,6 +46,7 @@ class Camera
 
     int prev_camera_view;
     int current_camera_view;
+    bool debug_overlays;
 
   public:
     Camera();
@@ -72,6 +73,7 @@ class Camera
     void PositionBasedOnPlayer(Character* player);
 
     void SetMap(World* _map) { map = _map; }
+    void SetDebugOverlays(bool enabled) { debug_overlays = enabled; }
 
     void SetCameraView(CameraView* camera_view);
 
