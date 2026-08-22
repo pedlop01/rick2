@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/bomb/bomb.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 1,
@@ -23,7 +23,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../designs/bomb/bomb.png",
-        "speed": 11,
+        "frameDurationTicks": 12,
         "sprites": [
           {
             "x": 1,
@@ -69,7 +69,7 @@
       "id": 2,
       "animation": {
         "bitmap": "../designs/bomb/bomb.png",
-        "speed": 4,
+        "frameDurationTicks": 5,
         "sprites": [
           {
             "x": 1,

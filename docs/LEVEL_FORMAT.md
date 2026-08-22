@@ -5,6 +5,9 @@ Rick2 levels use a single JSON package validated by
 `formatVersion` is mandatory; readers must reject versions they do not support.
 Version 1 contains:
 
+- `units`: the gameplay unit contract. Simulation runs at 50 ticks per second
+  (20 ms per tick), distances use pixels, durations use ticks and movement
+  speeds use pixels per tick. Rendering frequency never changes these units.
 - `display` and `camera`: output resolution and the initial logical viewport.
 - `map`: dimensions, tileset and the `tiles`, `frontTiles` and `collisions`
   layers. Every layer contains exactly `width * height` GIDs.
@@ -25,6 +28,12 @@ Animation states are selected by their explicit numeric `id`, never by their
 position in the `states` array. Both `id` and `name` must be unique within a
 definition; duplicate values are rejected while loading. Consequently, editors
 may reorder state declarations without changing runtime behaviour.
+
+Each animation uses `frameDurationTicks`, the number of simulation ticks for
+which a sprite remains visible. Entity action `wait`, trigger `delay` and enemy
+AI `blockSteps` values are durations in ticks. Entity and action `speed` values
+are pixels per tick. For example, `50` ticks is one second and a speed of `2`
+moves an entity 100 pixels per second.
 
 The committed level package is generated reproducibly:
 

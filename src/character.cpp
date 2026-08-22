@@ -1,5 +1,6 @@
 #include "character.h" // class's header file
 #include "camera.h"
+#include "game_time.h"
 
 // class constructor
 Character::Character() {
@@ -112,14 +113,15 @@ Character::Character(const char* file) {
     // Create animation and attach to state
     const std::string bitmap_file = animation.at("bitmap").get<std::string>();
     printf("\tAnimation %d: file = %s, speed = %d\n", num_anims,
-           bitmap_file.c_str(), animation.at("speed").get<int>());
+           bitmap_file.c_str(), animation.at("frameDurationTicks").get<int>());
     BitmapResource anim_bitmap = ResourceCache::Instance().LoadBitmap(bitmap_file);
     if (!anim_bitmap) {
       throw DataLoadError(std::string("Cannot load animation bitmap '") +
                           bitmap_file +
                           "' referenced by '" + file + "'");
     }
-    Animation* player_anim = new Animation(anim_bitmap, animation.at("speed").get<int>());
+    Animation* player_anim = new Animation(
+        anim_bitmap, animation.at("frameDurationTicks").get<unsigned int>());
     int num_sprites = 0;
     // Traverse all sprites in the animation
     for (nlohmann::json::const_iterator sprite = animation.at("sprites").begin();
@@ -679,10 +681,12 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
         break;
 
       case CHAR_STATE_HITTING:
-        if (keyboard.PressedSpace() && keyboard.PressedLeft() && (stepsInState < 20)) {  // REVISIT: this value should be a param
+        if (keyboard.PressedSpace() && keyboard.PressedLeft() &&
+            (stepsInState < GameTime::PLAYER_HIT_HOLD_DURATION_TICKS)) {
           state = CHAR_STATE_HITTING;
           direction = CHAR_DIR_LEFT;
-        } else if (keyboard.PressedSpace() && keyboard.PressedRight() && (stepsInState < 20)) {
+        } else if (keyboard.PressedSpace() && keyboard.PressedRight() &&
+                   (stepsInState < GameTime::PLAYER_HIT_HOLD_DURATION_TICKS)) {
           state = CHAR_STATE_HITTING;
           direction = CHAR_DIR_RIGHT;
         } else {
@@ -756,9 +760,9 @@ void Character::ComputeNextPosition(World* map) {
     // Correct y to be on top of platform
     SetPosY(map, GetPosY() - (GetPosY() + GetHeight() - inPlatformPtr->GetY()), false);
     if (inPlatformPtr->GetDirection() == OBJ_DIR_RIGHT) {
-      SetPosX(map, GetPosX() + inPlatformPtr->GetSpeed());
+      SetPosX(map, GetPosX() + inPlatformPtr->GetSpeedPixelsPerTick());
     } else if (inPlatformPtr->GetDirection() == OBJ_DIR_LEFT) {
-      SetPosX(map, GetPosX() - inPlatformPtr->GetSpeed());
+      SetPosX(map, GetPosX() - inPlatformPtr->GetSpeedPixelsPerTick());
     }
   }
 

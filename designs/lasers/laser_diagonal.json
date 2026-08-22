@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/lasers/lasers.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 53,
@@ -23,7 +23,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../designs/lasers/lasers.png",
-        "speed": 1,
+        "frameDurationTicks": 2,
         "sprites": [
           {
             "x": 53,
@@ -39,7 +39,7 @@
       "id": 2,
       "animation": {
         "bitmap": "../designs/lasers/lasers.png",
-        "speed": 2,
+        "frameDurationTicks": 3,
         "sprites": [
           {
             "x": 1,

@@ -18,8 +18,8 @@ Action::~Action() {
 Action::Action(int _direction, int _desp, int _wait, float _speed, int _cond) {
   direction = _direction;
   desp = _desp;
-  wait = _wait;
-  speed = _speed;
+  wait_ticks = _wait;
+  speed_pixels_per_tick = _speed;
   enabled = true;
   condition = _cond;
 }
@@ -201,14 +201,15 @@ void Object::Init(const char* file,
     // Create animation and attach to state
     const std::string bitmap_file = animation.at("bitmap").get<std::string>();
     printf("\tAnimation %d: file = %s, speed = %d\n", num_anims,
-           bitmap_file.c_str(), animation.at("speed").get<int>());
+           bitmap_file.c_str(), animation.at("frameDurationTicks").get<int>());
     BitmapResource obj_bitmap = ResourceCache::Instance().LoadBitmap(bitmap_file);
     if (!obj_bitmap) {
       throw DataLoadError(std::string("Cannot load animation bitmap '") +
                           bitmap_file +
                           "' referenced by '" + file + "'");
     }
-    Animation* obj_anim = new Animation(obj_bitmap, animation.at("speed").get<int>());
+    Animation* obj_anim = new Animation(
+        obj_bitmap, animation.at("frameDurationTicks").get<unsigned int>());
     int num_sprites = 0;
     // Traverse all sprites in the animation
     for (nlohmann::json::const_iterator sprite = animation.at("sprites").begin();

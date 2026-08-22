@@ -1,12 +1,13 @@
 #include "enemy.h"
 #include "character.h"
 #include "world.h"
+#include "game_time.h"
 
 // class constructor
 Enemy::Enemy() : Character() {
   type = CHARACTER_ENEMY;
   freezed = false;
-  steps_freezed = 0;
+  freeze_elapsed_ticks = 0;
 }
 
 Enemy::Enemy(const char* file,
@@ -41,7 +42,7 @@ Enemy::Enemy(const char* file,
   speed_y_max = _speed_y;
 
   freezed = false;
-  steps_freezed = 0;
+  freeze_elapsed_ticks = 0;
 
   ia = new EnemyIA(_ia_type, _ia_random, _ia_randomness, _ia_block_steps, pos_x, pos_y, _ia_orig_x, _ia_orig_y, _ia_limit_x, _ia_limit_y);
 }
@@ -71,9 +72,9 @@ void Enemy::CharacterStep(World* map, Character* player) {
                  (Player*)player, this);
     }
   } else {
-    steps_freezed++;
-    if (steps_freezed > 100) {
-      steps_freezed = 0;
+    freeze_elapsed_ticks++;
+    if (freeze_elapsed_ticks >= GameTime::ENEMY_FREEZE_DURATION_TICKS) {
+      freeze_elapsed_ticks = 0;
       freezed = false;
     }
   }

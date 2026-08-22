@@ -72,6 +72,13 @@ g++ -std=c++11 -pthread tests/timer_test.cpp src/timer.cpp \
 /tmp/rick2-timer-test
 ```
 
+The gameplay unit conversions and named durations have a fast regression test:
+
+```sh
+g++ -std=c++11 tests/game_time_test.cpp -o /tmp/rick2-game-time-test
+/tmp/rick2-game-time-test
+```
+
 The container-removal regression test verifies consecutive and final-element
 erasure:
 

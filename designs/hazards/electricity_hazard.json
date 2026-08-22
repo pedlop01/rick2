@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/hazards/hazards.png",
-        "speed": 2,
+        "frameDurationTicks": 3,
         "sprites": [
           {
             "x": 1,

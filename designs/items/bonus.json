@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/items/items.png",
-        "speed": 4,
+        "frameDurationTicks": 5,
         "sprites": [
           {
             "x": 1,
@@ -35,7 +35,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../designs/items/items.png",
-        "speed": 4,
+        "frameDurationTicks": 5,
         "sprites": [
           {
             "x": 1,
@@ -63,7 +63,7 @@
       "id": 2,
       "animation": {
         "bitmap": "../designs/items/items.png",
-        "speed": 6,
+        "frameDurationTicks": 7,
         "sprites": [
           {
             "x": 1,

@@ -2,6 +2,12 @@
   "formatVersion": 1,
   "kind": "rick2.level",
   "id": "level1",
+  "units": {
+    "simulationTicksPerSecond": 50,
+    "duration": "ticks",
+    "distance": "pixels",
+    "speed": "pixelsPerTick"
+  },
   "map": {
     "width": 160,
     "height": 255,
@@ -126539,7 +126545,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/platforms/platforms.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126555,7 +126561,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/platforms/platforms.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126577,7 +126583,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -126605,7 +126611,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -126633,7 +126639,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 6,
+            "frameDurationTicks": 7,
             "sprites": [
               {
                 "x": 1,
@@ -126673,7 +126679,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126689,7 +126695,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126705,7 +126711,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -126751,7 +126757,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 43,
@@ -126767,7 +126773,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 43,
@@ -126783,7 +126789,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/items/items.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -126829,7 +126835,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126845,7 +126851,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -126891,7 +126897,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126907,7 +126913,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -126947,7 +126953,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -126963,7 +126969,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -126997,7 +127003,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127013,7 +127019,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127053,7 +127059,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127069,7 +127075,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/backgrounds/level1_background.png",
-            "speed": 10,
+            "frameDurationTicks": 11,
             "sprites": [
               {
                 "x": 1,
@@ -127109,7 +127115,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127125,7 +127131,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127141,7 +127147,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127187,7 +127193,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 26,
@@ -127203,7 +127209,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 26,
@@ -127219,7 +127225,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127265,7 +127271,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127299,7 +127305,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127339,7 +127345,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
-            "speed": 2,
+            "frameDurationTicks": 3,
             "sprites": [
               {
                 "x": 1,
@@ -127379,7 +127385,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127401,7 +127407,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,
@@ -127447,7 +127453,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127463,7 +127469,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 18,
@@ -127497,7 +127503,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 53,
@@ -127513,7 +127519,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 53,
@@ -127529,7 +127535,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 2,
+            "frameDurationTicks": 3,
             "sprites": [
               {
                 "x": 1,
@@ -127575,7 +127581,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127591,7 +127597,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127607,7 +127613,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 2,
+            "frameDurationTicks": 3,
             "sprites": [
               {
                 "x": 1,
@@ -127653,7 +127659,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 27,
@@ -127669,7 +127675,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 27,
@@ -127685,7 +127691,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
-            "speed": 2,
+            "frameDurationTicks": 3,
             "sprites": [
               {
                 "x": 1,
@@ -127731,7 +127737,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127747,7 +127753,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127763,7 +127769,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -127791,7 +127797,7 @@
           "id": 3,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127813,7 +127819,7 @@
           "id": 4,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127829,7 +127835,7 @@
           "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127845,7 +127851,7 @@
           "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127861,7 +127867,7 @@
           "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127877,7 +127883,7 @@
           "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -127905,7 +127911,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -127921,7 +127927,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -127937,7 +127943,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -127965,7 +127971,7 @@
           "id": 3,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -127981,7 +127987,7 @@
           "id": 4,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128009,7 +128015,7 @@
           "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128025,7 +128031,7 @@
           "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128041,7 +128047,7 @@
           "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128057,7 +128063,7 @@
           "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -128091,7 +128097,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -128107,7 +128113,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -128123,7 +128129,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -128151,7 +128157,7 @@
           "id": 3,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128173,7 +128179,7 @@
           "id": 4,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128189,7 +128195,7 @@
           "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128205,7 +128211,7 @@
           "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128221,7 +128227,7 @@
           "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128237,7 +128243,7 @@
           "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -128265,7 +128271,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -128281,7 +128287,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -128297,7 +128303,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 25,
@@ -128337,7 +128343,7 @@
           "id": 3,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128359,7 +128365,7 @@
           "id": 4,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128381,7 +128387,7 @@
           "id": 5,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128397,7 +128403,7 @@
           "id": 6,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128413,7 +128419,7 @@
           "id": 7,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 3,
+            "frameDurationTicks": 4,
             "sprites": [
               {
                 "x": 1,
@@ -128429,7 +128435,7 @@
           "id": 8,
           "animation": {
             "bitmap": "../../characters/rick.png",
-            "speed": 5,
+            "frameDurationTicks": 6,
             "sprites": [
               {
                 "x": 1,
@@ -128457,7 +128463,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/shoot/shoot.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -128473,7 +128479,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/shoot/shoot.png",
-            "speed": 1,
+            "frameDurationTicks": 2,
             "sprites": [
               {
                 "x": 1,
@@ -128501,7 +128507,7 @@
           "id": 0,
           "animation": {
             "bitmap": "../../designs/bomb/bomb.png",
-            "speed": 0,
+            "frameDurationTicks": 1,
             "sprites": [
               {
                 "x": 1,
@@ -128517,7 +128523,7 @@
           "id": 1,
           "animation": {
             "bitmap": "../../designs/bomb/bomb.png",
-            "speed": 11,
+            "frameDurationTicks": 12,
             "sprites": [
               {
                 "x": 1,
@@ -128563,7 +128569,7 @@
           "id": 2,
           "animation": {
             "bitmap": "../../designs/bomb/bomb.png",
-            "speed": 4,
+            "frameDurationTicks": 5,
             "sprites": [
               {
                 "x": 1,

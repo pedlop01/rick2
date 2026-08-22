@@ -111,6 +111,7 @@ def convert(project_root, tmx_path, level_dir, config_path):
         "formatVersion": FORMAT_VERSION,
         "kind": "rick2.level",
         "id": level_dir.name,
+        "units": config["units"],
         "map": {
             "width": imported_map["width"],
             "height": imported_map["height"],

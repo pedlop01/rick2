@@ -45,8 +45,8 @@ class Action {
   private:
    int   direction;
    int   desp;
-   int   wait;
-   float speed;
+   int   wait_ticks;
+   float speed_pixels_per_tick;
    bool  enabled;
    int   condition;
 
@@ -58,8 +58,8 @@ class Action {
 
     int   GetDirection() { return direction; }
     int   GetDesp()      { return desp;      }
-    int   GetWait()      { return wait;      }
-    float GetSpeed()     { return speed;     }
+    int   GetWaitTicks()          { return wait_ticks;            }
+    float GetSpeedPixelsPerTick() { return speed_pixels_per_tick; }
     int   GetCondition() { return condition; }
 
     // It is possible to make an object inactive through an action,

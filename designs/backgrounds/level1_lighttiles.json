@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/backgrounds/level1_background.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 1,
@@ -23,7 +23,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../designs/backgrounds/level1_background.png",
-        "speed": 10,
+        "frameDurationTicks": 11,
         "sprites": [
           {
             "x": 1,

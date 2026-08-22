@@ -4,11 +4,22 @@
   "title": "Rick2 canonical level package",
   "type": "object",
   "additionalProperties": false,
-  "required": ["formatVersion", "kind", "id", "display", "camera", "map", "entities", "player", "projectiles", "definitions", "audio"],
+  "required": ["formatVersion", "kind", "id", "units", "display", "camera", "map", "entities", "player", "projectiles", "definitions", "audio"],
   "properties": {
     "formatVersion": { "const": 1 },
     "kind": { "const": "rick2.level" },
     "id": { "$ref": "#/$defs/nonEmptyString" },
+    "units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulationTicksPerSecond", "duration", "distance", "speed"],
+      "properties": {
+        "simulationTicksPerSecond": { "const": 50 },
+        "duration": { "const": "ticks" },
+        "distance": { "const": "pixels" },
+        "speed": { "const": "pixelsPerTick" }
+      }
+    },
     "display": { "$ref": "#/$defs/viewport" },
     "camera": {
       "allOf": [
@@ -164,10 +175,10 @@
               "animation": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["bitmap", "speed", "sprites"],
+                "required": ["bitmap", "frameDurationTicks", "sprites"],
                 "properties": {
                   "bitmap": { "$ref": "#/$defs/nonEmptyString" },
-                  "speed": { "type": "integer", "minimum": 0 },
+                  "frameDurationTicks": { "type": "integer", "minimum": 1 },
                   "sprites": {
                     "type": "array",
                     "minItems": 1,

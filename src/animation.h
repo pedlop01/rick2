@@ -17,7 +17,7 @@ class Animation
   public:
     BitmapResource    source_bitmap;
     vector<sprite_ptr> sprites;
-    int                speed;    
+    unsigned int       frame_duration_ticks;
     int                current_anim;
     int                steps_in_anim;
 
@@ -25,7 +25,8 @@ class Animation
 	  Animation();    // class constructor
 	  ~Animation();   // class destructor
 
-    Animation(const BitmapResource& _source_bitmap, int _speed);
+    Animation(const BitmapResource& _source_bitmap,
+              unsigned int _frame_duration_ticks);
 
     void AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, int _width, int _height);
 

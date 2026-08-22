@@ -1,9 +1,10 @@
 #include "timer.h"
+#include "game_time.h"
 
 #include <thread>
 
 namespace {
-const std::chrono::milliseconds GAME_TIMESTEP(20);
+const std::chrono::milliseconds GAME_TIMESTEP(GameTime::MILLISECONDS_PER_TICK);
 const unsigned int MAX_CATCH_UP_TICKS = 5;
 }
 

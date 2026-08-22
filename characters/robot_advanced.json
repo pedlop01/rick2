@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 1,
@@ -23,7 +23,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 1,
+        "frameDurationTicks": 2,
         "sprites": [
           {
             "x": 1,
@@ -39,7 +39,7 @@
       "id": 2,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 5,
+        "frameDurationTicks": 6,
         "sprites": [
           {
             "x": 1,
@@ -67,7 +67,7 @@
       "id": 3,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,
@@ -89,7 +89,7 @@
       "id": 4,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,
@@ -105,7 +105,7 @@
       "id": 5,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,
@@ -121,7 +121,7 @@
       "id": 6,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,
@@ -137,7 +137,7 @@
       "id": 7,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,
@@ -153,7 +153,7 @@
       "id": 8,
       "animation": {
         "bitmap": "../characters/enemies.png",
-        "speed": 5,
+        "frameDurationTicks": 6,
         "sprites": [
           {
             "x": 1,

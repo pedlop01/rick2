@@ -3,15 +3,16 @@
 // class constructor
 Animation::Animation() {
   source_bitmap = nullptr;
-  speed = 0;
+  frame_duration_ticks = 1;
   prev_anim = 0;
   current_anim = 0;
   steps_in_anim = 0;
 }
 
-Animation::Animation(const BitmapResource& _source_bitmap, int _speed) {
+Animation::Animation(const BitmapResource& _source_bitmap,
+                     unsigned int _frame_duration_ticks) {
   source_bitmap = _source_bitmap;
-  speed = _speed;
+  frame_duration_ticks = _frame_duration_ticks;
   prev_anim = 0;
   current_anim = 0;
   steps_in_anim = 0;
@@ -34,7 +35,7 @@ void Animation::AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, 
 
 void Animation::AnimStep() {
   steps_in_anim++;
-  if (steps_in_anim > speed) {
+  if (steps_in_anim >= frame_duration_ticks) {
     prev_anim = current_anim;
     current_anim = (current_anim + 1) % sprites.size();
     steps_in_anim = 0;
@@ -42,7 +43,8 @@ void Animation::AnimStep() {
 }
 
 bool Animation::CompletedLastAnim() {
-  return ((steps_in_anim == speed) && (current_anim == (sprites.size() - 1)));
+  return ((steps_in_anim + 1 == frame_duration_ticks) &&
+          (current_anim == (sprites.size() - 1)));
 }
 
 void Animation::ResetAnim() {

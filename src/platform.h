@@ -57,7 +57,7 @@ class Platform : public Object {
 
     // Get currection direction of the platform based on current action
     int   GetDirection();
-    float GetSpeed();
+    float GetSpeedPixelsPerTick();
 
     void PlatformStep();
 

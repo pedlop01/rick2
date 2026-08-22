@@ -23,7 +23,7 @@ class TriggerTarget {
   private:
     Object* target;
 
-    int delay;
+    int delay_ticks;
     bool set_trigger;
     bool set_trigger_cond;
     bool triggered;
@@ -36,7 +36,7 @@ class TriggerTarget {
     ~TriggerTarget();
 
     Object* GetTarget()      { return target;           }
-    int GetDelay()           { return delay;            }
+    int GetDelayTicks()      { return delay_ticks;      }
     bool GetSetTrigger()     { return set_trigger;      }
     bool GetSetTriggerCond() { return set_trigger_cond; }
     bool GetTriggered()      { return triggered;        }

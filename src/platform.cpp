@@ -69,14 +69,14 @@ int Platform::GetDirection() {
   return (*current_action)->GetDirection();
 }
 
-float Platform::GetSpeed() {
+float Platform::GetSpeedPixelsPerTick() {
   if ((actions.size() == 0) ||
       (current_action == actions.end()) ||
       (state == OBJ_STATE_STOP)) {
     return 0.0;
   }
 
-  return (*current_action)->GetSpeed();
+  return (*current_action)->GetSpeedPixelsPerTick();
 }
 
 // REVISIT: same function than in Hazard. Maybe we can unify this code
@@ -142,7 +142,7 @@ void Platform::PlatformStep() {
 
   // Handle current actions
   Action* current_action_ptr = *current_action;
-  current_speed = current_action_ptr->GetSpeed();
+  current_speed = current_action_ptr->GetSpeedPixelsPerTick();
   //printf("platform dir=%d, desp=%d, wait=%d cond=%d desp=%d wait_time=%d\n",
   //  current_action_ptr->GetDirection(),
   //  current_action_ptr->GetDesp(),
@@ -154,7 +154,7 @@ void Platform::PlatformStep() {
   switch (current_action_ptr->GetDirection()) {    
     case OBJ_DIR_STOP:
       // only wait time can be used here
-      if (current_wait_time >= current_action_ptr->GetWait()) {
+      if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
         advance_action = true;
       }
       break;
@@ -171,7 +171,7 @@ void Platform::PlatformStep() {
           advance_action = true;
         }
       } else {
-        if (current_wait_time >= current_action_ptr->GetWait()) {
+        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
           advance_action = true;
         }
       }
@@ -189,7 +189,7 @@ void Platform::PlatformStep() {
           advance_action = true;
         }
       } else {        
-        if (current_wait_time >= current_action_ptr->GetWait()) {                    
+        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
           advance_action = true;
         }
       }

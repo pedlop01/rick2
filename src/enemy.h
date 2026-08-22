@@ -17,7 +17,7 @@ class Enemy : public Character {
     EnemyIA* ia;
     Colbox weightColExt;
 
-    int  steps_freezed;
+    unsigned int freeze_elapsed_ticks;
     bool freezed;
 
   private:
@@ -49,6 +49,7 @@ class Enemy : public Character {
     bool GetOverStairs();
     bool GetInFloor();
     bool GetFreezed() { return freezed; }
+    unsigned int GetFreezeElapsedTicks() { return freeze_elapsed_ticks; }
 
     EnemyIA* GetEnemyIA();
 };

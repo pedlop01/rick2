@@ -7,7 +7,7 @@
       "id": 0,
       "animation": {
         "bitmap": "../designs/blocks/level1_blocks.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 1,
@@ -23,7 +23,7 @@
       "id": 1,
       "animation": {
         "bitmap": "../designs/blocks/level1_blocks.png",
-        "speed": 0,
+        "frameDurationTicks": 1,
         "sprites": [
           {
             "x": 1,
@@ -39,7 +39,7 @@
       "id": 2,
       "animation": {
         "bitmap": "../designs/blocks/level1_blocks.png",
-        "speed": 3,
+        "frameDurationTicks": 4,
         "sprites": [
           {
             "x": 1,

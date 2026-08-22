@@ -176,7 +176,7 @@ void Hazard::HazardStep(World* map, Character* player) {
 
   // Handle current actions
   Action* current_action_ptr = *current_action;
-  current_speed = current_action_ptr->GetSpeed();
+  current_speed = current_action_ptr->GetSpeedPixelsPerTick();
   //printf("hazard dir=%d, desp=%d, wait=%d\n", current_action_ptr->GetDirection(), current_action_ptr->GetDesp(), current_action_ptr->GetWait());
   switch (current_action_ptr->GetDirection()) {    
     case OBJ_DIR_STOP:
@@ -184,7 +184,7 @@ void Hazard::HazardStep(World* map, Character* player) {
       visible = current_action_ptr->GetEnabled();      
       // Active and inactive stop actions enters here
       // only wait time can be used here
-      if (current_wait_time >= current_action_ptr->GetWait()) {
+      if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
         advance_action = true;
         // Also make hazard visible, as any change in action
         // requires it to be updated
@@ -205,7 +205,7 @@ void Hazard::HazardStep(World* map, Character* player) {
           advance_action = true;
         }
       } else {
-        if (current_wait_time >= current_action_ptr->GetWait()) {
+        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
           advance_action = true;
         }
       }
@@ -224,7 +224,7 @@ void Hazard::HazardStep(World* map, Character* player) {
           advance_action = true;
         }
       } else {        
-        if (current_wait_time >= current_action_ptr->GetWait()) {                    
+        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
           advance_action = true;
         }
       }

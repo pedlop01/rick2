@@ -5,7 +5,7 @@ TriggerTarget::TriggerTarget(Object* _target,
                               bool _set_trigger,
                               bool _set_trigger_cond) {
   target = _target;
-  delay = _delay;
+  delay_ticks = _delay;
   set_trigger = _set_trigger;
   set_trigger_cond = _set_trigger_cond;
   triggered = false;
@@ -138,7 +138,8 @@ void Trigger::TriggerStep(int _x, int _y, int _width, int _height,
     int num_target = 0;
     for (vector<TriggerTarget*>::iterator it = targets.begin(); it != targets.end(); it++) {
       Object* object = (*it)->GetTarget();
-      if ((steps >= targets[num_target]->GetDelay()) && !targets[num_target]->GetTriggered()) {
+      if ((steps >= targets[num_target]->GetDelayTicks()) &&
+          !targets[num_target]->GetTriggered()) {
         // Set trigger on for object. Objects shall put trigger to false once
         // the action has been taken. Note that, recursive triggers may keep setting
         // object trigger continously.

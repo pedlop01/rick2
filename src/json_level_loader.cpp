@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include "data_loading.h"
+#include "game_time.h"
 
 namespace {
 using json = nlohmann::json;
@@ -35,6 +36,15 @@ const json& Require(const json& object, const char* key, const char* file) {
 }
 
 void ValidatePackage(const json& package, const char* file) {
+  const json& units = Require(package, "units", file);
+  if (Require(units, "simulationTicksPerSecond", file).get<unsigned int>() !=
+          GameTime::TICKS_PER_SECOND ||
+      Require(units, "duration", file).get<std::string>() != "ticks" ||
+      Require(units, "distance", file).get<std::string>() != "pixels" ||
+      Require(units, "speed", file).get<std::string>() != "pixelsPerTick") {
+    throw DataLoadError(std::string("Invalid '") + file +
+                        "': unsupported gameplay units");
+  }
   const json& display = Require(package, "display", file);
   const json& camera = Require(package, "camera", file);
   if (Require(display, "width", file).get<int>() <= 0 ||
@@ -88,7 +98,10 @@ void ValidatePackage(const json& package, const char* file) {
                             definition.key() + "'");
       }
       const json& animation = Require(*state, "animation", file);
-      Require(animation, "bitmap", file); Require(animation, "speed", file);
+      Require(animation, "bitmap", file);
+      if (Require(animation, "frameDurationTicks", file).get<int>() <= 0)
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': animation duration must be positive");
       const json& sprites = Require(animation, "sprites", file);
       if (!sprites.is_array() || sprites.empty())
         throw DataLoadError(std::string("Invalid '") + file + "': animation without sprites");

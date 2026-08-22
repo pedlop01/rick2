@@ -52,8 +52,23 @@ int main() {
                        std::string::npos;
   }
   assert(duplicate_failed);
+
+  reordered["units"]["simulationTicksPerSecond"] = 60;
+  const char* incompatible_units_file = "/tmp/rick2-incompatible-units.json";
+  {
+    std::ofstream output(incompatible_units_file);
+    output << reordered;
+  }
+  bool incompatible_units_failed = false;
+  try { LoadLevelPackage(incompatible_units_file); }
+  catch (const DataLoadError& error) {
+    incompatible_units_failed = std::string(error.what()).find("gameplay units") !=
+                                std::string::npos;
+  }
+  assert(incompatible_units_failed);
   std::remove(reordered_file);
   std::remove(duplicate_file);
+  std::remove(incompatible_units_file);
 
   LoadLevelPackage("levels/level1/level.json");
   bool failed = false;

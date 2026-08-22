@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "enemy.h"
+#include "game_time.h"
 
 Camera::Camera() {
   pos_x = 0;
@@ -18,7 +19,6 @@ Camera::Camera() {
   screen = 0;
   current_camera_view = 0;
   prev_camera_view = 0;
-  steps_drawing = 0;
 }
 
 Camera::~Camera() {
@@ -411,7 +411,11 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
     if (enemy->GetState() != CHAR_STATE_DEAD) {
 
       ALLEGRO_BITMAP* enemy_bitmap = enemy->GetCurrentAnimationBitmap();
-      if(!enemy->GetFreezed() || ((steps_drawing % 4) == 0)) {
+      // Flash according to simulation ticks; extra renders of the same state
+      // cannot make the effect run faster.
+      if(!enemy->GetFreezed() ||
+         ((enemy->GetFreezeElapsedTicks() %
+           GameTime::ENEMY_FREEZE_FLASH_PERIOD_TICKS) == 0)) {
         al_draw_bitmap(enemy_bitmap,                       
                        enemy->GetPosX() - GetPosX(),
                        enemy->GetPosY() - GetPosY(),
@@ -517,7 +521,6 @@ void Camera::DrawScreen(World* world, Character* player, ALLEGRO_FONT *font) {
                         0, 0, GetDisplayConfig().width,
                         GetDisplayConfig().height, 0);
 
-  steps_drawing++;
 }
 
 void Camera::SetCameraView(CameraView* camera_view) {

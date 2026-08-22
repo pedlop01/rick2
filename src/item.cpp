@@ -1,4 +1,5 @@
 #include "item.h"
+#include "game_time.h"
 
 Item::Item() {
   steps_dying = 0;
@@ -55,7 +56,7 @@ void Item::UpdateFSMState(World* map) {
     case OBJ_STATE_DYING:
       steps_dying++;
       if(strcmp(name, "bonus") == 0) {
-        if (steps_dying >= 30) {   // REVISIT: hard-coded. I do not really know if it is good to have this as a parameter
+        if (steps_dying >= GameTime::BONUS_DISAPPEAR_DURATION_TICKS) {
           state = OBJ_STATE_DEAD;
         }
       } else {

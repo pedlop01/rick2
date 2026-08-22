@@ -1,4 +1,10 @@
 {
+  "units": {
+    "simulationTicksPerSecond": 50,
+    "duration": "ticks",
+    "distance": "pixels",
+    "speed": "pixelsPerTick"
+  },
   "display": {
     "width": 1280,
     "height": 960
