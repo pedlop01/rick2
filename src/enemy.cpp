@@ -48,7 +48,7 @@ Enemy::Enemy(const char* file,
 
 // class destructor
 Enemy::~Enemy() {  
-
+  delete ia;
 }
 
 void Enemy::CharacterStep(World* map, Character* player) {

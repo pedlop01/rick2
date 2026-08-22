@@ -1,0 +1,5 @@
+# Mesa/GLX keeps process-wide driver caches alive after Allegro destroys the
+# display under WSLg. These allocations do not originate in the game.
+leak:libGLX_mesa.so
+leak:libgallium
+leak:libGLX.so

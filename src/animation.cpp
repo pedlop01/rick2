@@ -2,6 +2,8 @@
 
 // class constructor
 Animation::Animation() {
+  source_bitmap = nullptr;
+  speed = 0;
   prev_anim = 0;
   current_anim = 0;
   steps_in_anim = 0;
@@ -23,7 +25,9 @@ Animation::~Animation()
     }
     sprites.clear();
 
-    al_destroy_bitmap(source_bitmap);
+    if (source_bitmap) {
+      al_destroy_bitmap(source_bitmap);
+    }
 }
 
 void Animation::AddSprite(ALLEGRO_BITMAP* _sprite_bitmap, int _x, int _y, int _width, int _height) {

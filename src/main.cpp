@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <cstdlib>
 #include <fstream>
 #include <vector>
+#include <memory>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
@@ -21,19 +23,43 @@
 
 using namespace std;
 
+namespace {
+class AllegroSystemGuard {
+ public:
+  AllegroSystemGuard() : initialized(false) {}
+  ~AllegroSystemGuard() {
+    if (initialized) {
+      al_uninstall_system();
+    }
+  }
+
+  void MarkInitialized() { initialized = true; }
+
+ private:
+  bool initialized;
+};
+}
+
 int main(int argc, char *argv[]) {
+  const bool resource_check = getenv("RICK2_RESOURCE_CHECK") != nullptr;
+  const char* smoke_ticks_value = getenv("RICK2_SMOKE_TEST_TICKS");
+  const unsigned int smoke_tick_limit = smoke_ticks_value
+                                            ? strtoul(smoke_ticks_value, nullptr, 10)
+                                            : 0;
+  unsigned int processed_ticks = 0;
+  AllegroSystemGuard allegro_system;
   // Allegro variables
-  ALLEGRO_DISPLAY*       display     = NULL;
-  ALLEGRO_BITMAP*        bitmap      = NULL;
-  ALLEGRO_EVENT_QUEUE*   event_queue = NULL;
-  ALLEGRO_SAMPLE*        sample      = NULL;
+  unique_ptr<ALLEGRO_DISPLAY, void(*)(ALLEGRO_DISPLAY*)> display(nullptr, al_destroy_display);
+  unique_ptr<ALLEGRO_BITMAP, void(*)(ALLEGRO_BITMAP*)> bitmap(nullptr, al_destroy_bitmap);
+  unique_ptr<ALLEGRO_FONT, void(*)(ALLEGRO_FONT*)> font(nullptr, al_destroy_font);
+  unique_ptr<ALLEGRO_EVENT_QUEUE, void(*)(ALLEGRO_EVENT_QUEUE*)> event_queue(nullptr, al_destroy_event_queue);
   ALLEGRO_MOUSE_STATE    mouse_state;
-  World*                 map_level1 = nullptr;
-  Player*                player = nullptr;
   Keyboard               keyboard;
   Camera                 camera;
   Timer                  timer;
   SoundHandler           sound_handler;
+  unique_ptr<World>      map_level1;
+  unique_ptr<Player>     player;
 
 
   // Check arguments
@@ -47,6 +73,7 @@ int main(int argc, char *argv[]) {
     printf("Error: failed to initialize allegro!\n");
     return -1;
   }
+  allegro_system.MarkInitialized();
 
   if(!al_install_keyboard()) {
     printf("Error: failed to initialize keyboard!\n");
@@ -59,7 +86,7 @@ int main(int argc, char *argv[]) {
   }
 
   al_set_new_display_flags(ALLEGRO_WINDOWED);
-  display = al_create_display(SCREEN_X, SCREEN_Y);
+  display.reset(al_create_display(SCREEN_X, SCREEN_Y));
   if(!display) {
     printf("Error: failed to create display!\n");
     return -1;
@@ -70,10 +97,14 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  bitmap = al_create_bitmap(SCREEN_X, SCREEN_Y);
+  if (resource_check) {
+    // Avoid attributing video-driver allocations to the game during LSan runs.
+    al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
+  }
+
+  bitmap.reset(al_create_bitmap(SCREEN_X, SCREEN_Y));
   if(!bitmap) {
     printf("Error: failed to create bitmap!\n");
-    al_destroy_display(display);
     return -1;
   }
 
@@ -85,7 +116,7 @@ int main(int argc, char *argv[]) {
   al_init_font_addon();       // initialize the font addon
   al_init_ttf_addon();        // initialize the ttf (True Type Font) addon
 
-  ALLEGRO_FONT *font = al_load_ttf_font("../fonts/verdana.ttf", 8,0 );
+  font.reset(al_load_ttf_font("../fonts/verdana.ttf", 8,0));
 
   if (!font) {
     printf("Error: Could not load 'pirulen.ttf'\n");
@@ -107,25 +138,25 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  al_set_target_bitmap(bitmap);
+  al_set_target_bitmap(bitmap.get());
   al_clear_to_color(al_map_rgb(0, 0, 0));
-  al_set_target_bitmap(al_get_backbuffer(display));
-  al_draw_bitmap(bitmap, 0, 0, 0);
+  al_set_target_bitmap(al_get_backbuffer(display.get()));
+  al_draw_bitmap(bitmap.get(), 0, 0, 0);
   al_flip_display();
 
-  event_queue = al_create_event_queue();
+  event_queue.reset(al_create_event_queue());
   if(!event_queue) {
     printf("Error: failted to create event_queue!\n");
     return -1;
   }
 
-  al_register_event_source(event_queue, al_get_keyboard_event_source());
+  al_register_event_source(event_queue.get(), al_get_keyboard_event_source());
 
   // Game initializations
   try {
-    map_level1 = new World("../levels/level1/level.json", &sound_handler, false);
-    camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1, bitmap);
-    player = new Player(GetPlayerDefinition().c_str());
+    map_level1.reset(new World("../levels/level1/level.json", &sound_handler, false));
+    camera.InitCamera(0, 0, CAMERA_X, CAMERA_Y, map_level1.get(), bitmap.get());
+    player.reset(new Player(GetPlayerDefinition().c_str()));
     player->RegisterCamera(&camera);
     player->RegisterSoundHandler(&sound_handler);
 
@@ -134,14 +165,16 @@ int main(int argc, char *argv[]) {
     sound_handler.PlayMusic(0);
   } catch (const DataLoadError& error) {
     fprintf(stderr, "Game data error: %s\n", error.what());
-    delete player;
-    delete map_level1;
     return -1;
   } catch (const std::exception& error) {
     fprintf(stderr, "Invalid JSON game data: %s\n", error.what());
-    delete player;
-    delete map_level1;
     return -1;
+  }
+
+  // Allow automated resource checks to load and destroy the complete game
+  // state without depending on a working graphical event loop.
+  if (resource_check) {
+    return 0;
   }
 
   // Start the fixed 50 Hz simulation clock after loading all resources.
@@ -151,9 +184,9 @@ int main(int argc, char *argv[]) {
   do {
     const unsigned int simulation_ticks = timer.WaitForSimulationTicks();
 
-    al_set_target_bitmap(bitmap);
+    al_set_target_bitmap(bitmap.get());
 
-    keyboard.ReadKeyboard(event_queue);
+    keyboard.ReadKeyboard(event_queue.get());
     
     // REVISIT: added mouse to combine creation with main game
     al_get_mouse_state(&mouse_state);
@@ -165,18 +198,20 @@ int main(int argc, char *argv[]) {
     for (unsigned int tick = 0; tick < simulation_ticks; ++tick) {
       // Perform a fixed-time step for the world and player. If rendering was
       // briefly delayed, process a bounded number of ticks to catch up.
-      map_level1->WorldStep(player);
-      player->CharacterStep(map_level1, keyboard);
+      map_level1->WorldStep(player.get());
+      player->CharacterStep(map_level1.get(), keyboard);
+      ++processed_ticks;
     }
 
     //printf("[Main] Camera positioning and drawing\n");
-    camera.CameraStep(map_level1, player, font);
+    camera.CameraStep(map_level1.get(), player.get(), font.get());
 
     // Move bitmap into display
-    al_set_target_bitmap(al_get_backbuffer(display));
-    al_draw_bitmap(bitmap, 0, 0, 0);    
+    al_set_target_bitmap(al_get_backbuffer(display.get()));
+    al_draw_bitmap(bitmap.get(), 0, 0, 0);
     al_flip_display();
+    if (smoke_tick_limit && processed_ticks >= smoke_tick_limit) {
+      break;
+    }
   } while(true);
-
-  al_destroy_display(display);
 }

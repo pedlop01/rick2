@@ -2,10 +2,30 @@
 
 SoundHandler::SoundHandler() {
   playing_music_id = 0;
+  for (int index = 0; index < NUM_SONGS; ++index) {
+    music[index] = nullptr;
+    music_instance[index] = nullptr;
+  }
+  for (int index = 0; index < NUM_FXS; ++index) {
+    fx[index] = nullptr;
+  }
 }
 
 SoundHandler::~SoundHandler() {
-
+  for (int index = 0; index < NUM_SONGS; ++index) {
+    if (music_instance[index]) {
+      al_stop_sample_instance(music_instance[index]);
+      al_destroy_sample_instance(music_instance[index]);
+    }
+    if (music[index]) {
+      al_destroy_sample(music[index]);
+    }
+  }
+  for (int index = 0; index < NUM_FXS; ++index) {
+    if (fx[index]) {
+      al_destroy_sample(fx[index]);
+    }
+  }
 }
 
 void SoundHandler::InitializeSounds() {

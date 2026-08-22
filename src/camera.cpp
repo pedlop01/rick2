@@ -22,7 +22,9 @@ Camera::Camera() {
 }
 
 Camera::~Camera() {
-
+  if (camera_bitmap) {
+    al_destroy_bitmap(camera_bitmap);
+  }
 }
 
 void Camera::InitCamera(int _pos_x, int _pos_y, int _pixels_width, int _pixels_height, World* _map, ALLEGRO_BITMAP* _screen) {
@@ -52,6 +54,9 @@ void Camera::InitCamera(int _pos_x, int _pos_y, int _pixels_width, int _pixels_h
   // If bitmap exists, then destroy it first
   al_destroy_bitmap(camera_bitmap);
   camera_bitmap = al_create_bitmap(pixels_width, pixels_height);
+  if (!camera_bitmap) {
+    throw std::runtime_error("Failed to create camera bitmap");
+  }
 
   // Finally, link the screen bitmap
   screen = _screen;

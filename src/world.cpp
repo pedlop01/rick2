@@ -7,11 +7,17 @@
 
 // class constructor
 World::World()
+  : map_width(0), map_height(0), world_tiles(nullptr),
+    world_tiles_front(nullptr), current_checkpoint(nullptr),
+    target_checkpoints(nullptr), world_image(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 }
 
 World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOption)
+  : map_width(0), map_height(0), world_tiles(nullptr),
+    world_tiles_front(nullptr), current_checkpoint(nullptr),
+    target_checkpoints(nullptr), world_image(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 
@@ -115,16 +121,19 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 // class destructor
 World::~World()
 {
-  // Delete tiles
-//  for( int i = 0 ; i < tiles_m_y ; i++ ) {
-//    for( int j = 0 ; j < tiles_m_x ; j++ ) {
-//      delete tiles_mundo[i][j];
-//    }
-//    delete tiles_mundo[i];
-//  }
-//  delete tiles_mundo;
-//    
-//  al_destroy_bitmap(world_image);
+  for (int x = 0; x < map_width; ++x) {
+    for (int y = 0; y < map_height; ++y) {
+      delete world_tiles[x][y];
+      delete world_tiles_front[x][y];
+    }
+    delete[] world_tiles[x];
+    delete[] world_tiles_front[x];
+  }
+  delete[] world_tiles;
+  delete[] world_tiles_front;
+  if (world_image) {
+    al_destroy_bitmap(world_image);
+  }
 
   // Destroy platforms
   for (vector<Platform*>::iterator it = platforms.begin() ; it != platforms.end(); ++it) {
@@ -133,10 +142,19 @@ World::~World()
   for (list<Object*>::iterator it = objects.begin() ; it != objects.end(); ++it) {
       delete *it;
   }
+  for (list<Object*>::iterator it = back_objects.begin() ; it != back_objects.end(); ++it) {
+      delete *it;
+  }
   for (list<Block*>::iterator it = blocks.begin() ; it != blocks.end(); ++it) {
       delete *it;
   }
   for (list<Checkpoint*>::iterator it = checkpoints.begin() ; it != checkpoints.end(); ++it) {
+      delete *it;
+  }
+  for (list<Trigger*>::iterator it = triggers.begin() ; it != triggers.end(); ++it) {
+      delete *it;
+  }
+  for (vector<Character*>::iterator it = enemies.begin() ; it != enemies.end(); ++it) {
       delete *it;
   }
   for (vector<CameraView*>::iterator it = camera_views.begin() ; it != camera_views.end(); ++it) {

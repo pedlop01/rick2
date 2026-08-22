@@ -46,6 +46,18 @@ The current Makefile does not track header dependencies. Until the build system
 is modernized, use `make clean` after changing a header to avoid linking stale
 object files.
 
+To load and release all game resources without entering the graphical loop,
+run the sanitized binary from `bin/` with:
+
+```sh
+RICK2_RESOURCE_CHECK=1 \
+LSAN_OPTIONS=suppressions=../tests/lsan-wsl.supp \
+/tmp/rick2-sanitized
+```
+
+The suppression file only covers process-wide Mesa/GLX caches reported by WSLg;
+leaks originating in the game remain visible.
+
 The fixed-timestep clock has a standalone timing check:
 
 ```sh

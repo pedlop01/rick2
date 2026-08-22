@@ -981,15 +981,8 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
 }
 
 ALLEGRO_BITMAP* Character::GetCurrentAnimationBitmap() {
-  ALLEGRO_BITMAP* bitmap = animations[state]->source_bitmap;
-  // Set transparent color
-  al_convert_mask_to_alpha(bitmap, al_map_rgb(255,0,255));
-  sprite_ptr sprite = &(*animations[state]->sprites[animations[state]->GetCurrentAnim()]);
-  return al_create_sub_bitmap(bitmap,
-                              sprite->x,
-                              sprite->y,
-                              sprite->width,
-                              sprite->height);
+  sprite_ptr sprite = animations[state]->sprites[animations[state]->GetCurrentAnim()];
+  return sprite->GetBitmap();
 }
 
 int Character::GetCurrentAnimationBitmapAttributes() {
