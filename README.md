@@ -45,3 +45,11 @@ cd bin
 The current Makefile does not track header dependencies. Until the build system
 is modernized, use `make clean` after changing a header to avoid linking stale
 object files.
+
+The fixed-timestep clock has a standalone timing check:
+
+```sh
+g++ -std=c++11 -pthread tests/timer_test.cpp src/timer.cpp \
+  -o /tmp/rick2-timer-test
+/tmp/rick2-timer-test
+```

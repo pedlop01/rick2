@@ -1,9 +1,4 @@
-#ifdef __WIN32
-#include <windows.h>
-#endif
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <fstream>
 #include <vector>
 #include <allegro5/allegro.h>
@@ -133,15 +128,17 @@ int main(int argc, char *argv[]) {
   player->RegisterCamera(&camera);
   player->RegisterSoundHandler(&sound_handler);
 
-  // Start counter for first iteration
-  timer.StartCounter();
-
   // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
   sound_handler.InitializeSounds();
   sound_handler.PlayMusic(0);
 
+  // Start the fixed 50 Hz simulation clock after loading all resources.
+  timer.StartCounter();
+
   // Main loop
   do {
+    const unsigned int simulation_ticks = timer.WaitForSimulationTicks();
+
     al_set_target_bitmap(bitmap);
 
     keyboard.ReadKeyboard(event_queue);
@@ -153,35 +150,21 @@ int main(int argc, char *argv[]) {
 
     if(keyboard.PressedESC())   { return 0; }
 
-    // Perform an step of all elements belonging to the world level
-    //printf("[Main] World step\n");
-    map_level1->WorldStep(player);
-
-    // Handle player
-    //printf("[Main] Calling player step\n");
-    player->CharacterStep(map_level1, keyboard);
+    for (unsigned int tick = 0; tick < simulation_ticks; ++tick) {
+      // Perform a fixed-time step for the world and player. If rendering was
+      // briefly delayed, process a bounded number of ticks to catch up.
+      map_level1->WorldStep(player);
+      player->CharacterStep(map_level1, keyboard);
+    }
 
     //printf("[Main] Camera positioning and drawing\n");
     camera.CameraStep(map_level1, player, font);
-
-    // Check counter value for adding waiting time
-    double delay = timer.GetCounter();
-    if(delay < 20)
-#ifdef __WIN32
-      Sleep(20 - delay);
-#else
-      sleep(0.00002 - delay);
-#endif
 
     // Move bitmap into display
     al_set_target_bitmap(al_get_backbuffer(display));
     al_draw_bitmap(bitmap, 0, 0, 0);    
     al_flip_display();
-
-    // Start counter again for next iteration
-    timer.StartCounter();
   } while(true);
 
   al_destroy_display(display);
 }
-

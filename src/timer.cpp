@@ -1,46 +1,42 @@
-#include "timer.h" // class's header file
+#include "timer.h"
 
-// class constructor
-Timer::Timer() {
-  PCFreq = 0.0;
-  CounterStart = 0;
+#include <thread>
+
+namespace {
+const std::chrono::milliseconds GAME_TIMESTEP(20);
+const unsigned int MAX_CATCH_UP_TICKS = 5;
 }
 
-// class destructor
-Timer::~Timer() {
+Timer::Timer()
+  : timestep(GAME_TIMESTEP),
+    accumulator(Clock::duration::zero()),
+    previous_time(Clock::now()),
+    max_catch_up_ticks(MAX_CATCH_UP_TICKS) {
 }
 
-void Timer::StartCounter()
-{
-#ifdef __WIN32
-  LARGE_INTEGER li;
-  if(!QueryPerformanceFrequency(&li))
-    printf("QueryPerformanceFrequency failed!\n");
-
-  PCFreq = double(li.QuadPart)/1000.0;
-
-  QueryPerformanceCounter(&li);
-  CounterStart = li.QuadPart;
-#else
-  struct timespec gettime_now;
-  clock_gettime(CLOCK_REALTIME, &gettime_now);
-  CounterStart = gettime_now.tv_nsec;
-#endif
+void Timer::StartCounter() {
+  accumulator = Clock::duration::zero();
+  previous_time = Clock::now();
 }
 
-double Timer::GetCounter()
-{
-#ifdef __WIN32
-  LARGE_INTEGER li;
-  QueryPerformanceCounter(&li);
+unsigned int Timer::WaitForSimulationTicks() {
+  Clock::time_point now = Clock::now();
+  accumulator += now - previous_time;
+  previous_time = now;
 
-  return double(li.QuadPart-CounterStart)/PCFreq;
-#else
-  unsigned long time_difference;
-  struct timespec gettime_now;
-  clock_gettime(CLOCK_REALTIME, &gettime_now);
-  time_difference = gettime_now.tv_nsec - CounterStart;
+  while (accumulator < timestep) {
+    std::this_thread::sleep_for(timestep - accumulator);
+    now = Clock::now();
+    accumulator += now - previous_time;
+    previous_time = now;
+  }
 
-  return (time_difference / 1000000000);
-#endif
+  const Clock::duration max_accumulator = timestep * max_catch_up_ticks;
+  if (accumulator > max_accumulator) {
+    accumulator = max_accumulator;
+  }
+
+  const unsigned int ticks = static_cast<unsigned int>(accumulator / timestep);
+  accumulator -= timestep * ticks;
+  return ticks;
 }

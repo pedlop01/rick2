@@ -1,29 +1,26 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#ifdef __WIN32
-#include <windows.h>
-#else
-#include <time.h>
-#endif
-#include <stdio.h>
+#include <chrono>
 
-typedef class Timer* timer_ptr; 
 class Timer {
-  private:    
-    double PCFreq;
-#ifdef __WIN32
-    __int64 CounterStart;
-#else
-    unsigned long CounterStart;
-#endif
+  private:
+    typedef std::chrono::steady_clock Clock;
 
-  public:    
-	  Timer();    // class constructor	    
-	  ~Timer();   // class desructor
+    Clock::duration timestep;
+    Clock::duration accumulator;
+    Clock::time_point previous_time;
+    unsigned int max_catch_up_ticks;
 
-    void   StartCounter();
-    double GetCounter();
+  public:
+    Timer();
+
+    void StartCounter();
+
+    // Wait until at least one fixed simulation tick is available and return
+    // how many ticks must be processed. Long stalls are capped so the game
+    // cannot enter an unbounded catch-up loop.
+    unsigned int WaitForSimulationTicks();
 };
 
 #endif // TIMER_H
