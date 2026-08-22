@@ -314,7 +314,9 @@ bool Character::ComputeCollisionBlocks(World* map) {
       // Take first block with collision
       break;
     }
-  } 
+  }
+
+  return blockCollisionLeft || blockCollisionRight;
 }
 
 void Character::GetCollisionsByCoords(World* map, Colbox &mask_col, int left_up_x, int left_up_y, int right_down_x, int right_down_y) {

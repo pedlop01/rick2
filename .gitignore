@@ -1,0 +1,9 @@
+# Local build artifacts
+/bin/*.o
+/bin/*.d
+/bin/rick2
+
+# Crash and sanitizer artifacts
+core
+core.*
+*.log

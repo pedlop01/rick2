@@ -183,7 +183,7 @@ class Object {
     virtual void SetTrigger() {;};
     virtual void UnsetTrigger() {;};
 
-    virtual bool GetCondActions() {;}
+    virtual bool GetCondActions() { return false; }
     virtual void SetCondActions(bool _cond_action) {;};
 
     void SetX(int _x)              { x = _x;              };
@@ -209,7 +209,7 @@ class Object {
     bool GetVisible() { return visible;                         };
     bool GetActive()  { return active;                          };
 
-    virtual int GetTypeId() {;};
+    virtual int GetTypeId() { return -1; };
 
     void SetSpeedX(float _speed_x)          { speed_x = _speed_x;           };
     void SetSpeedXMax(float _speed_x_max)   { speed_x_max = _speed_x_max;   };

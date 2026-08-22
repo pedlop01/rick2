@@ -51,13 +51,13 @@ class Tile
         }
         ~Tile() { ; }
         
-        int  SetLeftUpX(int x)         { left_up_x = x;        }
+        void SetLeftUpX(int x)         { left_up_x = x;        }
         int  GetLeftUpX()              { return left_up_x;     }
-        int  SetLeftUpY(int y)         { left_up_y = y;        }
+        void SetLeftUpY(int y)         { left_up_y = y;        }
         int  GetLeftUpY()              { return left_up_y;     }
-        int  SetRightDownX(int x)      { right_down_x = x;     }
+        void SetRightDownX(int x)      { right_down_x = x;     }
         int  GetRightDownX()           { return right_down_x;  }
-        int  SetRightDownY(int y)      { right_down_y = y;     }        
+        void SetRightDownY(int y)      { right_down_y = y;     }
         int  GetRightDownY()           { return right_down_y;  }        
         int  GetValue()                { return value;         }
         void SetValue(int val)         { value = val;          }
