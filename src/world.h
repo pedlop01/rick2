@@ -27,6 +27,7 @@
 #include "bomb.h"
 #include "character.h"
 #include "sound_handler.h"
+#include "tile_bounds.h"
 
 using namespace std;
 
@@ -45,10 +46,9 @@ class Tile
         int type;        
 
     public:
-        Tile() {
-          value = 0;
-          type = 0;
-        }
+        Tile()
+          : left_up_x(0), left_up_y(0), right_down_x(0), right_down_y(0),
+            value(0), type(0) { }
         ~Tile() { ; }
         
         void SetLeftUpX(int x)         { left_up_x = x;        }
@@ -82,6 +82,8 @@ class World
 
         Tile    ***world_tiles;
         Tile    ***world_tiles_front;
+        Tile    empty_tile;
+        Tile    boundary_tile;
 
         // Platforms belonging to this level
         vector<Platform*> platforms;

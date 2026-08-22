@@ -8,10 +8,13 @@
 // class constructor
 World::World()
 {
+  boundary_tile.SetType(TILE_COL);
 }
 
 World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOption)
 {
+  boundary_tile.SetType(TILE_COL);
+
   // REVISIT: need to read collision map
   char aux_file[100];
   char tileset_file[100];
@@ -1051,29 +1054,49 @@ int World::GetTilesetTileHeight() {
 }
 
 Tile* World::GetTile(int x, int y) {
+  if (!IsTileIndexInBounds(x, y, map_width, map_height)) {
+    return &empty_tile;
+  }
   return world_tiles[x][y];
 }
 
 Tile* World::GetTileFront(int x, int y) {
+  if (!IsTileIndexInBounds(x, y, map_width, map_height)) {
+    return &empty_tile;
+  }
   return world_tiles_front[x][y];
 }
 
 bool World::IsTileCollisionable(int x, int y) {
+  if (!IsTileIndexInBounds(x, y, map_width, map_height)) {
+    return true;
+  }
   return (world_tiles[x][y]->GetType() == TILE_COL);
 }
 
 bool World::IsTileCollisionableDown(int x, int y) {
+  if (!IsTileIndexInBounds(x, y, map_width, map_height)) {
+    return true;
+  }
   return ((world_tiles[x][y]->GetType() == TILE_COL) ||
           (world_tiles[x][y]->GetType() == TILE_COL_DOWN) ||
           (world_tiles[x][y]->GetType() == TILE_STAIRS_TOP));
 }
 
 int World::GetTileValue(int x, int y) {
+  if (!IsTileIndexInBounds(x, y, map_width, map_height)) {
+    return empty_tile.GetValue();
+  }
   return world_tiles[x][y]->GetValue();
 }
 
 int World::GetTileValueByCoord(int x, int y)
 {
+  if (!IsWorldCoordinateInBounds(x, y, map_width, map_height,
+                                 tileset_tile_width, tileset_tile_height)) {
+    return empty_tile.GetValue();
+  }
+
   int tile_x = x / tileset_tile_width;
   int tile_y = y / tileset_tile_height;
 
@@ -1082,6 +1105,11 @@ int World::GetTileValueByCoord(int x, int y)
 
 Tile* World::GetTileByCoord(int x, int y)
 {
+  if (!IsWorldCoordinateInBounds(x, y, map_width, map_height,
+                                 tileset_tile_width, tileset_tile_height)) {
+    return &boundary_tile;
+  }
+
   int tile_x = x / tileset_tile_width;
   int tile_y = y / tileset_tile_height;
 

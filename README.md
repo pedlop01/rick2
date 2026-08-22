@@ -62,3 +62,12 @@ g++ -std=c++11 tests/container_utils_test.cpp \
   -o /tmp/rick2-container-utils-test
 /tmp/rick2-container-utils-test
 ```
+
+Tile-boundary checks, including negative coordinates and both upper limits, have
+a standalone regression test:
+
+```sh
+g++ -std=c++11 tests/tile_bounds_test.cpp \
+  -o /tmp/rick2-tile-bounds-test
+/tmp/rick2-tile-bounds-test
+```
