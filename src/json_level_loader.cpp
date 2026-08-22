@@ -1,6 +1,7 @@
 #include "json_level_loader.h"
 #include <fstream>
 #include <map>
+#include <set>
 #include "data_loading.h"
 
 namespace {
@@ -74,8 +75,18 @@ void ValidatePackage(const json& package, const char* file) {
     const json& states = Require(definition.value(), "states", file);
     if (!states.is_array() || states.empty())
       throw DataLoadError(std::string("Invalid '") + file + "': definition without states");
+    std::set<int> state_ids;
+    std::set<std::string> state_names;
     for (json::const_iterator state = states.begin(); state != states.end(); ++state) {
-      Require(*state, "name", file); Require(*state, "id", file);
+      const std::string state_name = Require(*state, "name", file).get<std::string>();
+      const int state_id = Require(*state, "id", file).get<int>();
+      if (state_name.empty() || state_id < 0 ||
+          !state_ids.insert(state_id).second ||
+          !state_names.insert(state_name).second) {
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': duplicate or invalid animation state in '" +
+                            definition.key() + "'");
+      }
       const json& animation = Require(*state, "animation", file);
       Require(animation, "bitmap", file); Require(animation, "speed", file);
       const json& sprites = Require(animation, "sprites", file);

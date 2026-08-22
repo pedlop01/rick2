@@ -20,7 +20,7 @@
     },
     {
       "name": "CHAR_STATE_MOVING",
-      "id": 2,
+      "id": 1,
       "animation": {
         "bitmap": "../characters/enemies.png",
         "speed": 3,

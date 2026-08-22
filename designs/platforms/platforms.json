@@ -20,7 +20,7 @@
     },
     {
       "name": "OBJ_STATE_MOVING",
-      "id": 0,
+      "id": 1,
       "animation": {
         "bitmap": "../designs/platforms/platforms.png",
         "speed": 0,

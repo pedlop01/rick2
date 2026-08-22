@@ -100,10 +100,6 @@ Character::Character(const char* file) {
   // Initialize animations directly from the canonical JSON package.
   const nlohmann::json& definition = GetAnimationDefinition(file);
 
-  // REVISIT: states are taking in order from the file. It would be better to find
-  // a way to insert them by id instead. However, giving an id to the xml
-  // state also requires synchronizing with the state id in the code.
-
   printf("- Initializing player:\n");
   // Iterate over states
   int num_anims = 0;
@@ -153,15 +149,20 @@ Character::Character(const char* file) {
                              sprite_height);      
       num_sprites++;
     }
-    animations.push_back(player_anim);
+    const int state_id = state->at("id").get<int>();
+    if (!animations.insert(std::make_pair(state_id, player_anim)).second) {
+      delete player_anim;
+      throw DataLoadError(std::string("Duplicate animation state id in '") +
+                          file + "'");
+    }
     num_anims++;
   }
 }
 
 // class destructor
 Character::~Character() {  
-  for(vector<Animation*>::iterator it = animations.begin(); it != animations.end(); ++it) {
-    delete (*it);
+  for(map<int, Animation*>::iterator it = animations.begin(); it != animations.end(); ++it) {
+    delete it->second;
   }
 }
 
@@ -968,9 +969,9 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
   // Compute next animation frame
   //printf("[CharacterStep] ComputeNextAnimation\n");
   if (direction == CHAR_DIR_STOP)
-    animations[state]->ResetAnim();
+    AnimationForState(state)->ResetAnim();
   else if (state != CHAR_STATE_DEAD)
-    animations[state]->AnimStep();
+    AnimationForState(state)->AnimStep();
 
   // Animation scaling factor is only used when dying
   if (state == CHAR_STATE_DYING)
@@ -982,7 +983,8 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
 }
 
 ALLEGRO_BITMAP* Character::GetCurrentAnimationBitmap() {
-  sprite_ptr sprite = animations[state]->sprites[animations[state]->GetCurrentAnim()];
+  Animation* animation = AnimationForState(state);
+  sprite_ptr sprite = animation->sprites[animation->GetCurrentAnim()];
   return sprite->GetBitmap();
 }
 
@@ -994,11 +996,22 @@ int Character::GetCurrentAnimationBitmapAttributes() {
 }
 
 int Character::GetCurrentAnimationWidth() {
-  return animations[state]->sprites[animations[state]->GetCurrentAnim()]->width;
+  Animation* animation = AnimationForState(state);
+  return animation->sprites[animation->GetCurrentAnim()]->width;
 }
 
 int Character::GetCurrentAnimationHeight() {
-  return animations[state]->sprites[animations[state]->GetCurrentAnim()]->height;
+  Animation* animation = AnimationForState(state);
+  return animation->sprites[animation->GetCurrentAnim()]->height;
+}
+
+Animation* Character::AnimationForState(int state_id) const {
+  map<int, Animation*>::const_iterator animation = animations.find(state_id);
+  if (animation == animations.end() || !animation->second) {
+    throw DataLoadError("Missing character animation for state " +
+                        std::to_string(state_id));
+  }
+  return animation->second;
 }
 
 float Character::GetCurrentAnimationScalingFactor() {

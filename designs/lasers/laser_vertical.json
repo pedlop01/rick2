@@ -36,7 +36,7 @@
     },
     {
       "name": "OBJ_STATE_DYING",
-      "id": 1,
+      "id": 2,
       "animation": {
         "bitmap": "../designs/lasers/lasers.png",
         "speed": 2,

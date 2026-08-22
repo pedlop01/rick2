@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <vector>
+#include <map>
 
 #include "rick_params.h"
 #include "world.h"
@@ -100,7 +101,9 @@ class Character {
 
 
     // Animations
-    vector<Animation*> animations;
+    map<int, Animation*> animations;
+
+    Animation* AnimationForState(int state_id) const;
 
     // Camera pointer
     // - Needed to localize rick in the screen. Used for some animations.

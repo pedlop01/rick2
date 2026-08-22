@@ -32,7 +32,7 @@
     },
     {
       "name": "OBJ_STATE_MOVING",
-      "id": 0,
+      "id": 1,
       "animation": {
         "bitmap": "../designs/items/items.png",
         "speed": 4,
@@ -60,7 +60,7 @@
     },
     {
       "name": "OBJ_STATE_DYING",
-      "id": 0,
+      "id": 2,
       "animation": {
         "bitmap": "../designs/items/items.png",
         "speed": 6,

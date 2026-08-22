@@ -126552,7 +126552,7 @@
         },
         {
           "name": "OBJ_STATE_MOVING",
-          "id": 0,
+          "id": 1,
           "animation": {
             "bitmap": "../../designs/platforms/platforms.png",
             "speed": 0,
@@ -126602,7 +126602,7 @@
         },
         {
           "name": "OBJ_STATE_MOVING",
-          "id": 0,
+          "id": 1,
           "animation": {
             "bitmap": "../../designs/items/items.png",
             "speed": 4,
@@ -126630,7 +126630,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 0,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/items/items.png",
             "speed": 6,
@@ -127138,7 +127138,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 3,
@@ -127216,7 +127216,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/blocks/level1_blocks.png",
             "speed": 3,
@@ -127296,7 +127296,7 @@
         },
         {
           "name": "OBJ_STATE_MOVING",
-          "id": 0,
+          "id": 1,
           "animation": {
             "bitmap": "../../designs/hazards/hazards.png",
             "speed": 1,
@@ -127460,7 +127460,7 @@
         },
         {
           "name": "CHAR_STATE_MOVING",
-          "id": 2,
+          "id": 1,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -127526,7 +127526,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
@@ -127604,7 +127604,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
@@ -127682,7 +127682,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/lasers/lasers.png",
             "speed": 2,
@@ -127826,7 +127826,7 @@
         },
         {
           "name": "CHAR_STATE_SHOOTING",
-          "id": 4,
+          "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -127842,7 +127842,7 @@
         },
         {
           "name": "CHAR_STATE_BOMBING",
-          "id": 4,
+          "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -127858,7 +127858,7 @@
         },
         {
           "name": "CHAR_STATE_HITTING",
-          "id": 4,
+          "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -127874,7 +127874,7 @@
         },
         {
           "name": "CHAR_STATE_DYING",
-          "id": 5,
+          "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 5,
@@ -128006,7 +128006,7 @@
         },
         {
           "name": "CHAR_STATE_SHOOTING",
-          "id": 4,
+          "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128022,7 +128022,7 @@
         },
         {
           "name": "CHAR_STATE_BOMBING",
-          "id": 4,
+          "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128038,7 +128038,7 @@
         },
         {
           "name": "CHAR_STATE_HITTING",
-          "id": 4,
+          "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128054,7 +128054,7 @@
         },
         {
           "name": "CHAR_STATE_DYING",
-          "id": 5,
+          "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 5,
@@ -128186,7 +128186,7 @@
         },
         {
           "name": "CHAR_STATE_SHOOTING",
-          "id": 4,
+          "id": 5,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128202,7 +128202,7 @@
         },
         {
           "name": "CHAR_STATE_BOMBING",
-          "id": 4,
+          "id": 6,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128218,7 +128218,7 @@
         },
         {
           "name": "CHAR_STATE_HITTING",
-          "id": 4,
+          "id": 7,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 3,
@@ -128234,7 +128234,7 @@
         },
         {
           "name": "CHAR_STATE_DYING",
-          "id": 5,
+          "id": 8,
           "animation": {
             "bitmap": "../../characters/enemies.png",
             "speed": 5,
@@ -128378,7 +128378,7 @@
         },
         {
           "name": "RICK_STATE_SHOOTING",
-          "id": 4,
+          "id": 5,
           "animation": {
             "bitmap": "../../characters/rick.png",
             "speed": 3,
@@ -128394,7 +128394,7 @@
         },
         {
           "name": "RICK_STATE_BOMBING",
-          "id": 4,
+          "id": 6,
           "animation": {
             "bitmap": "../../characters/rick.png",
             "speed": 3,
@@ -128410,7 +128410,7 @@
         },
         {
           "name": "RICK_STATE_HITTING",
-          "id": 4,
+          "id": 7,
           "animation": {
             "bitmap": "../../characters/rick.png",
             "speed": 3,
@@ -128426,7 +128426,7 @@
         },
         {
           "name": "RICK_STATE_DYING",
-          "id": 5,
+          "id": 8,
           "animation": {
             "bitmap": "../../characters/rick.png",
             "speed": 5,
@@ -128514,7 +128514,7 @@
         },
         {
           "name": "OBJ_STATE_MOVING",
-          "id": 15,
+          "id": 1,
           "animation": {
             "bitmap": "../../designs/bomb/bomb.png",
             "speed": 11,
@@ -128560,7 +128560,7 @@
         },
         {
           "name": "OBJ_STATE_DYING",
-          "id": 1,
+          "id": 2,
           "animation": {
             "bitmap": "../../designs/bomb/bomb.png",
             "speed": 4,

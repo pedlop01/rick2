@@ -150,7 +150,7 @@ void Hazard::HazardStep(World* map, Character* player) {
       completed_trigger = false;
     } else {
       // No actions for this hazard. However, need to move animation if present        
-      animations[state]->AnimStep();
+      AnimationForState(state)->AnimStep();
       return;
     }
   }
@@ -234,7 +234,7 @@ void Hazard::HazardStep(World* map, Character* player) {
   }
 
   // Move animations
-  animations[state]->AnimStep();
+  AnimationForState(state)->AnimStep();
 
   if (advance_action) {
     current_action++;

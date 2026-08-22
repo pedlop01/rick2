@@ -16,14 +16,14 @@ void StaticObject::Init(const char* _file, int _x, int _y, int _width, int _heig
   Object::Init(_file, _x, _y, _width, _height, true, true, OBJ_STATE_MOVING, OBJ_DIR_RIGHT, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
   // Advance some animation frames based on _anim_step
   for(int i = 0; i < _anim_step; i++)
-    animations[state]->AnimStep();
+    AnimationForState(state)->AnimStep();
 }
 
 void StaticObject::StaticObjectStep() {
   if (state != OBJ_STATE_DEAD) {
     if (direction == OBJ_DIR_STOP)
-      animations[state]->ResetAnim();
+      AnimationForState(state)->ResetAnim();
     else
-      animations[state]->AnimStep();
+      AnimationForState(state)->AnimStep();
   }
 }

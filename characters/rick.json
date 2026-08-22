@@ -120,7 +120,7 @@
     },
     {
       "name": "RICK_STATE_SHOOTING",
-      "id": 4,
+      "id": 5,
       "animation": {
         "bitmap": "../characters/rick.png",
         "speed": 3,
@@ -136,7 +136,7 @@
     },
     {
       "name": "RICK_STATE_BOMBING",
-      "id": 4,
+      "id": 6,
       "animation": {
         "bitmap": "../characters/rick.png",
         "speed": 3,
@@ -152,7 +152,7 @@
     },
     {
       "name": "RICK_STATE_HITTING",
-      "id": 4,
+      "id": 7,
       "animation": {
         "bitmap": "../characters/rick.png",
         "speed": 3,
@@ -168,7 +168,7 @@
     },
     {
       "name": "RICK_STATE_DYING",
-      "id": 5,
+      "id": 8,
       "animation": {
         "bitmap": "../characters/rick.png",
         "speed": 5,

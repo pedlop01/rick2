@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <vector>
+#include <map>
 
 #include "rick_params.h"
 #include "animation.h"
@@ -146,7 +147,9 @@ class Object {
     Object*    itemColPtr;
     Enemy*     enemyPtr;
 
-    vector<Animation*> animations;
+    map<int, Animation*> animations;
+
+    Animation* AnimationForState(int state_id) const;
 
     SoundHandler* sound_handler;
 

@@ -128,8 +128,8 @@ Object::Object(int _x, int _y, int _width, int _height, int _visible, int _activ
 }
 
 Object::~Object() {
-  for(vector<Animation*>::iterator it = animations.begin(); it != animations.end(); it++) {
-    delete *it;
+  for(map<int, Animation*>::iterator it = animations.begin(); it != animations.end(); ++it) {
+    delete it->second;
   }
   animations.clear();
   printf("Object destructor\n");
@@ -239,7 +239,12 @@ void Object::Init(const char* file,
 
       num_sprites++;
     }
-    animations.push_back(obj_anim);
+    const int state_id = state->at("id").get<int>();
+    if (!animations.insert(std::make_pair(state_id, obj_anim)).second) {
+      delete obj_anim;
+      throw DataLoadError(std::string("Duplicate animation state id in '") +
+                          file + "'");
+    }
     num_anims++;
   }
 
@@ -807,19 +812,29 @@ void Object::ObjectStep(World* map, Character* player) {
 //  printf("[Object] ComputeAnimationStep\n");
   if (state != OBJ_STATE_DEAD) {
     if ((prev_direction != direction) && (direction == OBJ_DIR_STOP) && (obj_type != OBJ_BOMB))  // BOMBs are an exception!
-      animations[state]->ResetAnim();
+      AnimationForState(state)->ResetAnim();
     else
-      animations[state]->AnimStep();
+      AnimationForState(state)->AnimStep();
   }
 }
 
 Animation* Object::GetCurrentAnimation() {
-  return animations[state];
+  return AnimationForState(state);
 }
 
 ALLEGRO_BITMAP* Object::GetCurrentAnimationBitmap() {
-  sprite_ptr sprite = &(*animations[state]->sprites[animations[state]->GetCurrentAnim()]);
+  Animation* animation = AnimationForState(state);
+  sprite_ptr sprite = animation->sprites[animation->GetCurrentAnim()];
   return sprite->GetBitmap();
+}
+
+Animation* Object::AnimationForState(int state_id) const {
+  map<int, Animation*>::const_iterator animation = animations.find(state_id);
+  if (animation == animations.end() || !animation->second) {
+    throw DataLoadError("Missing object animation for state " +
+                        std::to_string(state_id));
+  }
+  return animation->second;
 }
 
 int Object::GetCurrentAnimationBitmapAttributes() {
