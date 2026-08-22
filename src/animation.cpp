@@ -9,7 +9,7 @@ Animation::Animation() {
   steps_in_anim = 0;
 }
 
-Animation::Animation(ALLEGRO_BITMAP* _source_bitmap, int _speed) {
+Animation::Animation(const BitmapResource& _source_bitmap, int _speed) {
   source_bitmap = _source_bitmap;
   speed = _speed;
   prev_anim = 0;
@@ -25,12 +25,9 @@ Animation::~Animation()
     }
     sprites.clear();
 
-    if (source_bitmap) {
-      al_destroy_bitmap(source_bitmap);
-    }
 }
 
-void Animation::AddSprite(ALLEGRO_BITMAP* _sprite_bitmap, int _x, int _y, int _width, int _height) {
+void Animation::AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, int _width, int _height) {
   sprite_ptr sprite = new Sprite(_sprite_bitmap, _x, _y, _width, _height);
   sprites.push_back(sprite);
 }

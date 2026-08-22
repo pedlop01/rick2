@@ -10,14 +10,6 @@ SoundHandler::~SoundHandler() {
       al_stop_sample_instance(music_instance[index]);
       al_destroy_sample_instance(music_instance[index]);
     }
-    if (music[index]) {
-      al_destroy_sample(music[index]);
-    }
-  }
-  for (std::size_t index = 0; index < fx.size(); ++index) {
-    if (fx[index]) {
-      al_destroy_sample(fx[index]);
-    }
   }
 }
 
@@ -27,15 +19,15 @@ void SoundHandler::InitializeSounds() {
   if (configured_music.empty()) {
     throw DataLoadError("Level audio must define at least one music track");
   }
-  music.assign(configured_music.size(), nullptr);
+  music.assign(configured_music.size(), SampleResource());
   music_instance.assign(configured_music.size(), nullptr);
   for (std::size_t index = 0; index < configured_music.size(); ++index) {
-    music[index] = al_load_sample(configured_music[index].c_str());
+    music[index] = ResourceCache::Instance().LoadSample(configured_music[index]);
     if (!music[index]) {
       throw DataLoadError(std::string("Cannot load audio '") +
                           configured_music[index] + "'");
     }
-    music_instance[index] = al_create_sample_instance(music[index]);
+    music_instance[index] = al_create_sample_instance(music[index].get());
     if (!music_instance[index] ||
         !al_attach_sample_instance_to_mixer(music_instance[index],
                                             al_get_default_mixer())) {
@@ -46,11 +38,11 @@ void SoundHandler::InitializeSounds() {
   if (configured_effects.size() != 7) {
     throw DataLoadError("Level audio must define exactly 7 sound effects");
   }
-  fx.assign(configured_effects.size(), nullptr);
+  fx.assign(configured_effects.size(), SampleResource());
   fx_id.resize(configured_effects.size());
   for (int index = FX_WALK; index <= FX_EXPLOSION; ++index) {
     const char* effect_file = configured_effects[index].c_str();
-    fx[index] = al_load_sample(effect_file);
+    fx[index] = ResourceCache::Instance().LoadSample(effect_file);
     if (!fx[index]) {
       throw DataLoadError(std::string("Cannot load audio '") +
                           effect_file + "'");
@@ -75,9 +67,9 @@ void SoundHandler::PlaySound(int id, bool loop) {
     return;
   }
   if (loop) {
-    al_play_sample(fx[id], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &fx_id[id]);
+    al_play_sample(fx[id].get(), 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &fx_id[id]);
   } else {
-    al_play_sample(fx[id], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &fx_id[id]);
+    al_play_sample(fx[id].get(), 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &fx_id[id]);
   }
 }
 

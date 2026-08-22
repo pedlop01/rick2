@@ -108,6 +108,16 @@ g++ -std=c++11 tests/json_level_loader_test.cpp \
 /tmp/rick2-json-loader-test
 ```
 
+The graphics resource cache has a standalone reuse check:
+
+```sh
+g++ -std=c++11 tests/resource_cache_test.cpp src/resource_cache.cpp \
+  -o /tmp/rick2-resource-cache-test \
+  $(pkg-config --cflags --libs allegro-5 allegro_image-5 \
+    allegro_audio-5 allegro_acodec-5)
+/tmp/rick2-resource-cache-test
+```
+
 The format and versioning policy are documented in `docs/LEVEL_FORMAT.md`; its
 machine-readable contract is `schema/level.schema.json`. Building requires the
 header-only `nlohmann/json` library (`nlohmann-json3-dev` on Debian/Ubuntu).

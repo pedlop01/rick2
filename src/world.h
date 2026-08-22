@@ -29,6 +29,7 @@
 #include "tile_bounds.h"
 #include "data_loading.h"
 #include "json_level_loader.h"
+#include "resource_cache.h"
 
 using namespace std;
 
@@ -112,7 +113,7 @@ class World
         bool shoot_exists;
         bool bomb_exists;
 
-        ALLEGRO_BITMAP* world_image;
+        BitmapResource world_image;
 
 	public:
 		World();                          // class constructor		
@@ -134,7 +135,7 @@ class World
         bool  IsTileCollisionable(int x, int y);
         bool  IsTileCollisionableDown(int x, int y);
 		
-		    ALLEGRO_BITMAP* GetWorldImage()  { return world_image;     }
+		    ALLEGRO_BITMAP* GetWorldImage()  { return world_image.get(); }
 		
 		    int   GetTileValueByCoord(int x, int y);
         Tile* GetTileByCoord(int x, int y);

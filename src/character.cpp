@@ -113,7 +113,7 @@ Character::Character(const char* file) {
     const std::string bitmap_file = animation.at("bitmap").get<std::string>();
     printf("\tAnimation %d: file = %s, speed = %d\n", num_anims,
            bitmap_file.c_str(), animation.at("speed").get<int>());
-    ALLEGRO_BITMAP* anim_bitmap = al_load_bitmap(bitmap_file.c_str());
+    BitmapResource anim_bitmap = ResourceCache::Instance().LoadBitmap(bitmap_file);
     if (!anim_bitmap) {
       throw DataLoadError(std::string("Cannot load animation bitmap '") +
                           bitmap_file +
@@ -135,13 +135,13 @@ Character::Character(const char* file) {
                                                                          sprite_width,
                                                                          sprite_height);
 
-      ALLEGRO_BITMAP* sprite_bitmap = al_create_sub_bitmap(anim_bitmap, sprite_x, sprite_y, sprite_width, sprite_height);
+      BitmapResource sprite_bitmap = ResourceCache::Instance().LoadSubBitmap(
+          bitmap_file, anim_bitmap, sprite_x, sprite_y, sprite_width,
+          sprite_height);
       if (!sprite_bitmap) {
         throw DataLoadError(std::string("Invalid sprite rectangle in '") +
                             file + "'");
       }
-      al_convert_mask_to_alpha(sprite_bitmap, al_map_rgb(255,0,255));
-
       player_anim->AddSprite(sprite_bitmap,
                              sprite_x,
                              sprite_y,

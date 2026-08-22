@@ -11,6 +11,7 @@
 #include "rick_params.h"
 #include "data_loading.h"
 #include "json_level_loader.h"
+#include "resource_cache.h"
 
 #define FX_WALK      0
 #define FX_SHOT      1
@@ -23,8 +24,8 @@
 class SoundHandler
 {
   private:
-    std::vector<ALLEGRO_SAMPLE*> music;
-    std::vector<ALLEGRO_SAMPLE*> fx;
+    std::vector<SampleResource> music;
+    std::vector<SampleResource> fx;
     std::vector<ALLEGRO_SAMPLE_INSTANCE*> music_instance;
     std::vector<ALLEGRO_SAMPLE_ID> fx_id;
 

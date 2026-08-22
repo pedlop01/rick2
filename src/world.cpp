@@ -9,7 +9,7 @@
 World::World()
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr), world_image(nullptr)
+    target_checkpoints(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 }
@@ -17,7 +17,7 @@ World::World()
 World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOption)
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr), world_image(nullptr)
+    target_checkpoints(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 
@@ -36,15 +36,13 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 
   printf("Tileset file = %s\n", tileset_file.c_str());
 
-  world_image = al_load_bitmap(tileset_file.c_str());
+  world_image = ResourceCache::Instance().LoadBitmap(tileset_file);
   if (!world_image) {
     throw DataLoadError(std::string("Cannot load tileset bitmap '") +
                         tileset_file + "'");
   }
 
   // Set transparent color for tileset
-  al_convert_mask_to_alpha(world_image, al_map_rgb(255,0,255));
-
   tileset_count = tileset.at("tileCount").get<int>();
   tileset_columns = tileset.at("columns").get<int>();
   tileset_tile_width = map.at("tileWidth").get<int>();
@@ -133,10 +131,6 @@ World::~World()
   }
   delete[] world_tiles;
   delete[] world_tiles_front;
-  if (world_image) {
-    al_destroy_bitmap(world_image);
-  }
-
   // Destroy platforms
   for (vector<Platform*>::iterator it = platforms.begin() ; it != platforms.end(); ++it) {
       delete *it;

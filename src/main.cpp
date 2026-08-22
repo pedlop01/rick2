@@ -38,6 +38,11 @@ class AllegroSystemGuard {
  private:
   bool initialized;
 };
+
+class ResourceCacheGuard {
+ public:
+  ~ResourceCacheGuard() { ResourceCache::Instance().Clear(); }
+};
 }
 
 int main(int argc, char *argv[]) {
@@ -59,6 +64,7 @@ int main(int argc, char *argv[]) {
   Camera                 camera;
   Timer                  timer;
   SoundHandler           sound_handler;
+  ResourceCacheGuard     resource_cache;
   unique_ptr<World>      world;
   unique_ptr<Player>     player;
 
@@ -177,6 +183,13 @@ int main(int argc, char *argv[]) {
     // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
     sound_handler.InitializeSounds();
     sound_handler.PlayMusic(GetInitialMusic());
+    const ResourceCacheStats cache_stats = ResourceCache::Instance().GetStats();
+    printf("Resource cache: %zu bitmap loads, %zu bitmap hits, "
+           "%zu sub-bitmap creations, %zu sub-bitmap hits, "
+           "%zu sample loads, %zu sample hits\n",
+           cache_stats.bitmap_loads, cache_stats.bitmap_hits,
+           cache_stats.sub_bitmap_creations, cache_stats.sub_bitmap_hits,
+           cache_stats.sample_loads, cache_stats.sample_hits);
   } catch (const DataLoadError& error) {
     fprintf(stderr, "Game data error: %s\n", error.what());
     return -1;

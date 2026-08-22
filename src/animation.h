@@ -15,7 +15,7 @@ class Animation
     int                prev_anim;
 
   public:
-    ALLEGRO_BITMAP*    source_bitmap;
+    BitmapResource    source_bitmap;
     vector<sprite_ptr> sprites;
     int                speed;    
     int                current_anim;
@@ -25,9 +25,9 @@ class Animation
 	  Animation();    // class constructor
 	  ~Animation();   // class destructor
 
-    Animation(ALLEGRO_BITMAP* _source_bitmap, int _speed);
+    Animation(const BitmapResource& _source_bitmap, int _speed);
 
-    void AddSprite(ALLEGRO_BITMAP* _sprite_bitmap, int _x, int _y, int _width, int _height);
+    void AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, int _width, int _height);
 
     void AnimStep();
     void ResetAnim();

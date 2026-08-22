@@ -17,6 +17,9 @@ Version 1 contains:
 
 Asset paths are relative to the package JSON, so levels can be loaded from a
 different location without depending on the process working directory.
+At runtime those resolved paths are also the stable keys of a session resource
+cache: identical bitmap, sprite-region and audio requests share one Allegro
+resource. A RAII guard empties the cache before Allegro shuts down.
 
 Animation states are selected by their explicit numeric `id`, never by their
 position in the `states` array. Both `id` and `name` must be unique within a
