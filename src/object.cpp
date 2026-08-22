@@ -62,6 +62,9 @@ Object::Object() {
   printf("Created object id = %d\n", obj_id);
   id++;
 
+  speed_x = 0.0;
+  speed_y = 0.0;
+
   initial_x = x;
   initial_y = y;
   initial_visible = visible;
@@ -71,8 +74,6 @@ Object::Object() {
   initial_speed_y = speed_y;
   initial_state = state;
 
-  speed_x = 0.0;
-  speed_y = 0.0;
 }
 
 Object::Object(int _x, int _y, int _width, int _height, int _visible, int _active) {
@@ -112,6 +113,9 @@ Object::Object(int _x, int _y, int _width, int _height, int _visible, int _activ
   printf("created obj id = %d\n", obj_id);
   id++;
 
+  speed_x = 0.0;
+  speed_y = 0.0;
+
   initial_x = x;
   initial_y = y;
   initial_visible = visible;
@@ -121,8 +125,6 @@ Object::Object(int _x, int _y, int _width, int _height, int _visible, int _activ
   initial_speed_y = speed_y;
   initial_state = state;
 
-  speed_x = 0.0;
-  speed_y = 0.0;
 }
 
 Object::~Object() {
@@ -174,6 +176,13 @@ void Object::Init(const char* file,
 
   this->SetSpeeds(_speed_x_max, _speed_x_min, _speed_x_step,
                   _speed_y_max, _speed_y_min, _speed_y_step);
+
+  // Objects start at rest. Store these values only after speed has been
+  // initialized so Reset() never restores indeterminate constructor data.
+  speed_x = 0.0;
+  speed_y = 0.0;
+  initial_speed_x = speed_x;
+  initial_speed_y = speed_y;
 
   // Read animations
   pugi::xml_parse_result result = obj_file.load_file(file);

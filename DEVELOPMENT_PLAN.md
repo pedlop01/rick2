@@ -30,6 +30,7 @@ comprobación para desarrollar, validar y hacer commits incrementales.
 | 12 | Expresar duraciones y velocidades independientemente del framerate | Alta | 1 | Pendiente | Animaciones, IA, triggers, muerte y efectos mantienen su duración al variar los FPS de renderizado; valores temporales tienen unidades documentadas. |
 | 13 | Separar herramientas de depuración de las reglas del juego | Media | 1 | Pendiente | Coordenadas del ratón, bounding boxes y activaciones de prueba se controlan mediante un modo de depuración y no alteran una partida normal. |
 | 14 | Migrar XML/TMX disperso a un formato JSON canónico y versionado | Alta | 7 | Pendiente | Existe JSON Schema, `formatVersion`, conversor desde los datos actuales y cargador JSON; el nivel 1 migrado conserva su contenido y comportamiento. |
+| 15 | Corregir el crash al morir por un láser | Crítica | 0 | Completada | La muerte causada por el láser de la primera escalera completa la animación y el respawn sin crash; el reset de láseres no restaura valores indeterminados y pasa las comprobaciones con optimización y sanitizers. |
 
 ## Orden recomendado
 
@@ -86,3 +87,4 @@ en su tarea correspondiente.
 | 2026-08-22 | 0 | Corregidos contratos sin retorno que provocaban `SIGTRAP` con el compilador actual; documentados build, ejecución y diagnóstico. | Build limpio y ASan/UBSan correctos; arranque automatizado y prueba manual de nivel, controles, cámara, colisiones y audio superados. | Commit de baseline funcional |
 | 2026-08-22 | 4, 5 | Completados los contratos virtuales, añadido `override`, convertidos `Object` y `Character` en bases con destrucción virtual y resuelto el método oculto de `Block`. | Build limpio y ASan/UBSan correctos; prueba manual del nivel, lanzamiento de bombas y destrucción de bloques superada. | Commit de contratos virtuales |
 | 2026-08-22 | 1 | Sustituido el reloj dependiente de plataforma por `steady_clock`; simulación fijada a 50 Hz con recuperación limitada a cinco ticks y renderizado desacoplado de los ticks pendientes. | Build limpio correcto; prueba aislada: 50 ticks en 1001 ms; prueba manual aceptada provisionalmente bajo WSL. | Commit de timestep fijo |
+| 2026-08-22 | 15 | Inicializadas las velocidades antes de capturar el estado de reset y preservada su precisión como `float`, evitando que `Laser::Reset()` restaure valores indeterminados tras la muerte. | Build limpio optimizado y sanitizers correctos; muerte por el láser de la primera escalera y respawn validados manualmente. | Commit de reset de láseres |

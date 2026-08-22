@@ -125,8 +125,8 @@ class Object {
     bool initial_visible;
     bool intial_active;
     int  initial_direction;
-    int  initial_speed_x;
-    int  initial_speed_y;
+    float initial_speed_x;
+    float initial_speed_y;
     int  initial_state;
 
     // Collisions
