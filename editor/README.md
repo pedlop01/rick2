@@ -18,10 +18,10 @@ The release is generated in `editor/dist/`. Open `dist/index.html` directly in
 a browser; no HTTP server is required. `dist/` and `node_modules/` are generated
 locally and are intentionally not committed.
 
-Current task-17 scope is the application shell: header, project toolbar, layer
-panel, responsive Canvas workspace, property inspector, status/error regions and
-an offline build. Project actions remain disabled until task 18 implements the
-real file lifecycle.
+The application can create an empty project, open and export the universal
+`.rick2-project` ZIP and, in browsers supporting the File System Access API,
+open or write an extracted project directory. Unsaved projects are identified
+in the header and protected before replacement or closing.
 
 ## Commands
 
@@ -34,6 +34,6 @@ real file lifecycle.
 
 ## Dependencies and licenses
 
-Runtime application code currently has no third-party dependencies. TypeScript
-(Apache-2.0) and esbuild (MIT) are development-only build tools; their exact
-versions are recorded in `package-lock.json`.
+The runtime bundle contains fflate (MIT) for offline ZIP processing. TypeScript
+(Apache-2.0) and esbuild (MIT) are development-only build tools; exact versions
+are recorded in `package-lock.json` and no dependency is fetched at runtime.

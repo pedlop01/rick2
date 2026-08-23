@@ -31,6 +31,7 @@ button:focus-visible, canvas:focus-visible, input:focus-visible { outline: 2px s
 .toolbar button:not(:disabled):hover { background: #213453; border-color: #4b668f; }
 .toolbar button:disabled { color: #617188; opacity: .7; cursor: not-allowed; }
 .toolbar-separator { width: 1px; height: 24px; margin: 0 4px; background: #344159; }
+.notification { position: fixed; z-index: 10; top: 118px; left: 50%; max-width: min(620px, calc(100vw - 32px)); padding: 10px 14px; transform: translateX(-50%); color: #fecaca; background: #451a1a; border: 1px solid #ef4444; border-radius: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
 
 .panel { min-width: 0; background: #0e1726; }
 .layers-panel { grid-area: layers; border-right: 1px solid #26344a; }

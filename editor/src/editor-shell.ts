@@ -1,4 +1,14 @@
 import { WorkspacePreview } from "./workspace-preview";
+import {
+  createEmptyProject,
+  downloadProject,
+  pickProjectDirectory,
+  readProjectDirectory,
+  readProjectFile,
+  supportsDirectoryAccess,
+  writeProjectDirectory,
+} from "./project-io";
+import { ProjectSession } from "./project-session";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -14,6 +24,12 @@ function button(label: string, title?: string): HTMLButtonElement {
   return element;
 }
 
+function requiredElement<T extends Element>(host: ParentNode, selector: string): T {
+  const element = host.querySelector<T>(selector);
+  if (!element) throw new Error(`La plantilla no contiene ${selector}`);
+  return element;
+}
+
 export function createEditorShell(host: HTMLElement): void {
   host.className = "editor-shell";
   host.innerHTML = `
@@ -22,6 +38,7 @@ export function createEditorShell(host: HTMLElement): void {
       <div class="document-title" aria-live="polite">Sin proyecto</div>
     </header>
     <nav class="toolbar" aria-label="Herramientas del proyecto"></nav>
+    <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Capas</h2></div>
       <div class="panel-content" id="layer-list"></div>
@@ -37,21 +54,113 @@ export function createEditorShell(host: HTMLElement): void {
     <footer class="statusbar"><span id="status" role="status">Rick2 Engine preparado</span><span>100%</span></footer>
   `;
 
-  const toolbar = host.querySelector<HTMLElement>(".toolbar");
-  const layerList = host.querySelector<HTMLElement>("#layer-list");
-  const canvas = host.querySelector<HTMLCanvasElement>("canvas");
-  const status = host.querySelector<HTMLElement>("#status");
-  if (!toolbar || !layerList || !canvas || !status) {
-    throw new Error("La plantilla del editor está incompleta");
+  const toolbar = requiredElement<HTMLElement>(host, ".toolbar");
+  const layerList = requiredElement<HTMLElement>(host, "#layer-list");
+  const canvas = requiredElement<HTMLCanvasElement>(host, "canvas");
+  const status = requiredElement<HTMLElement>(host, "#status");
+  const documentTitle = requiredElement<HTMLElement>(host, ".document-title");
+  const hint = requiredElement<HTMLElement>(host, ".canvas-hint");
+  const notification = requiredElement<HTMLElement>(host, ".notification");
+
+  const session = new ProjectSession();
+  let directoryHandle: FileSystemDirectoryHandle | null = null;
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".rick2-project,.zip,application/zip";
+  fileInput.hidden = true;
+  host.append(fileInput);
+
+  function showError(error: unknown): void {
+    notification.textContent = error instanceof Error ? error.message : String(error);
+    notification.hidden = false;
   }
 
-  const newProject = button("Nuevo", "La creación de proyectos se implementará en la tarea 18");
-  const openProject = button("Abrir", "La apertura de proyectos se implementará en la tarea 18");
-  const saveProject = button("Guardar", "La exportación se implementará en la tarea 18");
-  for (const unavailable of [newProject, openProject, saveProject]) {
-    unavailable.disabled = true;
-    unavailable.setAttribute("aria-disabled", "true");
+  function clearError(): void {
+    notification.hidden = true;
+    notification.textContent = "";
   }
+
+  function refreshProjectState(message: string): void {
+    const project = session.project;
+    documentTitle.textContent = project
+        ? `${project.manifest.name}${session.dirty ? " •" : ""}`
+        : "Sin proyecto";
+    hint.textContent = project
+        ? `${project.manifest.levels.length} nivel(es) · ${project.files.size} archivo(s)`
+        : "Crea o abre un proyecto para comenzar";
+    saveProject.disabled = !project;
+    saveDirectory.disabled = !project || !supportsDirectoryAccess();
+    status.textContent = message;
+  }
+
+  function canReplaceProject(): boolean {
+    return session.canDiscard(() => window.confirm(
+      "El proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
+    ));
+  }
+
+  async function run(action: () => Promise<void>): Promise<void> {
+    clearError();
+    try { await action(); }
+    catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      showError(error);
+      status.textContent = "La operación no se ha completado";
+    }
+  }
+
+  const newProject = button("Nuevo");
+  const openProject = button("Abrir ZIP");
+  const openDirectory = button("Abrir carpeta");
+  const saveProject = button("Guardar ZIP");
+  const saveDirectory = button("Guardar carpeta");
+  openDirectory.hidden = !supportsDirectoryAccess();
+  saveDirectory.hidden = !supportsDirectoryAccess();
+  saveProject.disabled = true;
+  saveDirectory.disabled = true;
+
+  newProject.addEventListener("click", () => {
+    if (!canReplaceProject()) return;
+    directoryHandle = null;
+    session.replace(createEmptyProject(), true);
+    clearError();
+    refreshProjectState("Proyecto vacío creado; todavía no se ha guardado");
+  });
+  openProject.addEventListener("click", () => {
+    if (canReplaceProject()) fileInput.click();
+  });
+  fileInput.addEventListener("change", () => void run(async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (!file) return;
+    const project = await readProjectFile(file);
+    directoryHandle = null;
+    session.replace(project, false);
+    refreshProjectState(`Proyecto abierto desde ${file.name}`);
+  }));
+  openDirectory.addEventListener("click", () => void run(async () => {
+    if (!canReplaceProject()) return;
+    const handle = await pickProjectDirectory();
+    const project = await readProjectDirectory(handle);
+    directoryHandle = handle;
+    session.replace(project, false);
+    refreshProjectState(`Proyecto abierto desde la carpeta ${handle.name}`);
+  }));
+  saveProject.addEventListener("click", () => void run(async () => {
+    const project = session.project;
+    if (!project) return;
+    downloadProject(project);
+    session.markSaved();
+    refreshProjectState("Proyecto exportado como ZIP");
+  }));
+  saveDirectory.addEventListener("click", () => void run(async () => {
+    const project = session.project;
+    if (!project) return;
+    directoryHandle ??= await pickProjectDirectory();
+    await writeProjectDirectory(project, directoryHandle);
+    session.markSaved();
+    refreshProjectState(`Proyecto guardado en la carpeta ${directoryHandle.name}`);
+  }));
   const separator = document.createElement("span");
   separator.className = "toolbar-separator";
   separator.setAttribute("aria-hidden", "true");
@@ -59,7 +168,8 @@ export function createEditorShell(host: HTMLElement): void {
   const redo = button("Rehacer", "El historial se implementará en la tarea 25");
   undo.disabled = true;
   redo.disabled = true;
-  toolbar.append(newProject, openProject, saveProject, separator, undo, redo);
+  toolbar.append(newProject, openProject, openDirectory, saveProject,
+                 saveDirectory, separator, undo, redo);
 
   for (const [id, label] of LAYERS) {
     const row = document.createElement("label");
@@ -77,6 +187,12 @@ export function createEditorShell(host: HTMLElement): void {
 
   const preview = new WorkspacePreview(canvas);
   preview.start();
-  window.addEventListener("beforeunload", () => preview.stop(), { once: true });
-  status.textContent = "Aplicación offline cargada; esperando un proyecto";
+  window.addEventListener("beforeunload", (event) => {
+    preview.stop();
+    if (session.dirty) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
+  refreshProjectState("Aplicación offline cargada; esperando un proyecto");
 }
