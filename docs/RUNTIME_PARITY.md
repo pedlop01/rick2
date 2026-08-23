@@ -34,12 +34,17 @@ transient actors but never serializes them into the project.
 - Activación de checkpoints, caída fuera del mapa y respawn determinista.
 - Colisión letal con hazards visibles y láseres activos por defecto; las fases
   `deactivate` de los hazards se ocultan y dejan de producir daño.
+- Movimiento horizontal, vertical y diagonal de láseres según su velocidad y
+  dirección, con colisión contra el mapa y relanzamiento desde su origen.
+- Triggers espaciales `enters`, `stays`, `exits` y `hits`, con filtro de cara,
+  retardos por destino y activación de láseres, hazards y plataformas. `hits`
+  utiliza una pulsación nueva de la acción Espacio mientras Rick permanece en
+  la zona.
 - Modo de depuración invulnerable, activado por defecto en el editor: conserva
   la detección y señala el contacto peligroso sin interrumpir la exploración.
 - Encuadre de una pantalla lógica del juego, usando las dimensiones de cámara
   del nivel y centrado en la posición actual del personaje.
 - Seguimiento de cámara sin incluir zoom o pan del editor en deshacer/rehacer.
 
-Todavía faltan el movimiento y disparo completo de láseres, triggers, IA, armas,
-objetos, vidas, animaciones y audio. Se incorporarán como subsistemas
-independientes sobre este mismo reloj y modelo de datos.
+Todavía faltan IA, armas, objetos, vidas, animaciones y audio. Se incorporarán
+como subsistemas independientes sobre este mismo reloj y modelo de datos.
