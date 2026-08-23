@@ -33,6 +33,7 @@ test("gameplay guides expose checkpoint links, routes, targets and AI zones", ()
   entities.enemies.push({ id: 0, x: 0, y: 0, bb_x: 0, bb_y: 0, bb_width: 8, bb_height: 8, ia_orig_x: 2, ia_orig_y: 3, ia_limit_x: 20, ia_limit_y: 30 });
   const guides = new EntityDocumentModel(level).gameplayGuides(); assert.ok(guides.lines.some((line) => line.kind === "checkpoint")); assert.ok(guides.lines.some((line) => line.kind === "target")); assert.ok(guides.lines.some((line) => line.kind === "route")); assert.deepEqual(guides.zones[0].box, { x: 2, y: 3, width: 20, height: 30 });
 });
+test("hitTestAll returns every overlapping entity in selectable order", () => { const model = modelWithItem(); model.groups.items.push({ id: 2, attributes: { ini_x: 4, ini_y: 5, width: 8, height: 8 } }); const hits = model.hitTestAll(6, 6, "items"); assert.equal(hits.length, 2); assert.equal(hits[0].group, "items"); assert.equal(hits[0].index, 1); });
 
 test("checkpoint cycles are rejected before export", () => {
   const level = new LevelDocumentModel(createEmptyProject()); level.level.entities.checkpoints[0].nxt_chks = [0]; level.flush();

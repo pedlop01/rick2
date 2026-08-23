@@ -53,8 +53,12 @@ button:focus-visible, canvas:focus-visible, input:focus-visible { outline: 2px s
 .collision-palette button { padding: 7px; color: #b9c7d8; text-align: left; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .collision-palette button.selected { color: #07111d; background: #57d3ff; }
 .entity-controls, .asset-controls { display: grid; gap: 7px; padding: 10px; overflow: auto; border-top: 1px solid #26344a; }
-.entity-controls select, .entity-controls button, .asset-controls select, .asset-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
+.entity-controls select, .entity-controls input, .entity-controls button, .asset-controls select, .asset-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .entity-controls button { text-align: left; }
+.entity-filter { display: flex; align-items: center; gap: 7px; min-height: 26px; color: #aab8ca; font-size: 12px; }
+.entity-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; padding: 7px 0; border-top: 1px solid #26344a; border-bottom: 1px solid #26344a; }
+.entity-legend span { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; color: #8495ab; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.entity-legend i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 2px; }
 .asset-controls { gap: 5px; padding: 8px; }
 .asset-controls select { width: 100%; padding: 6px 5px; font-size: 12px; }
 .asset-controls button { padding: 6px; font-size: 12px; text-align: left; }

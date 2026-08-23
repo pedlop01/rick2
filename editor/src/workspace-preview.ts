@@ -1,7 +1,7 @@
 import { getProjectAsset, type Rick2Project } from "./project-io";
 import { tileSource, visibleTileBounds } from "./map-view";
 import type { TileMapDocument, TileRect } from "./level-document";
-import type { EntityBox, EntityRef, GameplayLine, GameplayZone } from "./entity-document";
+import { ENTITY_COLORS, type EntityBox, type EntityRef, type GameplayLine, type GameplayZone } from "./entity-document";
 import type { RuntimeBody } from "./preview-runtime";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
@@ -34,7 +34,7 @@ export class WorkspacePreview {
   #selection: TileRect | null = null;
   #editingPointer: number | null = null;
   #spacePressed = false;
-  #entities: Array<{ ref: EntityRef; box: EntityBox }> = [];
+  #entities: Array<{ ref: EntityRef; box: EntityBox; label?: string }> = [];
   #selectedEntity: EntityRef | null = null;
   #gameplayLines: GameplayLine[] = [];
   #gameplayZones: GameplayZone[] = [];
@@ -142,7 +142,7 @@ export class WorkspacePreview {
 
   setEditHandlers(handlers: TilePointerHandlers): void { this.#editHandlers = handlers; }
   setSelection(selection: TileRect | null): void { this.#selection = selection; this.#scheduleDraw(); }
-  setEntities(entities: Array<{ ref: EntityRef; box: EntityBox }>, selected: EntityRef | null): void { this.#entities = entities; this.#selectedEntity = selected; this.#scheduleDraw(); }
+  setEntities(entities: Array<{ ref: EntityRef; box: EntityBox; label?: string }>, selected: EntityRef | null): void { this.#entities = entities; this.#selectedEntity = selected; this.#scheduleDraw(); }
   setGameplayGuides(lines: GameplayLine[], zones: GameplayZone[]): void { this.#gameplayLines = lines; this.#gameplayZones = zones; this.#scheduleDraw(); }
   setRuntimeBodies(bodies: readonly RuntimeBody[]): void { this.#runtimeBodies = bodies; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
@@ -306,14 +306,15 @@ export class WorkspacePreview {
   }
 
   #drawEntities(): void {
-    const colors = ["#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#2dd4bf", "#60a5fa", "#f97316", "#e879f9", "#4ade80", "#94a3b8"];
     for (const item of this.#entities) {
       const selected = this.#selectedEntity?.group === item.ref.group && this.#selectedEntity.index === item.ref.index;
-      this.#context.fillStyle = selected ? "rgba(87, 211, 255, .32)" : "rgba(15, 23, 42, .18)";
-      this.#context.strokeStyle = selected ? "#57d3ff" : colors[item.ref.group.length % colors.length]!;
-      this.#context.lineWidth = (selected ? 2 : 1) / this.#zoom;
-      this.#context.fillRect(item.box.x, item.box.y, Math.max(1, item.box.width), Math.max(1, item.box.height));
-      this.#context.strokeRect(item.box.x, item.box.y, Math.max(1, item.box.width), Math.max(1, item.box.height));
+      const width = Math.max(1, item.box.width), height = Math.max(1, item.box.height), color = ENTITY_COLORS[item.ref.group];
+      this.#context.fillStyle = selected ? "rgba(87, 211, 255, .34)" : `${color}24`;
+      this.#context.strokeStyle = selected ? "#e0f2fe" : color;
+      this.#context.lineWidth = (selected ? 2.5 : 1.25) / this.#zoom;
+      this.#context.fillRect(item.box.x, item.box.y, width, height); this.#context.strokeRect(item.box.x, item.box.y, width, height);
+      if (selected) { const size = 4 / this.#zoom; this.#context.fillStyle = "#e0f2fe"; for (const [x, y] of [[item.box.x, item.box.y], [item.box.x + width, item.box.y], [item.box.x, item.box.y + height], [item.box.x + width, item.box.y + height]] as const) this.#context.fillRect(x - size / 2, y - size / 2, size, size); }
+      if (this.#zoom >= .75) { const label = item.label ?? `${item.ref.group} #${item.ref.index}`; this.#context.font = `${10 / this.#zoom}px ui-sans-serif`; this.#context.textBaseline = "bottom"; const textWidth = this.#context.measureText(label).width; this.#context.fillStyle = "rgba(8, 13, 22, .82)"; this.#context.fillRect(item.box.x, item.box.y - 13 / this.#zoom, textWidth + 5 / this.#zoom, 13 / this.#zoom); this.#context.fillStyle = selected ? "#e0f2fe" : color; this.#context.fillText(label, item.box.x + 2 / this.#zoom, item.box.y - 2 / this.#zoom); }
     }
   }
 

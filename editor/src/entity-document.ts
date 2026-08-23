@@ -2,11 +2,15 @@ import type { EditableLevel, LevelDocumentModel } from "./level-document";
 
 export const ENTITY_GROUPS = ["platforms", "items", "backgroundObjects", "blocks", "hazards", "checkpoints", "lasers", "triggers", "enemies", "cameraViews"] as const;
 export type EntityGroup = typeof ENTITY_GROUPS[number];
+export const ENTITY_COLORS: Record<EntityGroup, string> = {
+  platforms: "#fbbf24", items: "#f472b6", backgroundObjects: "#94a3b8", blocks: "#f97316", hazards: "#fb7185",
+  checkpoints: "#60a5fa", lasers: "#e879f9", triggers: "#fb923c", enemies: "#4ade80", cameraViews: "#2dd4bf",
+};
 export type EntityRecord = Record<string, unknown>;
 export interface EntityRef { group: EntityGroup; index: number; }
 export interface EntityBox { x: number; y: number; width: number; height: number; }
-export interface GameplayLine { x1: number; y1: number; x2: number; y2: number; kind: "checkpoint" | "target" | "route"; }
-export interface GameplayZone { box: EntityBox; kind: "ai" | "camera" | "trigger"; }
+export interface GameplayLine { x1: number; y1: number; x2: number; y2: number; kind: "checkpoint" | "target" | "route"; from?: string; to?: string; }
+export interface GameplayZone { box: EntityBox; kind: "ai" | "camera" | "trigger"; owner?: string; }
 const placedGroups: readonly EntityGroup[] = ["platforms", "items", "backgroundObjects", "blocks", "hazards"];
 function record(value: unknown): EntityRecord { return value && typeof value === "object" ? value as EntityRecord : {}; }
 function finite(value: unknown, fallback = 0): number { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
@@ -39,20 +43,19 @@ export class EntityDocumentModel {
   gameplayGuides(): { lines: GameplayLine[]; zones: GameplayZone[] } {
     const lines: GameplayLine[] = []; const zones: GameplayZone[] = []; const centers = new Map<string, { x: number; y: number }>();
     for (const item of this.all()) centers.set(`${item.ref.group}:${String(item.entity.id)}`, { x: item.box.x + item.box.width / 2, y: item.box.y + item.box.height / 2 });
-    for (const checkpoint of this.groups.checkpoints) { const from = centers.get(`checkpoints:${String(checkpoint.id)}`); if (!from) continue; for (const id of list(checkpoint.nxt_chks)) { const to = centers.get(`checkpoints:${String(id)}`); if (to) lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, kind: "checkpoint" }); } }
+    for (const checkpoint of this.groups.checkpoints) { const fromKey = `checkpoints:${String(checkpoint.id)}`, from = centers.get(fromKey); if (!from) continue; for (const id of list(checkpoint.nxt_chks)) { const toKey = `checkpoints:${String(id)}`, to = centers.get(toKey); if (to) lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, kind: "checkpoint", from: fromKey, to: toKey }); } }
     const targetGroup: Record<string, EntityGroup> = { platform: "platforms", laser: "lasers", hazard: "hazards" };
-    for (const trigger of this.groups.triggers) { const from = centers.get(`triggers:${String(trigger.id)}`); if (!from) continue; for (const raw of list(record(trigger.targets).target)) { const target = record(raw); const group = targetGroup[String(target.type)]; const to = group && centers.get(`${group}:${String(target.id)}`); if (to) lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, kind: "target" }); } }
-    for (const group of ["platforms", "hazards"] as const) for (const entity of this.groups[group]) { const start = centers.get(`${group}:${String(entity.id)}`); if (!start) continue; let x = start.x; let y = start.y; for (const raw of list(record(entity.actions).action)) { const action = record(raw); const distance = finite(action.desp); let nx = x; let ny = y; if (action.direction === "left") nx -= distance; if (action.direction === "right") nx += distance; if (action.direction === "up") ny -= distance; if (action.direction === "down") ny += distance; if (nx !== x || ny !== y) lines.push({ x1: x, y1: y, x2: nx, y2: ny, kind: "route" }); x = nx; y = ny; } }
-    for (const enemy of this.groups.enemies) zones.push({ box: { x: finite(enemy.ia_orig_x), y: finite(enemy.ia_orig_y), width: finite(enemy.ia_limit_x), height: finite(enemy.ia_limit_y) }, kind: "ai" });
-    for (const item of this.all()) if (item.ref.group === "cameraViews" || item.ref.group === "triggers") zones.push({ box: item.box, kind: item.ref.group === "cameraViews" ? "camera" : "trigger" });
+    for (const trigger of this.groups.triggers) { const fromKey = `triggers:${String(trigger.id)}`, from = centers.get(fromKey); if (!from) continue; for (const raw of list(record(trigger.targets).target)) { const target = record(raw); const group = targetGroup[String(target.type)], toKey = group ? `${group}:${String(target.id)}` : ""; const to = centers.get(toKey); if (to) lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, kind: "target", from: fromKey, to: toKey }); } }
+    for (const group of ["platforms", "hazards"] as const) for (const entity of this.groups[group]) { const owner = `${group}:${String(entity.id)}`, start = centers.get(owner); if (!start) continue; let x = start.x; let y = start.y; for (const raw of list(record(entity.actions).action)) { const action = record(raw); const distance = finite(action.desp); let nx = x; let ny = y; if (action.direction === "left") nx -= distance; if (action.direction === "right") nx += distance; if (action.direction === "up") ny -= distance; if (action.direction === "down") ny += distance; if (nx !== x || ny !== y) lines.push({ x1: x, y1: y, x2: nx, y2: ny, kind: "route", from: owner }); x = nx; y = ny; } }
+    for (const enemy of this.groups.enemies) zones.push({ box: { x: finite(enemy.ia_orig_x), y: finite(enemy.ia_orig_y), width: finite(enemy.ia_limit_x), height: finite(enemy.ia_limit_y) }, kind: "ai", owner: `enemies:${String(enemy.id)}` });
+    for (const item of this.all()) if (item.ref.group === "cameraViews" || item.ref.group === "triggers") zones.push({ box: item.box, kind: item.ref.group === "cameraViews" ? "camera" : "trigger", owner: `${item.ref.group}:${String(item.entity.id)}` });
     return { lines, zones };
   }
 
   hitTest(x: number, y: number, group?: EntityGroup): EntityRef | null {
-    const candidates = this.all();
-    for (let index = candidates.length - 1; index >= 0; --index) { const item = candidates[index]!; if (group && item.ref.group !== group) continue; if (x >= item.box.x && y >= item.box.y && x < item.box.x + Math.max(1, item.box.width) && y < item.box.y + Math.max(1, item.box.height)) return item.ref; }
-    return null;
+    return this.hitTestAll(x, y, group)[0] ?? null;
   }
+  hitTestAll(x: number, y: number, group?: EntityGroup): EntityRef[] { return this.all().filter((item) => (!group || item.ref.group === group) && x >= item.box.x && y >= item.box.y && x < item.box.x + Math.max(1, item.box.width) && y < item.box.y + Math.max(1, item.box.height)).reverse().map((item) => item.ref); }
 
   move(ref: EntityRef, x: number, y: number): boolean {
     const entity = this.entity(ref); if (!entity || !Number.isFinite(x) || !Number.isFinite(y)) return false;

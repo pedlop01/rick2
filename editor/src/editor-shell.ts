@@ -12,7 +12,7 @@ import { ProjectSession } from "./project-session";
 import { hasValidationErrors, validateProject, type Diagnostic } from "./validation";
 import { LevelDocumentModel, type TileClipboard, type TileRect } from "./level-document";
 import { TilePalette } from "./tile-palette";
-import { EntityDocumentModel, ENTITY_GROUPS, type EntityGroup, type EntityRecord, type EntityRef } from "./entity-document";
+import { EntityDocumentModel, ENTITY_COLORS, ENTITY_GROUPS, type EntityGroup, type EntityRecord, type EntityRef } from "./entity-document";
 import { AssetDocumentModel } from "./asset-document";
 import { AssetEditor } from "./asset-editor";
 import { ProjectHistory } from "./project-history";
@@ -90,10 +90,11 @@ export function createEditorShell(host: HTMLElement): void {
   let entityModel: EntityDocumentModel | null = null;
   let assetModel: AssetDocumentModel | null = null;
   let runtime: PreviewRuntime | null = null;
-  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0; let runtimeInvulnerable = true;
+  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0; let runtimeInvulnerable = true; let placingPlayer = false;
   const runtimeInput: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
   let runtimeEditorView: ViewState | null = null;
   let entityGroup: EntityGroup = "items";
+  let showAllEntities = false; let showRelations = true; let showRoutes = true; let showZones = true; let selectedGuidesOnly = false;
   let selectedEntity: EntityRef | null = null;
   let selection: TileRect | null = null;
   let clipboard: TileClipboard | null = null;
@@ -143,7 +144,7 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
-    stopRuntime(); runtimePreviewActive = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); preview.setRuntimeBodies([]);
+    stopRuntime(); runtimePreviewActive = false; placingPlayer = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
@@ -321,9 +322,10 @@ export function createEditorShell(host: HTMLElement): void {
   const fit = button("Encajar", "Mostrar el mapa completo");
   const gameScreen = button("Pantalla de juego", "Ajustar el zoom a una pantalla del juego centrada en Rick");
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
-  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview"); const invulnerable = button("Invulnerable: sí", "Ignorar daño durante la previsualización");
+  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview"); const invulnerable = button("Invulnerable: sí", "Ignorar daño durante la previsualización"); const placePlayer = button("Colocar Rick", "El siguiente clic en el mapa indica dónde apoya los pies Rick");
   invulnerable.setAttribute("aria-pressed", "true");
   invulnerable.addEventListener("click", () => { runtimeInvulnerable = !runtimeInvulnerable; runtime?.setInvulnerable(runtimeInvulnerable); invulnerable.textContent = `Invulnerable: ${runtimeInvulnerable ? "sí" : "no"}`; invulnerable.setAttribute("aria-pressed", String(runtimeInvulnerable)); renderRuntime(); });
+  placePlayer.addEventListener("click", () => { if (!runtime) return; placingPlayer = !placingPlayer; placePlayer.setAttribute("aria-pressed", String(placingPlayer)); status.textContent = placingPlayer ? "Haz clic en el punto donde Rick debe apoyar los pies" : "Colocación de Rick cancelada"; canvas.focus(); });
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
   const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) preview.centerOnWorld(runtime.player.x + 12, runtime.player.y + 10); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
   const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
@@ -331,7 +333,7 @@ export function createEditorShell(host: HTMLElement): void {
   play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
   pause.addEventListener("click", () => { stopRuntime(); play.disabled = false; pause.disabled = true; step.disabled = false; renderRuntime(); });
   step.addEventListener("click", () => { if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtime?.step(runtimeInput); resetPreview.disabled = false; renderRuntime(); });
-  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; runtime?.reset(); preview.setRuntimeBodies([]); if (runtimeEditorView) preview.setViewState(runtimeEditorView); runtimeEditorView = null; refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
+  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; placingPlayer = false; placePlayer.setAttribute("aria-pressed", "false"); for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; runtime?.reset(); preview.setRuntimeBodies([]); if (runtimeEditorView) preview.setViewState(runtimeEditorView); runtimeEditorView = null; refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
   const toolButtons = new Map<EditTool, HTMLButtonElement>();
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -363,7 +365,7 @@ export function createEditorShell(host: HTMLElement): void {
   });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
-                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
+                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, placePlayer, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
   setTool("pencil");
 
   for (const [id, label] of LAYERS) {
@@ -403,14 +405,34 @@ export function createEditorShell(host: HTMLElement): void {
   groupSelect.value = entityGroup;
   groupSelect.addEventListener("change", () => { entityGroup = groupSelect.value as EntityGroup; selectedEntity = null; refreshEntityOverlay(); refreshProjectState(`Grupo de entidades: ${entityGroup}`); });
   const newEntity = button("Nueva"); const duplicateEntity = button("Duplicar seleccionada"); const deleteEntity = button("Eliminar seleccionada");
-  newEntity.addEventListener("click", () => { if (!entityModel || !entityModel.groups[entityGroup].length) { status.textContent = `No hay un modelo de ${entityGroup} que clonar`; return; } selectedEntity = entityModel.duplicate({ group: entityGroup, index: 0 }); commitEntityChange("Entidad creada desde el modelo del grupo"); });
+  newEntity.addEventListener("click", () => { if (!entityModel || !entityModel.groups[entityGroup].length) { status.textContent = `No hay un modelo de ${entityGroup} que clonar`; return; } selectedEntity = entityModel.duplicate({ group: entityGroup, index: 0 }); if (selectedEntity && lastPointerTile) entityModel.move(selectedEntity, lastPointerTile.worldX, lastPointerTile.worldY); commitEntityChange(lastPointerTile ? "Entidad creada en la posición del cursor" : "Entidad creada desde el modelo del grupo"); });
   duplicateEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; selectedEntity = entityModel.duplicate(selectedEntity); commitEntityChange("Entidad duplicada"); });
   deleteEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; entityModel.remove(selectedEntity); selectedEntity = null; commitEntityChange("Entidad eliminada"); });
-  entityControls.append(groupSelect, newEntity, duplicateEntity, deleteEntity);
+  const filterControl = (label: string, checked: boolean, onChange: (checked: boolean) => void): HTMLLabelElement => { const row = document.createElement("label"); row.className = "entity-filter"; const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = checked; checkbox.addEventListener("change", () => onChange(checkbox.checked)); row.append(checkbox, document.createTextNode(label)); return row; };
+  const showAllControl = filterControl("Mostrar todos los grupos", false, (checked) => { showAllEntities = checked; refreshEntityOverlay(); });
+  const relationsControl = filterControl("Relaciones", true, (checked) => { showRelations = checked; refreshEntityOverlay(); });
+  const routesControl = filterControl("Rutas", true, (checked) => { showRoutes = checked; refreshEntityOverlay(); });
+  const zonesControl = filterControl("Zonas", true, (checked) => { showZones = checked; refreshEntityOverlay(); });
+  const selectedGuidesControl = filterControl("Solo guías de la selección", false, (checked) => { selectedGuidesOnly = checked; refreshEntityOverlay(); });
+  const legend = document.createElement("div"); legend.className = "entity-legend"; legend.setAttribute("aria-label", "Leyenda de entidades");
+  for (const group of ENTITY_GROUPS) { const item = document.createElement("span"); const swatch = document.createElement("i"); swatch.style.background = ENTITY_COLORS[group]; item.append(swatch, document.createTextNode(group)); legend.append(item); }
+  const entitySearch = document.createElement("input"); entitySearch.type = "search"; entitySearch.placeholder = "Buscar grupo, ID o definición"; entitySearch.setAttribute("aria-label", "Buscar entidad");
+  const entityResults = document.createElement("select"); entityResults.size = 4; entityResults.setAttribute("aria-label", "Resultados de entidades");
+  entitySearch.addEventListener("input", () => refreshEntityFinder());
+  entityResults.addEventListener("change", () => { const [group, index] = entityResults.value.split(":"); if (!group || index === undefined || !entityModel) return; selectedEntity = { group: group as EntityGroup, index: Number(index) }; entityGroup = selectedEntity.group; groupSelect.value = entityGroup; const box = entityModel.box(selectedEntity); if (box) preview.centerOnWorld(box.x + box.width / 2, box.y + box.height / 2); refreshEntityOverlay(); renderDiagnostics([]); });
+  entityControls.append(groupSelect, showAllControl, relationsControl, routesControl, zonesControl, selectedGuidesControl, legend, entitySearch, entityResults, newEntity, duplicateEntity, deleteEntity);
+
+  function refreshEntityFinder(): void {
+    entityResults.innerHTML = ""; if (!entityModel) return; const query = entitySearch.value.trim().toLowerCase();
+    for (const item of entityModel.all()) { const id = String(item.entity.id ?? item.ref.index); const definition = String((item.entity.attributes as Record<string, unknown> | undefined)?.definition ?? item.entity.definition ?? ""); const text = `${item.ref.group} ${id} ${definition}`; if (query && !text.toLowerCase().includes(query)) continue; const option = document.createElement("option"); option.value = `${item.ref.group}:${item.ref.index}`; option.textContent = `${item.ref.group} #${id}${definition ? ` · ${definition.split("/").at(-1)}` : ""}`; entityResults.append(option); }
+  }
 
   function refreshEntityOverlay(): void {
-    preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => item.ref.group === entityGroup) ?? []) : [], selectedEntity);
-    const guides = activeTool === "entity" ? entityModel?.gameplayGuides() : null; preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []);
+    preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => showAllEntities || item.ref.group === entityGroup).map((item) => ({ ...item, label: `${item.ref.group} #${String(item.entity.id ?? item.ref.index)}` })) ?? []) : [], selectedEntity);
+    const guides = activeTool === "entity" ? entityModel?.gameplayGuides() : null;
+    const selectedRecord = selectedEntity ? entityModel?.entity(selectedEntity) : null; const selectedKey = selectedEntity && selectedRecord ? `${selectedEntity.group}:${String(selectedRecord.id)}` : null;
+    preview.setGameplayGuides(guides?.lines.filter((line) => (line.kind === "route" ? showRoutes : showRelations) && (!selectedGuidesOnly || !selectedKey || line.from === selectedKey || line.to === selectedKey)) ?? [], showZones ? (guides?.zones.filter((zone) => !selectedGuidesOnly || !selectedKey || zone.owner === selectedKey) ?? []) : []);
+    refreshEntityFinder();
   }
   function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshEntityOverlay(); refreshProjectState(message); }
 
@@ -423,9 +445,16 @@ export function createEditorShell(host: HTMLElement): void {
   };
   preview.setEditHandlers({
     down(tile) {
-      if (!levelModel || runtimePreviewActive) return;
+      if (!levelModel) return;
+      if (placingPlayer && runtime) { if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; resetPreview.disabled = false; runtime.placePlayerAt(tile.worldX, tile.worldY); placingPlayer = false; placePlayer.setAttribute("aria-pressed", "false"); renderRuntime(); status.textContent = `Rick colocado en ${Math.round(tile.worldX)}, ${Math.round(tile.worldY)}`; return; }
+      if (runtimePreviewActive) return;
       canvas.focus(); gestureStart = tile; gestureLast = tile; lastPointerTile = tile; gestureChanged = false;
-      if (activeTool === "entity") { selectedEntity = entityModel?.hitTest(tile.worldX, tile.worldY, entityGroup) ?? null; refreshEntityOverlay(); renderDiagnostics([]); return; }
+      if (activeTool === "entity") {
+        const hits = entityModel?.hitTestAll(tile.worldX, tile.worldY, showAllEntities ? undefined : entityGroup) ?? [];
+        const current = selectedEntity ? hits.findIndex((ref) => ref.group === selectedEntity!.group && ref.index === selectedEntity!.index) : -1;
+        selectedEntity = hits.length ? hits[(current + 1) % hits.length]! : null; refreshEntityOverlay(); renderDiagnostics([]);
+        status.textContent = hits.length > 1 ? `Entidad solapada ${((current + 1) % hits.length) + 1}/${hits.length}; vuelve a pulsar para recorrerlas` : selectedEntity ? "Entidad seleccionada" : "No hay entidades en este punto"; return;
+      }
       if (activeTool === "pencil") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, palette.selectedGid);
       if (activeTool === "eraser") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, 0);
       if (activeTool === "fill") gestureChanged = levelModel.floodFill(activeLayer, tile.x, tile.y, palette.selectedGid);

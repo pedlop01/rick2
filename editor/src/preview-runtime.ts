@@ -19,6 +19,7 @@ export class PreviewRuntime {
   get invulnerable(): boolean { return this.#invulnerable; }
   get dangerContact(): boolean { return this.#dangerContact; }
   setInvulnerable(enabled: boolean): void { this.#invulnerable = enabled; }
+  placePlayerAt(worldX: number, worldY: number): void { this.#player.placeAtFeet(worldX, worldY); this.#dangerContact = false; }
   get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot; return [...this.#bodies.filter((body) => body.visible), { key: "player", x: player.x, y: player.y, width: 23, height: 21, frame: this.#tick }]; }
   reset(): void {
     this.#tick = 0; this.#player.reset(); this.#dangerContact = false; this.#bodies = []; this.#triggers = []; const entities = record(this.#source.entities);
