@@ -170,14 +170,24 @@ export function createEditorShell(host: HTMLElement): void {
     list.className = "diagnostic-list";
     for (const diagnostic of diagnostics) {
       const item = document.createElement("li");
+      item.classList.add(`diagnostic-${diagnostic.severity}`); item.tabIndex = 0; item.title = "Ir al elemento";
       const location = document.createElement("code");
       location.textContent = `${diagnostic.file}${diagnostic.path}`;
       const message = document.createElement("span");
       message.textContent = diagnostic.message;
       item.append(location, message);
+      item.addEventListener("click", () => navigateDiagnostic(diagnostic)); item.addEventListener("keydown", (event) => { if (event.key === "Enter") navigateDiagnostic(diagnostic); });
       list.append(item);
     }
     inspector.append(title, list);
+  }
+
+  function navigateDiagnostic(diagnostic: Diagnostic): void {
+    const tile = diagnostic.path.match(/^\/map\/layers\/(tiles|frontTiles|collisions)\/(\d+)/);
+    if (tile && levelModel) { const layer = tile[1] as MapLayerName; const index = Number(tile[2]); activeLayer = layer; toolButtons.get("select")?.click(); selection = { x: index % levelModel.map.width, y: Math.floor(index / levelModel.map.width), width: 1, height: 1 }; preview.setSelection(selection); status.textContent = `Diagnóstico en ${layer}, celda ${index}`; return; }
+    const entity = diagnostic.path.match(/^\/entities\/([^/]+)\/(\d+)/);
+    if (entity && ENTITY_GROUPS.includes(entity[1] as EntityGroup)) { entityGroup = entity[1] as EntityGroup; selectedEntity = { group: entityGroup, index: Number(entity[2]) }; groupSelect.value = entityGroup; toolButtons.get("entity")?.click(); refreshEntityOverlay(); renderEntityInspector(); return; }
+    if (diagnostic.path.startsWith("/definitions/") || diagnostic.path.startsWith("/audio/") || diagnostic.path.startsWith("/map/tileset")) toolButtons.get("asset")?.click();
   }
 
   function primitiveFields(value: EntityRecord, prefix: string[] = []): Array<{ path: string[]; value: string | number }> {

@@ -51,6 +51,8 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   const add = (path: string, message: string): void => {
     diagnostics.push({ severity: "error", file, path, message, source: "semantic" });
   };
+  const warn = (path: string, message: string): void => { diagnostics.push({ severity: "warning", file, path, message, source: "semantic" }); };
+  const referencedDefinitions = new Set<string>();
   const asset = (reference: unknown, path: string): Uint8Array | null => {
     if (typeof reference !== "string") return null;
     try { const resolved = resolveProjectReference(file, reference); const bytes = project.files.get(resolved); if (!bytes) add(path, `Asset inexistente: ${resolved}`); return bytes ?? null; }
@@ -60,6 +62,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   const map = object(level.map);
   const width = Number(map.width);
   const height = Number(map.height);
+  const tileWidth = Number(map.tileWidth); const tileHeight = Number(map.tileHeight);
   const layers = object(map.layers);
   if (Number.isInteger(width) && Number.isInteger(height)) {
     for (const name of ["tiles", "frontTiles", "collisions"]) {
@@ -67,6 +70,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
       if (Array.isArray(layer) && layer.length !== width * height) {
         add(`/map/layers/${name}`, `La capa contiene ${layer.length} celdas; se esperaban ${width * height}`);
       }
+      if (Array.isArray(layer)) { const tileCount = Number(object(map.tileset).tileCount); layer.forEach((gid, index) => { const valid = name === "collisions" ? gid === 0 || (Number.isInteger(gid) && gid >= tileCount + 1 && gid <= tileCount + 4) : Number.isInteger(gid) && gid >= 0 && gid <= tileCount; if (!valid) add(`/map/layers/${name}/${index}`, `GID fuera del rango permitido: ${String(gid)}`); }); }
     }
   }
 
@@ -86,6 +90,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
       if (typeof definition === "string" && !(definition in definitions)) {
         add(`/entities/${group}/${index}`, `Definición inexistente: ${definition}`);
       }
+      if (typeof definition === "string") referencedDefinitions.add(definition);
     });
   }
 
@@ -97,18 +102,24 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
       if (dimensions && Array.isArray(sprites)) sprites.forEach((rawSprite, spriteIndex) => { const sprite = object(rawSprite); if (Number(sprite.x) + Number(sprite.width) > dimensions.width || Number(sprite.y) + Number(sprite.height) > dimensions.height) add(`/definitions/${definitionId}/states/${stateIndex}/animation/sprites/${spriteIndex}`, `El frame sale del bitmap de ${dimensions.width}×${dimensions.height}`); });
     });
   }
-  const tileset = object(map.tileset); asset(tileset.image, "/map/tileset/image"); const audio = object(level.audio); if (Array.isArray(audio.music)) audio.music.forEach((reference, index) => asset(reference, `/audio/music/${index}`)); if (Array.isArray(audio.effects)) audio.effects.forEach((reference, index) => asset(reference, `/audio/effects/${index}`));
+  const tileset = object(map.tileset); const tilesetBytes = asset(tileset.image, "/map/tileset/image"); const tilesetDimensions = tilesetBytes && pngDimensions(tilesetBytes); if (tilesetDimensions && (tilesetDimensions.width !== tileset.imageWidth || tilesetDimensions.height !== tileset.imageHeight)) add("/map/tileset", `Dimensiones declaradas ${String(tileset.imageWidth)}×${String(tileset.imageHeight)}; bitmap real ${tilesetDimensions.width}×${tilesetDimensions.height}`);
+  const audio = object(level.audio); if (Array.isArray(audio.music)) { audio.music.forEach((reference, index) => asset(reference, `/audio/music/${index}`)); if (Number(audio.initialMusic) >= audio.music.length) add("/audio/initialMusic", "El índice de música inicial no existe"); } if (Array.isArray(audio.effects)) audio.effects.forEach((reference, index) => asset(reference, `/audio/effects/${index}`));
+  const worldWidth = width * tileWidth; const worldHeight = height * tileHeight;
+  if (Number.isFinite(worldWidth) && Number.isFinite(worldHeight)) for (const [group, rawEntities] of Object.entries(entities)) if (Array.isArray(rawEntities)) rawEntities.forEach((raw, index) => { const entity = object(raw); const attrs = object(entity.attributes); let x = Number(attrs.ini_x ?? attrs.x ?? entity.x ?? entity.chk_x ?? entity.left_up_x); let y = Number(attrs.ini_y ?? attrs.y ?? entity.y ?? entity.chk_y ?? entity.left_up_y); let w = Number(attrs.width ?? entity.bb_width ?? entity.chk_width ?? (Number(entity.right_down_x) - x)); let h = Number(attrs.height ?? entity.bb_height ?? entity.chk_height ?? (Number(entity.right_down_y) - y)); if (![x, y, w, h].every(Number.isFinite)) return; if (w <= 0 || h <= 0) add(`/entities/${group}/${index}`, "La geometría debe tener área positiva"); else if (x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight) add(`/entities/${group}/${index}`, "La entidad sale de los límites del mapa"); });
 
   const playerDefinition = object(level.player).definition;
   if (typeof playerDefinition === "string" && !(playerDefinition in definitions)) {
     add("/player/definition", `Definición inexistente: ${playerDefinition}`);
   }
+  if (typeof playerDefinition === "string") referencedDefinitions.add(playerDefinition);
   for (const [name, rawProjectile] of Object.entries(object(level.projectiles))) {
     const definition = object(rawProjectile).definition;
     if (typeof definition === "string" && !(definition in definitions)) {
       add(`/projectiles/${name}/definition`, `Definición inexistente: ${definition}`);
     }
+    if (typeof definition === "string") referencedDefinitions.add(definition);
   }
+  for (const id of Object.keys(definitions)) if (!referencedDefinitions.has(id)) warn(`/definitions/${id}`, "Definición no utilizada por el nivel");
 
   const checkpointIds = ids.get("checkpoints") ?? new Set<number>();
   const checkpoints = entities.checkpoints;

@@ -59,6 +59,16 @@ test("asset validation rejects duplicate states, missing bitmaps and frames outs
   assert.ok(diagnostics.some((item) => item.message.includes("sale del bitmap")));
 });
 
+test("integral validation rejects invalid GIDs, geometry and tileset metadata", () => {
+  const project = createEmptyProject(); const level = readLevel(project); level.map.layers.tiles[3] = 99; level.map.tileset.imageWidth = 9; level.entities.items.push({ id: 0, attributes: { ini_x: 30, ini_y: 20, width: 8, height: 8, definition: "objects/bomb" } }); writeLevel(project, level);
+  const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.path.endsWith("/tiles/3"))); assert.ok(diagnostics.some((item) => item.message.includes("Dimensiones declaradas"))); assert.ok(diagnostics.some((item) => item.message.includes("límites del mapa")));
+});
+
+test("warnings are visible but do not block export", () => {
+  const project = createEmptyProject(); const level = readLevel(project); level.definitions["objects/unused"] = structuredClone(level.definitions["objects/bomb"]); writeLevel(project, level);
+  const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.severity === "warning")); assert.equal(hasValidationErrors(diagnostics), false);
+});
+
 test("migration registry accepts v1 clones and rejects future versions", () => {
   const level = readLevel(createEmptyProject());
   const prepared = prepareLevelForEditing(level);

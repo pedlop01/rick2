@@ -12,7 +12,7 @@ function modelWithItem() {
 }
 test("entities can be hit, moved, duplicated and deleted", () => {
   const model = modelWithItem(); assert.deepEqual(model.hitTest(6, 6, "items"), { group: "items", index: 0 });
-  assert.equal(model.move({ group: "items", index: 0 }, 16, 24), true); assert.deepEqual(model.box({ group: "items", index: 0 }), { x: 16, y: 24, width: 8, height: 8 });
+  assert.equal(model.move({ group: "items", index: 0 }, 4, 4), true); assert.deepEqual(model.box({ group: "items", index: 0 }), { x: 4, y: 4, width: 8, height: 8 });
   const copy = model.duplicate({ group: "items", index: 0 }); assert.deepEqual(copy, { group: "items", index: 1 }); assert.equal(model.entity(copy).id, 1); model.flush(); assert.deepEqual(validateProject(model.project), []); assert.equal(model.remove(copy), true);
 });
 test("primitive edits preserve their JSON types", () => {

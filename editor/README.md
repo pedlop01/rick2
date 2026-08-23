@@ -61,6 +61,11 @@ Every completed edit enters a bounded project history. Use the toolbar,
 together. Dirty projects are mirrored to IndexedDB and offered for recovery on
 the next launch, while a confirmed save clears the recovery copy.
 
+The inspector separates blocking errors from amber non-blocking warnings.
+Diagnostics cover schema, assets, state IDs, GIDs, references, map geometry,
+tileset metadata and gameplay bounds. Click a diagnostic (or focus it and press
+Enter) to select its map cell or entity, or open the relevant asset catalog.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 
