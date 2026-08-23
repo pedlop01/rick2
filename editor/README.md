@@ -45,6 +45,11 @@ duplicate and remove instances from the left panel. The inspector preserves
 numeric and textual JSON types while editing the selected entity. `Nueva` uses
 the first valid entity in that group as its schema-compatible template.
 
+Gameplay relationships are drawn while editing entities: blue checkpoint
+links, orange trigger targets, yellow movement routes and green AI limit zones.
+Nested inspector fields include action sequences and targets; enum values use
+bounded selectors, and invalid references or checkpoint cycles block export.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 

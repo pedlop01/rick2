@@ -168,7 +168,7 @@ export function createEditorShell(host: HTMLElement): void {
     const fields: Array<{ path: string[]; value: string | number }> = [];
     for (const [key, child] of Object.entries(value)) {
       if (typeof child === "string" || typeof child === "number") fields.push({ path: [...prefix, key], value: child });
-      else if (child && typeof child === "object" && !Array.isArray(child)) fields.push(...primitiveFields(child as EntityRecord, [...prefix, key]));
+      else if (child && typeof child === "object") fields.push(...primitiveFields(child as EntityRecord, [...prefix, key]));
     }
     return fields;
   }
@@ -179,7 +179,15 @@ export function createEditorShell(host: HTMLElement): void {
     const title = document.createElement("h3"); title.textContent = `${selectedEntity.group} · ${String(entity.id ?? selectedEntity.index)}`; inspector.append(title);
     for (const field of primitiveFields(entity)) {
       const label = document.createElement("label"); label.className = "property-field"; const caption = document.createElement("span"); caption.textContent = field.path.join(".");
-      const input = document.createElement("input"); input.type = typeof field.value === "number" ? "number" : "text"; input.value = String(field.value); if (typeof field.value === "number") input.step = "any";
+      const enumValues: Record<string, string[]> = { ini_state: ["stop", "moving"], pl_face: ["left", "right"], action: ["enters", "stays", "exits", "hits"], face: ["any", "left", "right"], ia_type: ["walker", "chaser"] };
+      const key = field.path.at(-1)!; let choices = enumValues[key];
+      if (key === "type") choices = field.path.includes("targets") ? ["platform", "laser", "hazard"] : ["horizontal", "vertical", "diagonal"];
+      if (key === "direction") choices = field.path.includes("actions") ? ["stop", "left", "right", "up", "down", ...(selectedEntity.group === "hazards" ? ["deactivate"] : [])] : ["left", "right"];
+      if (["visible", "recursive", "one_use", "exploits", "trigger", "stop_inactive", "onehot", "default_trigger", "ia_random", "trigger_cond"].includes(key)) choices = ["0", "1"];
+      const input = choices ? document.createElement("select") : document.createElement("input");
+      if (input instanceof HTMLSelectElement) for (const choice of choices!) { const option = document.createElement("option"); option.value = choice; option.textContent = choice; input.append(option); }
+      else { input.type = typeof field.value === "number" ? "number" : "text"; if (typeof field.value === "number") input.step = "any"; }
+      input.value = String(field.value);
       input.addEventListener("change", () => {
         const value = typeof field.value === "number" ? Number(input.value) : input.value; if (typeof value === "number" && !Number.isFinite(value)) return;
         entityModel!.setPrimitive(selectedEntity!, field.path, value); commitEntityChange("Propiedad de entidad modificada"); renderEntityInspector();
@@ -337,7 +345,10 @@ export function createEditorShell(host: HTMLElement): void {
   deleteEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; entityModel.remove(selectedEntity); selectedEntity = null; commitEntityChange("Entidad eliminada"); });
   entityControls.append(groupSelect, newEntity, duplicateEntity, deleteEntity);
 
-  function refreshEntityOverlay(): void { preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => item.ref.group === entityGroup) ?? []) : [], selectedEntity); }
+  function refreshEntityOverlay(): void {
+    preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => item.ref.group === entityGroup) ?? []) : [], selectedEntity);
+    const guides = activeTool === "entity" ? entityModel?.gameplayGuides() : null; preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []);
+  }
   function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); refreshEntityOverlay(); refreshProjectState(message); }
 
   let gestureStart: PointerPosition | null = null;

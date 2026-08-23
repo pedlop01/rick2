@@ -99,6 +99,13 @@ function semanticLevelDiagnostics(file: string, value: unknown): Diagnostic[] {
       }
     });
   });
+  if (Array.isArray(checkpoints)) {
+    const graph = new Map<number, number[]>();
+    checkpoints.forEach((raw) => { const checkpoint = object(raw); if (typeof checkpoint.id === "number") graph.set(checkpoint.id, Array.isArray(checkpoint.nxt_chks) ? checkpoint.nxt_chks.filter((id): id is number => typeof id === "number") : []); });
+    const visiting = new Set<number>(); const visited = new Set<number>();
+    const visit = (id: number): boolean => { if (visiting.has(id)) return true; if (visited.has(id)) return false; visiting.add(id); const cyclic = (graph.get(id) ?? []).some(visit); visiting.delete(id); visited.add(id); return cyclic; };
+    for (const id of graph.keys()) if (visit(id)) { add("/entities/checkpoints", "Las relaciones de checkpoints contienen un ciclo"); break; }
+  }
 
   const targetGroups: Record<string, string> = {
     platform: "platforms", laser: "lasers", hazard: "hazards",
