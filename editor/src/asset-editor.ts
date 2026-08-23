@@ -4,12 +4,13 @@ import { AssetDocumentModel } from "./asset-document";
 export class AssetEditor {
   readonly #controls: HTMLElement; readonly #inspector: HTMLElement;
   #model: AssetDocumentModel | null = null; #definitionId = ""; #stateIndex = 0; #frameIndex = 0; #timer = 0;
+  #visible = false;
   #onChange: (message: string, reloadMap?: boolean) => void = () => undefined;
   constructor(controls: HTMLElement, inspector: HTMLElement) { this.#controls = controls; this.#inspector = inspector; }
   setChangeListener(listener: (message: string, reloadMap?: boolean) => void): void { this.#onChange = listener; }
-  load(model: AssetDocumentModel): void { this.#model = model; this.#definitionId = Object.keys(model.definitions)[0] ?? ""; this.#stateIndex = 0; this.#frameIndex = 0; this.render(); }
-  show(): void { this.#controls.hidden = false; this.render(); }
-  hide(): void { this.#controls.hidden = true; if (this.#timer) window.clearInterval(this.#timer); }
+  load(model: AssetDocumentModel): void { this.#model = model; this.#definitionId = Object.keys(model.definitions)[0] ?? ""; this.#stateIndex = 0; this.#frameIndex = 0; if (this.#visible) this.render(); }
+  show(): void { this.#visible = true; this.#controls.hidden = false; this.render(); }
+  hide(): void { this.#visible = false; this.#controls.hidden = true; if (this.#timer) window.clearInterval(this.#timer); }
 
   render(): void {
     if (this.#timer) window.clearInterval(this.#timer); this.#controls.innerHTML = ""; this.#inspector.innerHTML = ""; this.#inspector.classList.remove("empty-inspector");

@@ -56,6 +56,11 @@ definitions, states and frames, edit sprite rectangles and
 `frameDurationTicks`, and play the selected animation at 50 simulation ticks
 per second. Imported files receive safe, collision-free project paths.
 
+Every completed edit enters a bounded project history. Use the toolbar,
+`Ctrl+Z`, `Ctrl+Shift+Z` or `Ctrl+Y`; undo/redo restores JSON and imported assets
+together. Dirty projects are mirrored to IndexedDB and offered for recovery on
+the next launch, while a confirmed save clears the recovery copy.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 

@@ -15,6 +15,8 @@ import { TilePalette } from "./tile-palette";
 import { EntityDocumentModel, ENTITY_GROUPS, type EntityGroup, type EntityRecord, type EntityRef } from "./entity-document";
 import { AssetDocumentModel } from "./asset-document";
 import { AssetEditor } from "./asset-editor";
+import { ProjectHistory } from "./project-history";
+import { clearRecovery, loadRecovery, saveRecovery } from "./recovery-store";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -74,6 +76,10 @@ export function createEditorShell(host: HTMLElement): void {
   const assetControls = requiredElement<HTMLElement>(host, "#asset-controls");
 
   const session = new ProjectSession();
+  const history = new ProjectHistory();
+  let recoveryWrite = Promise.resolve();
+  const persistRecovery = (): void => { if (session.project) recoveryWrite = recoveryWrite.then(() => saveRecovery(session.project!)).catch(() => undefined); };
+  const discardRecovery = (): void => { recoveryWrite = recoveryWrite.then(() => clearRecovery()).catch(() => undefined); };
   const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
   const layerRows = new Map<MapLayerName, HTMLElement>();
   let activeLayer: MapLayerName = "tiles";
@@ -125,6 +131,7 @@ export function createEditorShell(host: HTMLElement): void {
     project: ReturnType<typeof createEmptyProject>,
     dirty: boolean,
     message: string,
+    resetHistory = true,
   ): Promise<void> {
     session.replace(project, dirty);
     levelModel = new LevelDocumentModel(project);
@@ -133,10 +140,13 @@ export function createEditorShell(host: HTMLElement): void {
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
-    await preview.load(project, levelModel.map);
+    await preview.load(project, levelModel.map, resetHistory);
     await palette.load(project, levelModel);
     assetEditor.load(assetModel);
     refreshEntityOverlay();
+    if (resetHistory) history.reset(project, !dirty);
+    refreshHistoryControls();
+    if (resetHistory) { if (dirty) persistRecovery(); else discardRecovery(); }
     hint.hidden = true;
   }
 
@@ -261,6 +271,8 @@ export function createEditorShell(host: HTMLElement): void {
     }
     downloadProject(project);
     session.markSaved();
+    history.markClean();
+    discardRecovery();
     refreshProjectState("Proyecto exportado como ZIP");
   }));
   saveDirectory.addEventListener("click", () => void run(async () => {
@@ -272,6 +284,8 @@ export function createEditorShell(host: HTMLElement): void {
     directoryHandle ??= await pickProjectDirectory();
     await writeProjectDirectory(project, directoryHandle);
     session.markSaved();
+    history.markClean();
+    discardRecovery();
     refreshProjectState(`Proyecto guardado en la carpeta ${directoryHandle.name}`);
   }));
   const separator = document.createElement("span");
@@ -279,8 +293,11 @@ export function createEditorShell(host: HTMLElement): void {
   separator.setAttribute("aria-hidden", "true");
   const undo = button("Deshacer", "El historial se implementará en la tarea 25");
   const redo = button("Rehacer", "El historial se implementará en la tarea 25");
-  undo.disabled = true;
-  redo.disabled = true;
+  undo.disabled = true; redo.disabled = true;
+  function refreshHistoryControls(): void { undo.disabled = !history.canUndo; redo.disabled = !history.canRedo; undo.title = history.undoLabel ? `Deshacer: ${history.undoLabel}` : "Nada que deshacer"; redo.title = history.redoLabel ? `Rehacer: ${history.redoLabel}` : "Nada que rehacer"; }
+  async function restoreHistory(project: ReturnType<ProjectHistory["undo"]>, message: string): Promise<void> { if (!project) return; await activateProject(project, !history.isClean, message, false); if (history.isClean) discardRecovery(); else persistRecovery(); }
+  undo.addEventListener("click", () => void restoreHistory(history.undo(), "Cambio deshecho"));
+  redo.addEventListener("click", () => void restoreHistory(history.redo(), "Cambio rehecho"));
   const zoomOut = button("−", "Alejar");
   const zoomIn = button("+", "Acercar");
   const fit = button("Encajar", "Mostrar el mapa completo");
@@ -338,7 +355,7 @@ export function createEditorShell(host: HTMLElement): void {
   const preview = new WorkspacePreview(canvas);
   const palette = new TilePalette(paletteHost);
   const assetEditor = new AssetEditor(assetControls, inspector);
-  assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map).then(() => palette.load(session.project!, levelModel!)); });
+  assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map, false).then(() => palette.load(session.project!, levelModel!)); });
   palette.setSelectListener((gid) => { status.textContent = `GID seleccionado: ${gid}`; });
   preview.start();
   layerRows.get(activeLayer)?.classList.add("active");
@@ -357,14 +374,14 @@ export function createEditorShell(host: HTMLElement): void {
     preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => item.ref.group === entityGroup) ?? []) : [], selectedEntity);
     const guides = activeTool === "entity" ? entityModel?.gameplayGuides() : null; preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []);
   }
-  function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); refreshEntityOverlay(); refreshProjectState(message); }
+  function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshEntityOverlay(); refreshProjectState(message); }
 
   let gestureStart: PointerPosition | null = null;
   let gestureLast: PointerPosition | null = null;
   let gestureChanged = false;
   const finishEdit = (message: string): void => {
     if (!gestureChanged || !levelModel) return;
-    levelModel.flush(); session.markDirty(); preview.refresh(); refreshProjectState(message);
+    levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); preview.refresh(); refreshProjectState(message);
   };
   preview.setEditHandlers({
     down(tile) {
@@ -402,6 +419,8 @@ export function createEditorShell(host: HTMLElement): void {
     if (tile) { lastPointerTile = tile; status.textContent = `${activeLayer} · x ${tile.x}, y ${tile.y} · GID ${palette.selectedGid}`; }
   });
   canvas.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); void restoreHistory(event.shiftKey ? history.redo() : history.undo(), event.shiftKey ? "Cambio rehecho" : "Cambio deshecho"); return; }
+    if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); void restoreHistory(history.redo(), "Cambio rehecho"); return; }
     if (!levelModel || !event.ctrlKey || !["c", "x", "v"].includes(event.key.toLowerCase())) return;
     const key = event.key.toLowerCase();
     if ((key === "c" || key === "x") && selection) {
@@ -427,4 +446,5 @@ export function createEditorShell(host: HTMLElement): void {
     }
   });
   refreshProjectState("Aplicación offline cargada; esperando un proyecto");
+  void loadRecovery().then((project) => { if (project && !session.project && window.confirm("Hay un proyecto sin guardar de una sesión anterior. ¿Quieres recuperarlo?")) void activateProject(project, true, "Proyecto recuperado desde el almacenamiento local"); }).catch(() => undefined);
 }

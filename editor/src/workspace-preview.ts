@@ -97,7 +97,7 @@ export class WorkspacePreview {
     if (this.#frame) cancelAnimationFrame(this.#frame);
   }
 
-  async load(project: Rick2Project, editableMap?: TileMapDocument): Promise<void> {
+  async load(project: Rick2Project, editableMap?: TileMapDocument, fitView = true): Promise<void> {
     const levelPath = project.manifest.initialLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`No se encuentra ${levelPath}`);
@@ -109,7 +109,7 @@ export class WorkspacePreview {
     this.#tileset?.close();
     this.#tileset = bitmap;
     this.#map = editableMap ?? level.map;
-    this.fit();
+    if (fitView) this.fit(); else this.#scheduleDraw();
   }
 
   clear(): void {
