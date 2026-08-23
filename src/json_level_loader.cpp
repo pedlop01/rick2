@@ -4,6 +4,7 @@
 #include <set>
 #include "data_loading.h"
 #include "game_time.h"
+#include "format_versions.h"
 
 namespace {
 using json = nlohmann::json;
@@ -152,7 +153,7 @@ std::string GetInitialLevelFromGamePackage(const char* file) {
     std::ifstream input(file);
     if (!input) throw DataLoadError(std::string("Cannot load '") + file + "'");
     json game; input >> game;
-    if (game.value("formatVersion", 0) != 1 ||
+    if (game.value("formatVersion", 0) != FormatVersions::GAME ||
         game.value("kind", "") != "rick2.game" ||
         !game.contains("initialLevel") ||
         !game["initialLevel"].is_string() ||
@@ -173,7 +174,8 @@ void LoadLevelPackage(const char* file) {
     std::ifstream input(file);
     if (!input) throw DataLoadError(std::string("Cannot load '") + file + "'");
     json value; input >> value;
-    if (value.value("formatVersion", 0) != 1 || value.value("kind", "") != "rick2.level")
+    if (value.value("formatVersion", 0) != FormatVersions::LEVEL ||
+        value.value("kind", "") != "rick2.level")
       throw DataLoadError(std::string("Invalid '") + file + "': unsupported format");
     ValidatePackage(value, file);
     const std::string package_directory = ParentPath(file);

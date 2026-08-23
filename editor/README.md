@@ -23,6 +23,11 @@ The application can create an empty project, open and export the universal
 open or write an extracted project directory. Unsaved projects are identified
 in the header and protected before replacement or closing.
 
+Project and level schemas are bundled into the release. Structural and semantic
+diagnostics appear in the inspector with their file and JSON path; export is
+disabled while errors remain. Version upgrades enter through the explicit
+migration registry in `src/migrations.ts`.
+
 ## Commands
 
 | Command | Purpose |
@@ -34,6 +39,7 @@ in the header and protected before replacement or closing.
 
 ## Dependencies and licenses
 
-The runtime bundle contains fflate (MIT) for offline ZIP processing. TypeScript
-(Apache-2.0) and esbuild (MIT) are development-only build tools; exact versions
-are recorded in `package-lock.json` and no dependency is fetched at runtime.
+The runtime bundle contains Ajv (MIT) for JSON Schema validation and fflate
+(MIT) for offline ZIP processing. TypeScript (Apache-2.0) and esbuild (MIT) are
+development-only build tools; exact versions are recorded in `package-lock.json`
+and no dependency is fetched at runtime.

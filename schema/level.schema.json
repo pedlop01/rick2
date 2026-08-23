@@ -142,19 +142,257 @@
       "additionalProperties": false,
       "required": ["platforms", "items", "backgroundObjects", "blocks", "hazards", "checkpoints", "lasers", "triggers", "enemies", "cameraViews"],
       "properties": {
-        "platforms": { "$ref": "#/$defs/entityArray" },
-        "items": { "$ref": "#/$defs/entityArray" },
-        "backgroundObjects": { "$ref": "#/$defs/entityArray" },
-        "blocks": { "$ref": "#/$defs/entityArray" },
-        "hazards": { "$ref": "#/$defs/entityArray" },
-        "checkpoints": { "$ref": "#/$defs/entityArray" },
-        "lasers": { "$ref": "#/$defs/entityArray" },
-        "triggers": { "$ref": "#/$defs/entityArray" },
-        "enemies": { "$ref": "#/$defs/entityArray" },
-        "cameraViews": { "$ref": "#/$defs/entityArray" }
+        "platforms": { "$ref": "#/$defs/platformArray" },
+        "items": { "$ref": "#/$defs/itemArray" },
+        "backgroundObjects": { "$ref": "#/$defs/backgroundObjectArray" },
+        "blocks": { "$ref": "#/$defs/blockArray" },
+        "hazards": { "$ref": "#/$defs/hazardArray" },
+        "checkpoints": { "$ref": "#/$defs/checkpointArray" },
+        "lasers": { "$ref": "#/$defs/laserArray" },
+        "triggers": { "$ref": "#/$defs/triggerArray" },
+        "enemies": { "$ref": "#/$defs/enemyArray" },
+        "cameraViews": { "$ref": "#/$defs/cameraViewArray" }
       }
     },
-    "entityArray": { "type": "array", "items": { "type": "object" } },
+    "booleanInteger": { "type": "integer", "enum": [0, 1] },
+    "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "number": { "type": "number" },
+    "definitionReference": { "$ref": "#/$defs/nonEmptyString" },
+    "placementAttributes": {
+      "type": "object",
+      "required": ["ini_x", "ini_y", "width", "height", "definition"],
+      "properties": {
+        "ini_x": { "type": "integer" },
+        "ini_y": { "type": "integer" },
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" },
+        "definition": { "$ref": "#/$defs/definitionReference" }
+      }
+    },
+    "movementAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "desp", "wait", "speed", "cond"],
+      "properties": {
+        "direction": { "enum": ["stop", "right", "left", "up", "down"] },
+        "desp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "wait": { "$ref": "#/$defs/nonNegativeInteger" },
+        "speed": { "type": "number", "minimum": 0 },
+        "cond": { "type": "integer", "enum": [0, 1, 2] }
+      }
+    },
+    "hazardAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "desp", "wait", "speed", "cond"],
+      "properties": {
+        "direction": { "enum": ["stop", "right", "left", "up", "down", "deactivate"] },
+        "desp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "wait": { "$ref": "#/$defs/nonNegativeInteger" },
+        "speed": { "type": "number", "minimum": 0 },
+        "cond": { "type": "integer", "enum": [0, 1, 2] }
+      }
+    },
+    "actionCollection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "oneOf": [
+            { "$ref": "#/$defs/movementAction" },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/movementAction" } }
+          ]
+        }
+      }
+    },
+    "hazardActionCollection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "oneOf": [
+            { "$ref": "#/$defs/hazardAction" },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hazardAction" } }
+          ]
+        }
+      }
+    },
+    "platformArray": { "type": "array", "items": { "$ref": "#/$defs/platform" } },
+    "platform": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "attributes", "actions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "unevaluatedProperties": false,
+          "allOf": [
+            { "$ref": "#/$defs/placementAttributes" },
+            {
+              "type": "object",
+              "required": ["visible", "recursive", "one_use", "ini_state"],
+              "properties": {
+                "visible": { "$ref": "#/$defs/booleanInteger" },
+                "recursive": { "$ref": "#/$defs/booleanInteger" },
+                "one_use": { "$ref": "#/$defs/booleanInteger" },
+                "ini_state": { "enum": ["stop", "moving"] }
+              }
+            }
+          ]
+        },
+        "actions": { "$ref": "#/$defs/actionCollection" }
+      }
+    },
+    "itemArray": { "type": "array", "items": { "$ref": "#/$defs/simplePlacedEntity" } },
+    "simplePlacedEntity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "attributes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "allOf": [{ "$ref": "#/$defs/placementAttributes" }],
+          "unevaluatedProperties": false
+        }
+      }
+    },
+    "backgroundObjectArray": { "type": "array", "items": { "$ref": "#/$defs/backgroundObject" } },
+    "backgroundObject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "attributes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "unevaluatedProperties": false,
+          "allOf": [
+            { "$ref": "#/$defs/placementAttributes" },
+            { "type": "object", "required": ["skip_num_anims"], "properties": { "skip_num_anims": { "$ref": "#/$defs/nonNegativeInteger" } } }
+          ]
+        }
+      }
+    },
+    "blockArray": { "type": "array", "items": { "$ref": "#/$defs/block" } },
+    "block": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "attributes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "unevaluatedProperties": false,
+          "allOf": [
+            { "$ref": "#/$defs/placementAttributes" },
+            { "type": "object", "required": ["exploits"], "properties": { "exploits": { "$ref": "#/$defs/booleanInteger" } } }
+          ]
+        }
+      }
+    },
+    "hazardArray": { "type": "array", "items": { "$ref": "#/$defs/hazard" } },
+    "hazard": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "attributes", "actions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "unevaluatedProperties": false,
+          "allOf": [
+            { "$ref": "#/$defs/placementAttributes" },
+            { "type": "object", "required": ["trigger", "stop_inactive"], "properties": {
+              "trigger": { "$ref": "#/$defs/booleanInteger" },
+              "stop_inactive": { "$ref": "#/$defs/booleanInteger" }
+            } }
+          ]
+        },
+        "actions": { "$ref": "#/$defs/hazardActionCollection" }
+      }
+    },
+    "checkpointArray": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/checkpoint" } },
+    "checkpoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "chk_x", "chk_y", "chk_width", "chk_height", "pl_x", "pl_y", "pl_face", "nxt_chks"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "chk_x": { "type": "integer" }, "chk_y": { "type": "integer" },
+        "chk_width": { "$ref": "#/$defs/positiveInteger" }, "chk_height": { "$ref": "#/$defs/positiveInteger" },
+        "pl_x": { "type": "integer" }, "pl_y": { "type": "integer" },
+        "pl_face": { "enum": ["left", "right"] },
+        "nxt_chks": { "type": "array", "items": { "$ref": "#/$defs/nonNegativeInteger" }, "uniqueItems": true }
+      }
+    },
+    "laserArray": { "type": "array", "items": { "$ref": "#/$defs/laser" } },
+    "laser": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "x", "y", "bb_x", "bb_y", "bb_width", "bb_height", "type", "speed", "recursive", "direction", "default_trigger", "definition"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" }, "x": { "type": "integer" }, "y": { "type": "integer" },
+        "bb_x": { "$ref": "#/$defs/nonNegativeInteger" }, "bb_y": { "$ref": "#/$defs/nonNegativeInteger" },
+        "bb_width": { "$ref": "#/$defs/positiveInteger" }, "bb_height": { "$ref": "#/$defs/positiveInteger" },
+        "type": { "enum": ["horizontal", "vertical", "diagonal"] },
+        "speed": { "type": "number", "minimum": 0 }, "recursive": { "$ref": "#/$defs/booleanInteger" },
+        "direction": { "enum": ["left", "right"] }, "default_trigger": { "$ref": "#/$defs/booleanInteger" },
+        "definition": { "$ref": "#/$defs/definitionReference" }
+      }
+    },
+    "triggerArray": { "type": "array", "items": { "$ref": "#/$defs/trigger" } },
+    "triggerTarget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "id", "delay", "trigger", "trigger_cond"],
+      "properties": {
+        "type": { "enum": ["platform", "laser", "hazard"] },
+        "id": { "$ref": "#/$defs/nonNegativeInteger" }, "delay": { "$ref": "#/$defs/nonNegativeInteger" },
+        "trigger": { "$ref": "#/$defs/booleanInteger" }, "trigger_cond": { "$ref": "#/$defs/booleanInteger" }
+      }
+    },
+    "triggerTargets": {
+      "type": "object", "additionalProperties": false, "required": ["target"],
+      "properties": { "target": { "oneOf": [
+        { "$ref": "#/$defs/triggerTarget" },
+        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/triggerTarget" } }
+      ] } }
+    },
+    "trigger": {
+      "type": "object", "additionalProperties": false, "required": ["id", "attributes", "targets"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "attributes": {
+          "type": "object", "additionalProperties": false,
+          "required": ["x", "y", "width", "height", "recursive", "onehot", "action", "face"],
+          "properties": {
+            "x": { "type": "integer" }, "y": { "type": "integer" },
+            "width": { "$ref": "#/$defs/positiveInteger" }, "height": { "$ref": "#/$defs/positiveInteger" },
+            "recursive": { "$ref": "#/$defs/booleanInteger" }, "onehot": { "$ref": "#/$defs/booleanInteger" },
+            "action": { "enum": ["enters", "stays", "exits", "hits"] }, "face": { "enum": ["any", "left", "right"] }
+          }
+        },
+        "targets": { "$ref": "#/$defs/triggerTargets" }
+      }
+    },
+    "enemyArray": { "type": "array", "items": { "$ref": "#/$defs/enemy" } },
+    "enemy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "x", "y", "bb_x", "bb_y", "bb_width", "bb_height", "direction", "speed_x", "speed_y", "ia_type", "ia_random", "ia_randomness", "ia_block_steps", "ia_orig_x", "ia_orig_y", "ia_limit_x", "ia_limit_y", "definition"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" }, "x": { "type": "integer" }, "y": { "type": "integer" },
+        "bb_x": { "$ref": "#/$defs/nonNegativeInteger" }, "bb_y": { "$ref": "#/$defs/nonNegativeInteger" },
+        "bb_width": { "$ref": "#/$defs/positiveInteger" }, "bb_height": { "$ref": "#/$defs/positiveInteger" },
+        "direction": { "enum": ["left", "right"] },
+        "speed_x": { "type": "number", "minimum": 0 }, "speed_y": { "type": "number", "minimum": 0 },
+        "ia_type": { "enum": ["walker", "chaser"] }, "ia_random": { "$ref": "#/$defs/booleanInteger" },
+        "ia_randomness": { "$ref": "#/$defs/nonNegativeInteger" }, "ia_block_steps": { "$ref": "#/$defs/nonNegativeInteger" },
+        "ia_orig_x": { "type": "integer" }, "ia_orig_y": { "type": "integer" },
+        "ia_limit_x": { "$ref": "#/$defs/nonNegativeInteger" }, "ia_limit_y": { "$ref": "#/$defs/nonNegativeInteger" },
+        "definition": { "$ref": "#/$defs/definitionReference" }
+      }
+    },
+    "cameraViewArray": { "type": "array", "items": { "$ref": "#/$defs/cameraView" } },
+    "cameraView": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "left_up_x", "left_up_y", "right_down_x", "right_down_y"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "left_up_x": { "type": "integer" }, "left_up_y": { "type": "integer" },
+        "right_down_x": { "type": "integer" }, "right_down_y": { "type": "integer" }
+      }
+    },
     "animationDefinition": {
       "type": "object",
       "additionalProperties": false,

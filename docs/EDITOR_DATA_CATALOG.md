@@ -92,16 +92,15 @@ These counts are regression data, not engine limits.
 
 ## Known contract gaps to close
 
-1. Entity arrays are generic objects in the schema and need typed `$defs`.
-2. Singleton-or-array action/target shapes must become one canonical array form
-   through a versioned migration or be described explicitly in the schema.
-3. Integer booleans should remain compatible in version 1; a later version may
+1. Singleton-or-array action/target shapes are now explicit in the version-1
+   schema; a future canonical array-only shape requires a versioned migration.
+2. Integer booleans remain compatible in version 1; a later version may
    migrate them to JSON booleans.
-4. `onehot` is present on triggers but not consumed by the current loader; it
+3. `onehot` is present on triggers but not consumed by the current loader; it
    must be either specified and implemented or removed through migration.
-5. Collision GID meanings and the fixed seven audio effect slots need named,
+4. Collision GID meanings and the fixed seven audio effect slots need named,
    machine-readable contracts rather than implicit C++ constants/order.
-6. IDs are not yet checked for uniqueness in every entity group by the schema.
-7. Several semantic constraints currently exist only in C++ and must be shared
-   with the editor validation layer.
-
+5. JSON Schema cannot express uniqueness by entity `id`; Rick2 Engine now checks
+   it semantically, and the equivalent native validation should be centralized.
+6. Asset existence and decoded dimensions remain for the integral validation in
+   task 26.

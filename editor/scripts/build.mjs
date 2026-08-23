@@ -41,4 +41,13 @@ await build({
   platform: "node",
   target: ["node18"],
 });
+await build({
+  entryPoints: [path.join(root, "src/validation.ts"), path.join(root, "src/migrations.ts")],
+  outdir: testOutput,
+  outExtension: { ".js": ".mjs" },
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  target: ["node18"],
+});
 console.log(`Rick2 Engine built at ${output}`);

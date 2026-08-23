@@ -149,7 +149,20 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
   };
   const emptyEntities = {
     platforms: [], items: [], backgroundObjects: [], blocks: [], hazards: [],
-    checkpoints: [], lasers: [], triggers: [], enemies: [], cameraViews: [],
+    checkpoints: [{
+      id: 0, chk_x: 0, chk_y: 0, chk_width: 16, chk_height: 16,
+      pl_x: 0, pl_y: 0, pl_face: "right", nxt_chks: [],
+    }],
+    lasers: [], triggers: [], enemies: [], cameraViews: [],
+  };
+  const placeholderState = {
+    name: "stop",
+    id: 0,
+    animation: {
+      bitmap: "../../assets/images/placeholder.png",
+      frameDurationTicks: 1,
+      sprites: [{ x: 0, y: 0, width: 8, height: 8 }],
+    },
   };
   const cells = 32 * 25;
   const level = {
@@ -170,8 +183,16 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
       shoot: { definition: "objects/shoot", width: 1, height: 1, yOffset: 0 },
       bomb: { definition: "objects/bomb", width: 1, height: 1, yOffset: 0 },
     },
-    definitions: {},
-    audio: { initialMusic: 0, music: [], effects: [] },
+    definitions: {
+      "characters/player": { kind: "character", name: "player", states: [placeholderState] },
+      "objects/shoot": { kind: "object", name: "shoot", states: [placeholderState] },
+      "objects/bomb": { kind: "object", name: "bomb", states: [placeholderState] },
+    },
+    audio: {
+      initialMusic: 0,
+      music: ["../../assets/audio/music.ogg"],
+      effects: Array(7).fill("../../assets/audio/effect.wav"),
+    },
   };
   const game = { formatVersion: 1, kind: "rick2.game", initialLevel: levelPath };
   return loadProjectFiles(new Map([

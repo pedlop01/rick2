@@ -154,6 +154,8 @@ catalog are documented in `docs/ENGINE_ARCHITECTURE.md` and
 
 ```sh
 python3 tests/editor_contract_test.py
+python3 tests/level_schema_test.py
+python3 tests/format_compatibility_test.py
 ```
 
 Build and test the offline web application shell with Node.js 22 or newer:

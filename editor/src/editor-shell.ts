@@ -9,6 +9,7 @@ import {
   writeProjectDirectory,
 } from "./project-io";
 import { ProjectSession } from "./project-session";
+import { hasValidationErrors, validateProject, type Diagnostic } from "./validation";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -61,6 +62,7 @@ export function createEditorShell(host: HTMLElement): void {
   const documentTitle = requiredElement<HTMLElement>(host, ".document-title");
   const hint = requiredElement<HTMLElement>(host, ".canvas-hint");
   const notification = requiredElement<HTMLElement>(host, ".notification");
+  const inspector = requiredElement<HTMLElement>(host, ".inspector-panel .panel-content");
 
   const session = new ProjectSession();
   let directoryHandle: FileSystemDirectoryHandle | null = null;
@@ -82,15 +84,49 @@ export function createEditorShell(host: HTMLElement): void {
 
   function refreshProjectState(message: string): void {
     const project = session.project;
+    const diagnostics = project ? validateProject(project) : [];
+    const invalid = hasValidationErrors(diagnostics);
     documentTitle.textContent = project
         ? `${project.manifest.name}${session.dirty ? " •" : ""}`
         : "Sin proyecto";
     hint.textContent = project
         ? `${project.manifest.levels.length} nivel(es) · ${project.files.size} archivo(s)`
         : "Crea o abre un proyecto para comenzar";
-    saveProject.disabled = !project;
-    saveDirectory.disabled = !project || !supportsDirectoryAccess();
-    status.textContent = message;
+    saveProject.disabled = !project || invalid;
+    saveDirectory.disabled = !project || invalid || !supportsDirectoryAccess();
+    renderDiagnostics(diagnostics);
+    status.textContent = invalid
+        ? `${message} · ${diagnostics.length} error(es) de validación`
+        : message;
+  }
+
+  function renderDiagnostics(diagnostics: readonly Diagnostic[]): void {
+    inspector.innerHTML = "";
+    inspector.classList.toggle("empty-inspector", diagnostics.length === 0);
+    if (!diagnostics.length) {
+      const icon = document.createElement("span");
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "✓";
+      const text = document.createElement("p");
+      text.textContent = session.project ? "Proyecto válido" : "No hay ninguna selección";
+      inspector.append(icon, text);
+      return;
+    }
+    const title = document.createElement("p");
+    title.className = "diagnostic-summary";
+    title.textContent = `${diagnostics.length} problema(s)`;
+    const list = document.createElement("ol");
+    list.className = "diagnostic-list";
+    for (const diagnostic of diagnostics) {
+      const item = document.createElement("li");
+      const location = document.createElement("code");
+      location.textContent = `${diagnostic.file}${diagnostic.path}`;
+      const message = document.createElement("span");
+      message.textContent = diagnostic.message;
+      item.append(location, message);
+      list.append(item);
+    }
+    inspector.append(title, list);
   }
 
   function canReplaceProject(): boolean {
@@ -149,6 +185,9 @@ export function createEditorShell(host: HTMLElement): void {
   saveProject.addEventListener("click", () => void run(async () => {
     const project = session.project;
     if (!project) return;
+    if (hasValidationErrors(validateProject(project))) {
+      throw new Error("Corrige los errores de validación antes de exportar");
+    }
     downloadProject(project);
     session.markSaved();
     refreshProjectState("Proyecto exportado como ZIP");
@@ -156,6 +195,9 @@ export function createEditorShell(host: HTMLElement): void {
   saveDirectory.addEventListener("click", () => void run(async () => {
     const project = session.project;
     if (!project) return;
+    if (hasValidationErrors(validateProject(project))) {
+      throw new Error("Corrige los errores de validación antes de guardar");
+    }
     directoryHandle ??= await pickProjectDirectory();
     await writeProjectDirectory(project, directoryHandle);
     session.markSaved();

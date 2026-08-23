@@ -1,0 +1,14 @@
+{
+  "rick2.game": {
+    "read": [1],
+    "write": 1
+  },
+  "rick2.level": {
+    "read": [1],
+    "write": 1
+  },
+  "rick2.project": {
+    "read": [1],
+    "write": 1
+  }
+}

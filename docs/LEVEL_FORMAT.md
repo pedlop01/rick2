@@ -58,3 +58,9 @@ and PugiXML is not part of the executable.
 The default is not compiled into the executable: `game.json`, validated by
 `schema/game.schema.json`, selects `initialLevel`. Its path is relative to the
 game package itself.
+
+Supported read/write versions for the native runtime and Rick2 Engine are
+declared in `schema/format_versions.json`. Entity groups are fully typed in the
+level schema, including their runtime enums and the version-1 singleton-or-array
+representation used by actions and trigger targets. Future shape changes must
+use a new format version and an explicit editor migration.
