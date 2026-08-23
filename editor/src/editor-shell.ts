@@ -235,7 +235,7 @@ export function createEditorShell(host: HTMLElement): void {
 
   async function run(action: () => Promise<void>): Promise<void> {
     clearError();
-    try { await action(); }
+    try { status.textContent = "Procesando…"; await new Promise(requestAnimationFrame); await action(); }
     catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       showError(error);
@@ -332,8 +332,8 @@ export function createEditorShell(host: HTMLElement): void {
     for (const [id, control] of toolButtons) control.setAttribute("aria-pressed", String(id === tool));
     status.textContent = `Herramienta: ${tool}`;
   };
-  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"], ["entity", "Entidades"], ["asset", "Assets"]] as const) {
-    const control = button(label);
+  for (const [id, label, shortcut] of [["pencil", "Lápiz", "P"], ["eraser", "Borrador", "E"], ["fill", "Relleno", "F"], ["select", "Selección", "S"], ["entity", "Entidades", "O"], ["asset", "Assets", "A"]] as const) {
+    const control = button(label, `Atajo: ${shortcut}`); control.setAttribute("aria-keyshortcuts", shortcut);
     control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset"; paletteHost.hidden = id === "entity" || id === "asset"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
@@ -462,6 +462,14 @@ export function createEditorShell(host: HTMLElement): void {
   });
   const zoomStatus = requiredElement<HTMLElement>(host, ".statusbar span:last-child");
   preview.setZoomListener((zoom) => { zoomStatus.textContent = `${Math.round(zoom * 100)}%`; });
+  window.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement || event.ctrlKey || event.metaKey || event.altKey) return;
+    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset" }; const tool = shortcuts[event.key.toLowerCase()];
+    if (tool) { toolButtons.get(tool)?.click(); event.preventDefault(); return; }
+    if (event.key.toLowerCase() === "g") { grid.click(); event.preventDefault(); }
+    if (event.key === "0") { fit.click(); event.preventDefault(); }
+  });
   window.addEventListener("beforeunload", (event) => {
     stopRuntime();
     preview.stop();

@@ -71,6 +71,11 @@ platforms and hazards advance through their ordered actions while routes,
 triggers, camera regions and AI limits remain visible. Reset discards the
 simulation state; preview never writes to the document or its history.
 
+For touchpads, hold Space and drag with the primary button to pan; middle-button
+drag remains available, and Shift+wheel pans horizontally. Tool shortcuts are
+P/E/F/S/O/A (pencil, eraser, fill, selection, objects and assets), G toggles the
+grid and 0 fits the map. Shortcuts are ignored while editing form controls.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 

@@ -32,6 +32,7 @@ export class WorkspacePreview {
   #editHandlers: TilePointerHandlers | null = null;
   #selection: TileRect | null = null;
   #editingPointer: number | null = null;
+  #spacePressed = false;
   #entities: Array<{ ref: EntityRef; box: EntityBox }> = [];
   #selectedEntity: EntityRef | null = null;
   #gameplayLines: GameplayLine[] = [];
@@ -51,9 +52,13 @@ export class WorkspacePreview {
     const signal = this.#events.signal;
     this.#canvas.addEventListener("wheel", (event) => {
       event.preventDefault();
+      if (event.shiftKey) { this.#offsetX -= event.deltaY; this.#scheduleDraw(); return; }
       this.zoomAt(event.deltaY < 0 ? 1.2 : 1 / 1.2, event.offsetX, event.offsetY);
     }, { passive: false, signal });
     this.#canvas.addEventListener("pointerdown", (event) => {
+      if (event.button === 0 && this.#spacePressed) {
+        event.preventDefault(); this.#canvas.setPointerCapture(event.pointerId); this.#drag = { x: event.clientX, y: event.clientY, offsetX: this.#offsetX, offsetY: this.#offsetY }; this.#canvas.classList.add("is-panning"); return;
+      }
       if (event.button === 0 && this.#editHandlers) {
         const tile = this.tileAtClient(event.clientX, event.clientY);
         if (!tile) return;
@@ -89,6 +94,9 @@ export class WorkspacePreview {
     };
     this.#canvas.addEventListener("pointerup", stopDrag, { signal });
     this.#canvas.addEventListener("pointercancel", stopDrag, { signal });
+    window.addEventListener("keydown", (event) => { if (event.code === "Space" && (document.activeElement === this.#canvas || document.activeElement === document.body)) { event.preventDefault(); this.#spacePressed = true; this.#canvas.classList.add("is-pan-ready"); } }, { signal });
+    window.addEventListener("keyup", (event) => { if (event.code === "Space") { this.#spacePressed = false; this.#canvas.classList.remove("is-pan-ready"); } }, { signal });
+    window.addEventListener("blur", () => { this.#spacePressed = false; this.#canvas.classList.remove("is-pan-ready"); }, { signal });
     this.#resizeAndDraw();
   }
 
