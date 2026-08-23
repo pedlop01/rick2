@@ -50,6 +50,12 @@ links, orange trigger targets, yellow movement routes and green AI limit zones.
 Nested inspector fields include action sequences and targets; enum values use
 bounded selectors, and invalid references or checkpoint cycles block export.
 
+`Assets` opens the definition and animation catalog. It can import sprites,
+tilesets, music and effect replacements into the portable project, create
+definitions, states and frames, edit sprite rectangles and
+`frameDurationTicks`, and play the selected animation at 50 simulation ticks
+per second. Imported files receive safe, collision-free project paths.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 

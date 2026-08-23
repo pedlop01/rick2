@@ -206,6 +206,8 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     ["assets/images/placeholder.png", base64Bytes(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     )],
+    ["assets/audio/music.ogg", new Uint8Array()],
+    ["assets/audio/effect.wav", new Uint8Array()],
   ]));
 }
 

@@ -13,13 +13,15 @@ import { hasValidationErrors, validateProject, type Diagnostic } from "./validat
 import { LevelDocumentModel, type TileClipboard, type TileRect } from "./level-document";
 import { TilePalette } from "./tile-palette";
 import { EntityDocumentModel, ENTITY_GROUPS, type EntityGroup, type EntityRecord, type EntityRef } from "./entity-document";
+import { AssetDocumentModel } from "./asset-document";
+import { AssetEditor } from "./asset-editor";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Colisiones"],
 ] as const;
-type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity";
+type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset";
 
 function button(label: string, title?: string): HTMLButtonElement {
   const element = document.createElement("button");
@@ -46,7 +48,7 @@ export function createEditorShell(host: HTMLElement): void {
     <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Capas</h2></div>
-      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
+      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="asset-controls" id="asset-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
     </aside>
     <main class="workspace" aria-label="Lienzo del nivel">
       <canvas tabindex="0" aria-label="Vista previa vacía del mapa"></canvas>
@@ -69,6 +71,7 @@ export function createEditorShell(host: HTMLElement): void {
   const inspector = requiredElement<HTMLElement>(host, ".inspector-panel .panel-content");
   const paletteHost = requiredElement<HTMLElement>(host, "#tile-palette");
   const entityControls = requiredElement<HTMLElement>(host, "#entity-controls");
+  const assetControls = requiredElement<HTMLElement>(host, "#asset-controls");
 
   const session = new ProjectSession();
   const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
@@ -77,6 +80,7 @@ export function createEditorShell(host: HTMLElement): void {
   let activeTool: EditTool = "pencil";
   let levelModel: LevelDocumentModel | null = null;
   let entityModel: EntityDocumentModel | null = null;
+  let assetModel: AssetDocumentModel | null = null;
   let entityGroup: EntityGroup = "items";
   let selectedEntity: EntityRef | null = null;
   let selection: TileRect | null = null;
@@ -125,11 +129,13 @@ export function createEditorShell(host: HTMLElement): void {
     session.replace(project, dirty);
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
+    assetModel = new AssetDocumentModel(levelModel);
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
     await preview.load(project, levelModel.map);
     await palette.load(project, levelModel);
+    assetEditor.load(assetModel);
     refreshEntityOverlay();
     hint.hidden = true;
   }
@@ -285,9 +291,9 @@ export function createEditorShell(host: HTMLElement): void {
     for (const [id, control] of toolButtons) control.setAttribute("aria-pressed", String(id === tool));
     status.textContent = `Herramienta: ${tool}`;
   };
-  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"], ["entity", "Entidades"]] as const) {
+  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"], ["entity", "Entidades"], ["asset", "Assets"]] as const) {
     const control = button(label);
-    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; paletteHost.hidden = id === "entity"; preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
+    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset"; paletteHost.hidden = id === "entity" || id === "asset"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
@@ -331,6 +337,8 @@ export function createEditorShell(host: HTMLElement): void {
 
   const preview = new WorkspacePreview(canvas);
   const palette = new TilePalette(paletteHost);
+  const assetEditor = new AssetEditor(assetControls, inspector);
+  assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map).then(() => palette.load(session.project!, levelModel!)); });
   palette.setSelectListener((gid) => { status.textContent = `GID seleccionado: ${gid}`; });
   preview.start();
   layerRows.get(activeLayer)?.classList.add("active");

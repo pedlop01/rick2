@@ -7,6 +7,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 button, input { font: inherit; }
 button:focus-visible, canvas:focus-visible, input:focus-visible { outline: 2px solid #57d3ff; outline-offset: 2px; }
@@ -50,13 +51,18 @@ button:focus-visible, canvas:focus-visible, input:focus-visible { outline: 2px s
 .collision-palette { display: grid; gap: 5px; }
 .collision-palette button { padding: 7px; color: #b9c7d8; text-align: left; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .collision-palette button.selected { color: #07111d; background: #57d3ff; }
-.entity-controls { display: grid; gap: 7px; padding: 10px; border-top: 1px solid #26344a; }
-.entity-controls select, .entity-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
+.entity-controls, .asset-controls { display: grid; gap: 7px; padding: 10px; overflow: auto; border-top: 1px solid #26344a; }
+.entity-controls select, .entity-controls button, .asset-controls select, .asset-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .entity-controls button { text-align: left; }
+.asset-controls { gap: 5px; padding: 8px; }
+.asset-controls select { width: 100%; padding: 6px 5px; font-size: 12px; }
+.asset-controls button { padding: 6px; font-size: 12px; text-align: left; }
 .inspector-panel h3 { margin: 2px 0 12px; color: #dce6f2; font-size: 13px; }
 .property-field { display: grid; gap: 4px; margin-bottom: 9px; }
-.property-field span { overflow-wrap: anywhere; color: #8495ab; font-size: 10px; }
+.property-field span { overflow-wrap: anywhere; color: #8495ab; font-size: 12px; }
+.empty-inspector .property-field span, .property-field > span { font-size: 12px; }
 .property-field input, .property-field select { width: 100%; }
+.animation-preview { width: 100%; height: 120px; margin-bottom: 12px; background: repeating-conic-gradient(#111827 0 25%, #1e293b 0 50%) 0 / 16px 16px; border: 1px solid #31425e; image-rendering: pixelated; }
 .empty-inspector { display: grid; place-items: center; align-content: center; height: calc(100% - 42px); color: #64748b; text-align: center; }
 .empty-inspector span { font-size: 34px; }
 .diagnostic-summary { margin: 2px 0 10px; color: #fca5a5; font-weight: 700; }

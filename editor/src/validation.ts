@@ -2,6 +2,7 @@ import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020"
 import levelSchema from "../../schema/level.schema.json";
 import projectSchema from "../../schema/project.schema.json";
 import type { Rick2Project } from "./project-io";
+import { resolveProjectReference } from "./project-io";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -37,13 +38,23 @@ function object(value: unknown): Record<string, unknown> {
       ? value as Record<string, unknown> : {};
 }
 
-function semanticLevelDiagnostics(file: string, value: unknown): Diagnostic[] {
+function pngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length < 24 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); return { width: view.getUint32(16), height: view.getUint32(20) };
+}
+
+function semanticLevelDiagnostics(project: Rick2Project, file: string, value: unknown): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const level = object(value);
   const entities = object(level.entities);
   const definitions = object(level.definitions);
   const add = (path: string, message: string): void => {
     diagnostics.push({ severity: "error", file, path, message, source: "semantic" });
+  };
+  const asset = (reference: unknown, path: string): Uint8Array | null => {
+    if (typeof reference !== "string") return null;
+    try { const resolved = resolveProjectReference(file, reference); const bytes = project.files.get(resolved); if (!bytes) add(path, `Asset inexistente: ${resolved}`); return bytes ?? null; }
+    catch (error: unknown) { add(path, error instanceof Error ? error.message : String(error)); return null; }
   };
 
   const map = object(level.map);
@@ -77,6 +88,16 @@ function semanticLevelDiagnostics(file: string, value: unknown): Diagnostic[] {
       }
     });
   }
+
+  for (const [definitionId, rawDefinition] of Object.entries(definitions)) {
+    const definition = object(rawDefinition); const states = definition.states; if (!Array.isArray(states)) continue;
+    const stateIds = new Set<number>(); const stateNames = new Set<string>();
+    states.forEach((rawState, stateIndex) => { const state = object(rawState); if (typeof state.id === "number") { if (stateIds.has(state.id)) add(`/definitions/${definitionId}/states/${stateIndex}/id`, `ID de estado duplicado: ${state.id}`); stateIds.add(state.id); } if (typeof state.name === "string") { if (stateNames.has(state.name)) add(`/definitions/${definitionId}/states/${stateIndex}/name`, `Nombre de estado duplicado: ${state.name}`); stateNames.add(state.name); }
+      const animation = object(state.animation); const bitmap = asset(animation.bitmap, `/definitions/${definitionId}/states/${stateIndex}/animation/bitmap`); const dimensions = bitmap && pngDimensions(bitmap); const sprites = animation.sprites;
+      if (dimensions && Array.isArray(sprites)) sprites.forEach((rawSprite, spriteIndex) => { const sprite = object(rawSprite); if (Number(sprite.x) + Number(sprite.width) > dimensions.width || Number(sprite.y) + Number(sprite.height) > dimensions.height) add(`/definitions/${definitionId}/states/${stateIndex}/animation/sprites/${spriteIndex}`, `El frame sale del bitmap de ${dimensions.width}×${dimensions.height}`); });
+    });
+  }
+  const tileset = object(map.tileset); asset(tileset.image, "/map/tileset/image"); const audio = object(level.audio); if (Array.isArray(audio.music)) audio.music.forEach((reference, index) => asset(reference, `/audio/music/${index}`)); if (Array.isArray(audio.effects)) audio.effects.forEach((reference, index) => asset(reference, `/audio/effects/${index}`));
 
   const playerDefinition = object(level.player).definition;
   if (typeof playerDefinition === "string" && !(playerDefinition in definitions)) {
@@ -143,7 +164,7 @@ export function validateProject(project: Rick2Project): Diagnostic[] {
     if (!validateLevel(level)) {
       diagnostics.push(...schemaDiagnostics(path, validateLevel.errors));
     } else {
-      diagnostics.push(...semanticLevelDiagnostics(path, level));
+      diagnostics.push(...semanticLevelDiagnostics(project, path, level));
     }
   }
   return diagnostics;
