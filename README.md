@@ -176,3 +176,15 @@ python3 tools/package_editor_project.py
 ```
 
 The ignored output is `build/rick2-level1.rick2-project`.
+
+Run the complete native/editor compatibility pipeline with:
+
+```sh
+tools/check_all.sh
+```
+
+It verifies conversion and schemas, compiles the standalone C++ regressions,
+runs the web suite and creates `build/rick2-engine-web.zip` plus the portable
+level-1 project. The same command runs in GitHub Actions and publishes both as
+the `rick2-engine-offline` artifact. Extract the web ZIP and open `index.html`
+directly; no server is required.

@@ -7,7 +7,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "release": "npm run build && python3 ../tools/package_editor_release.py"
   },
   "devDependencies": {
     "esbuild": "0.25.10",
