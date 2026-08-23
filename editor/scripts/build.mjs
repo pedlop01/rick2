@@ -42,7 +42,7 @@ await build({
   target: ["node18"],
 });
 await build({
-  entryPoints: [path.join(root, "src/validation.ts"), path.join(root, "src/migrations.ts"), path.join(root, "src/map-view.ts"), path.join(root, "src/level-document.ts"), path.join(root, "src/entity-document.ts"), path.join(root, "src/asset-document.ts"), path.join(root, "src/project-history.ts")],
+  entryPoints: [path.join(root, "src/validation.ts"), path.join(root, "src/migrations.ts"), path.join(root, "src/map-view.ts"), path.join(root, "src/level-document.ts"), path.join(root, "src/entity-document.ts"), path.join(root, "src/asset-document.ts"), path.join(root, "src/project-history.ts"), path.join(root, "src/preview-runtime.ts")],
   outdir: testOutput,
   outExtension: { ".js": ".mjs" },
   bundle: true,

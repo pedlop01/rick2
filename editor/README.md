@@ -66,6 +66,11 @@ Diagnostics cover schema, assets, state IDs, GIDs, references, map geometry,
 tileset metadata and gameplay bounds. Click a diagnostic (or focus it and press
 Enter) to select its map cell or entity, or open the relevant asset catalog.
 
+The Play/Pause/Step/Reset controls run an isolated 50 Hz preview. Moving
+platforms and hazards advance through their ordered actions while routes,
+triggers, camera regions and AI limits remain visible. Reset discards the
+simulation state; preview never writes to the document or its history.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 

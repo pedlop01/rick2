@@ -6,7 +6,7 @@ export type EntityRecord = Record<string, unknown>;
 export interface EntityRef { group: EntityGroup; index: number; }
 export interface EntityBox { x: number; y: number; width: number; height: number; }
 export interface GameplayLine { x1: number; y1: number; x2: number; y2: number; kind: "checkpoint" | "target" | "route"; }
-export interface GameplayZone { box: EntityBox; kind: "ai"; }
+export interface GameplayZone { box: EntityBox; kind: "ai" | "camera" | "trigger"; }
 const placedGroups: readonly EntityGroup[] = ["platforms", "items", "backgroundObjects", "blocks", "hazards"];
 function record(value: unknown): EntityRecord { return value && typeof value === "object" ? value as EntityRecord : {}; }
 function finite(value: unknown, fallback = 0): number { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
@@ -44,6 +44,7 @@ export class EntityDocumentModel {
     for (const trigger of this.groups.triggers) { const from = centers.get(`triggers:${String(trigger.id)}`); if (!from) continue; for (const raw of list(record(trigger.targets).target)) { const target = record(raw); const group = targetGroup[String(target.type)]; const to = group && centers.get(`${group}:${String(target.id)}`); if (to) lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, kind: "target" }); } }
     for (const group of ["platforms", "hazards"] as const) for (const entity of this.groups[group]) { const start = centers.get(`${group}:${String(entity.id)}`); if (!start) continue; let x = start.x; let y = start.y; for (const raw of list(record(entity.actions).action)) { const action = record(raw); const distance = finite(action.desp); let nx = x; let ny = y; if (action.direction === "left") nx -= distance; if (action.direction === "right") nx += distance; if (action.direction === "up") ny -= distance; if (action.direction === "down") ny += distance; if (nx !== x || ny !== y) lines.push({ x1: x, y1: y, x2: nx, y2: ny, kind: "route" }); x = nx; y = ny; } }
     for (const enemy of this.groups.enemies) zones.push({ box: { x: finite(enemy.ia_orig_x), y: finite(enemy.ia_orig_y), width: finite(enemy.ia_limit_x), height: finite(enemy.ia_limit_y) }, kind: "ai" });
+    for (const item of this.all()) if (item.ref.group === "cameraViews" || item.ref.group === "triggers") zones.push({ box: item.box, kind: item.ref.group === "cameraViews" ? "camera" : "trigger" });
     return { lines, zones };
   }
 

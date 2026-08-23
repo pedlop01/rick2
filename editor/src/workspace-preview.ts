@@ -2,6 +2,7 @@ import { getProjectAsset, type Rick2Project } from "./project-io";
 import { tileSource, visibleTileBounds } from "./map-view";
 import type { TileMapDocument, TileRect } from "./level-document";
 import type { EntityBox, EntityRef, GameplayLine, GameplayZone } from "./entity-document";
+import type { RuntimeBody } from "./preview-runtime";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 
@@ -35,6 +36,7 @@ export class WorkspacePreview {
   #selectedEntity: EntityRef | null = null;
   #gameplayLines: GameplayLine[] = [];
   #gameplayZones: GameplayZone[] = [];
+  #runtimeBodies: readonly RuntimeBody[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -133,6 +135,7 @@ export class WorkspacePreview {
   setSelection(selection: TileRect | null): void { this.#selection = selection; this.#scheduleDraw(); }
   setEntities(entities: Array<{ ref: EntityRef; box: EntityBox }>, selected: EntityRef | null): void { this.#entities = entities; this.#selectedEntity = selected; this.#scheduleDraw(); }
   setGameplayGuides(lines: GameplayLine[], zones: GameplayZone[]): void { this.#gameplayLines = lines; this.#gameplayZones = zones; this.#scheduleDraw(); }
+  setRuntimeBodies(bodies: readonly RuntimeBody[]): void { this.#runtimeBodies = bodies; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
   tileAtClient(clientX: number, clientY: number): PointerPosition | null {
@@ -213,7 +216,7 @@ export class WorkspacePreview {
     if (this.#visibleLayers.tiles) this.#drawTileLayer(map.layers.tiles);
     if (this.#visibleLayers.frontTiles) this.#drawTileLayer(map.layers.frontTiles);
     if (this.#visibleLayers.collisions) this.#drawCollisionLayer(map.layers.collisions);
-    this.#drawGameplayGuides(); this.#drawEntities();
+    this.#drawGameplayGuides(); this.#drawEntities(); this.#drawRuntimeBodies();
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
     if (this.#selection) this.#drawSelection(this.#selection);
   }
@@ -297,9 +300,15 @@ export class WorkspacePreview {
   #drawGameplayGuides(): void {
     const context = this.#context; const colors = { checkpoint: "#60a5fa", target: "#f97316", route: "#fbbf24" };
     context.lineWidth = 1.5 / this.#zoom; context.setLineDash([5 / this.#zoom, 3 / this.#zoom]);
-    for (const zone of this.#gameplayZones) { context.fillStyle = "rgba(74, 222, 128, .08)"; context.strokeStyle = "#4ade80"; context.fillRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); context.strokeRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); }
+    const zoneColors = { ai: ["rgba(74, 222, 128, .08)", "#4ade80"], camera: ["rgba(96, 165, 250, .06)", "#60a5fa"], trigger: ["rgba(249, 115, 22, .1)", "#f97316"] } as const;
+    for (const zone of this.#gameplayZones) { const colors = zoneColors[zone.kind]; context.fillStyle = colors[0]; context.strokeStyle = colors[1]; context.fillRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); context.strokeRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); }
     for (const line of this.#gameplayLines) { context.strokeStyle = colors[line.kind]; context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.stroke(); }
     context.setLineDash([]);
+  }
+
+  #drawRuntimeBodies(): void {
+    if (!this.#runtimeBodies.length) return; const context = this.#context; context.lineWidth = 2 / this.#zoom;
+    for (const body of this.#runtimeBodies) { context.fillStyle = "rgba(34, 211, 238, .3)"; context.strokeStyle = "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

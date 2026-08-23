@@ -17,6 +17,7 @@ import { AssetDocumentModel } from "./asset-document";
 import { AssetEditor } from "./asset-editor";
 import { ProjectHistory } from "./project-history";
 import { clearRecovery, loadRecovery, saveRecovery } from "./recovery-store";
+import { PreviewRuntime } from "./preview-runtime";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -87,6 +88,8 @@ export function createEditorShell(host: HTMLElement): void {
   let levelModel: LevelDocumentModel | null = null;
   let entityModel: EntityDocumentModel | null = null;
   let assetModel: AssetDocumentModel | null = null;
+  let runtime: PreviewRuntime | null = null;
+  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0;
   let entityGroup: EntityGroup = "items";
   let selectedEntity: EntityRef | null = null;
   let selection: TileRect | null = null;
@@ -137,6 +140,8 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
+    stopRuntime(); runtimePreviewActive = false; runtime = new PreviewRuntime(levelModel.level); preview.setRuntimeBodies([]);
+    play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
@@ -312,6 +317,15 @@ export function createEditorShell(host: HTMLElement): void {
   const zoomIn = button("+", "Acercar");
   const fit = button("Encajar", "Mostrar el mapa completo");
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
+  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview");
+  play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}`; };
+  const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
+  function stopRuntime(): void { runtimePlaying = false; if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
+  play.addEventListener("click", () => { if (!runtime) return; runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
+  pause.addEventListener("click", () => { stopRuntime(); play.disabled = false; pause.disabled = true; step.disabled = false; renderRuntime(); });
+  step.addEventListener("click", () => { runtimePreviewActive = true; runtime?.step(); resetPreview.disabled = false; renderRuntime(); });
+  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; runtime?.reset(); preview.setRuntimeBodies([]); refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
   const toolButtons = new Map<EditTool, HTMLButtonElement>();
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -335,7 +349,7 @@ export function createEditorShell(host: HTMLElement): void {
   });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
-                 ...toolButtons.values(), separator.cloneNode(), zoomOut, zoomIn, fit, grid);
+                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, separator.cloneNode(), zoomOut, zoomIn, fit, grid);
   setTool("pencil");
 
   for (const [id, label] of LAYERS) {
@@ -395,7 +409,7 @@ export function createEditorShell(host: HTMLElement): void {
   };
   preview.setEditHandlers({
     down(tile) {
-      if (!levelModel) return;
+      if (!levelModel || runtimePreviewActive) return;
       canvas.focus(); gestureStart = tile; gestureLast = tile; lastPointerTile = tile; gestureChanged = false;
       if (activeTool === "entity") { selectedEntity = entityModel?.hitTest(tile.worldX, tile.worldY, entityGroup) ?? null; refreshEntityOverlay(); renderDiagnostics([]); return; }
       if (activeTool === "pencil") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, palette.selectedGid);
@@ -449,6 +463,7 @@ export function createEditorShell(host: HTMLElement): void {
   const zoomStatus = requiredElement<HTMLElement>(host, ".statusbar span:last-child");
   preview.setZoomListener((zoom) => { zoomStatus.textContent = `${Math.round(zoom * 100)}%`; });
   window.addEventListener("beforeunload", (event) => {
+    stopRuntime();
     preview.stop();
     if (session.dirty) {
       event.preventDefault();
