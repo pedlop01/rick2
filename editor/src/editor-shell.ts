@@ -1,4 +1,4 @@
-import { WorkspacePreview, type MapLayerName } from "./workspace-preview";
+import { WorkspacePreview, type MapLayerName, type PointerPosition } from "./workspace-preview";
 import {
   createEmptyProject,
   downloadProject,
@@ -12,13 +12,14 @@ import { ProjectSession } from "./project-session";
 import { hasValidationErrors, validateProject, type Diagnostic } from "./validation";
 import { LevelDocumentModel, type TileClipboard, type TileRect } from "./level-document";
 import { TilePalette } from "./tile-palette";
+import { EntityDocumentModel, ENTITY_GROUPS, type EntityGroup, type EntityRecord, type EntityRef } from "./entity-document";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Colisiones"],
 ] as const;
-type EditTool = "pencil" | "eraser" | "fill" | "select";
+type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity";
 
 function button(label: string, title?: string): HTMLButtonElement {
   const element = document.createElement("button");
@@ -45,7 +46,7 @@ export function createEditorShell(host: HTMLElement): void {
     <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Capas</h2></div>
-      <div class="panel-content" id="layer-list"></div><div class="tile-palette" id="tile-palette"></div>
+      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
     </aside>
     <main class="workspace" aria-label="Lienzo del nivel">
       <canvas tabindex="0" aria-label="Vista previa vacía del mapa"></canvas>
@@ -67,6 +68,7 @@ export function createEditorShell(host: HTMLElement): void {
   const notification = requiredElement<HTMLElement>(host, ".notification");
   const inspector = requiredElement<HTMLElement>(host, ".inspector-panel .panel-content");
   const paletteHost = requiredElement<HTMLElement>(host, "#tile-palette");
+  const entityControls = requiredElement<HTMLElement>(host, "#entity-controls");
 
   const session = new ProjectSession();
   const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
@@ -74,9 +76,12 @@ export function createEditorShell(host: HTMLElement): void {
   let activeLayer: MapLayerName = "tiles";
   let activeTool: EditTool = "pencil";
   let levelModel: LevelDocumentModel | null = null;
+  let entityModel: EntityDocumentModel | null = null;
+  let entityGroup: EntityGroup = "items";
+  let selectedEntity: EntityRef | null = null;
   let selection: TileRect | null = null;
   let clipboard: TileClipboard | null = null;
-  let lastPointerTile: { x: number; y: number } | null = null;
+  let lastPointerTile: PointerPosition | null = null;
   let directoryHandle: FileSystemDirectoryHandle | null = null;
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -119,14 +124,18 @@ export function createEditorShell(host: HTMLElement): void {
   ): Promise<void> {
     session.replace(project, dirty);
     levelModel = new LevelDocumentModel(project);
+    entityModel = new EntityDocumentModel(levelModel);
+    selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
     await preview.load(project, levelModel.map);
     await palette.load(project, levelModel);
+    refreshEntityOverlay();
     hint.hidden = true;
   }
 
   function renderDiagnostics(diagnostics: readonly Diagnostic[]): void {
+    if (selectedEntity && entityModel?.entity(selectedEntity)) { renderEntityInspector(); return; }
     inspector.innerHTML = "";
     inspector.classList.toggle("empty-inspector", diagnostics.length === 0);
     if (!diagnostics.length) {
@@ -153,6 +162,30 @@ export function createEditorShell(host: HTMLElement): void {
       list.append(item);
     }
     inspector.append(title, list);
+  }
+
+  function primitiveFields(value: EntityRecord, prefix: string[] = []): Array<{ path: string[]; value: string | number }> {
+    const fields: Array<{ path: string[]; value: string | number }> = [];
+    for (const [key, child] of Object.entries(value)) {
+      if (typeof child === "string" || typeof child === "number") fields.push({ path: [...prefix, key], value: child });
+      else if (child && typeof child === "object" && !Array.isArray(child)) fields.push(...primitiveFields(child as EntityRecord, [...prefix, key]));
+    }
+    return fields;
+  }
+
+  function renderEntityInspector(): void {
+    const entity = selectedEntity && entityModel?.entity(selectedEntity); if (!entity || !selectedEntity) return;
+    inspector.innerHTML = ""; inspector.classList.remove("empty-inspector");
+    const title = document.createElement("h3"); title.textContent = `${selectedEntity.group} · ${String(entity.id ?? selectedEntity.index)}`; inspector.append(title);
+    for (const field of primitiveFields(entity)) {
+      const label = document.createElement("label"); label.className = "property-field"; const caption = document.createElement("span"); caption.textContent = field.path.join(".");
+      const input = document.createElement("input"); input.type = typeof field.value === "number" ? "number" : "text"; input.value = String(field.value); if (typeof field.value === "number") input.step = "any";
+      input.addEventListener("change", () => {
+        const value = typeof field.value === "number" ? Number(input.value) : input.value; if (typeof value === "number" && !Number.isFinite(value)) return;
+        entityModel!.setPrimitive(selectedEntity!, field.path, value); commitEntityChange("Propiedad de entidad modificada"); renderEntityInspector();
+      });
+      label.append(caption, input); inspector.append(label);
+    }
   }
 
   function canReplaceProject(): boolean {
@@ -244,9 +277,9 @@ export function createEditorShell(host: HTMLElement): void {
     for (const [id, control] of toolButtons) control.setAttribute("aria-pressed", String(id === tool));
     status.textContent = `Herramienta: ${tool}`;
   };
-  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"]] as const) {
+  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"], ["entity", "Entidades"]] as const) {
     const control = button(label);
-    control.addEventListener("click", () => setTool(id));
+    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; paletteHost.hidden = id === "entity"; preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
@@ -294,8 +327,21 @@ export function createEditorShell(host: HTMLElement): void {
   preview.start();
   layerRows.get(activeLayer)?.classList.add("active");
 
-  let gestureStart: { x: number; y: number } | null = null;
-  let gestureLast: { x: number; y: number } | null = null;
+  const groupSelect = document.createElement("select");
+  for (const group of ENTITY_GROUPS) { const option = document.createElement("option"); option.value = group; option.textContent = group; groupSelect.append(option); }
+  groupSelect.value = entityGroup;
+  groupSelect.addEventListener("change", () => { entityGroup = groupSelect.value as EntityGroup; selectedEntity = null; refreshEntityOverlay(); refreshProjectState(`Grupo de entidades: ${entityGroup}`); });
+  const newEntity = button("Nueva"); const duplicateEntity = button("Duplicar seleccionada"); const deleteEntity = button("Eliminar seleccionada");
+  newEntity.addEventListener("click", () => { if (!entityModel || !entityModel.groups[entityGroup].length) { status.textContent = `No hay un modelo de ${entityGroup} que clonar`; return; } selectedEntity = entityModel.duplicate({ group: entityGroup, index: 0 }); commitEntityChange("Entidad creada desde el modelo del grupo"); });
+  duplicateEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; selectedEntity = entityModel.duplicate(selectedEntity); commitEntityChange("Entidad duplicada"); });
+  deleteEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; entityModel.remove(selectedEntity); selectedEntity = null; commitEntityChange("Entidad eliminada"); });
+  entityControls.append(groupSelect, newEntity, duplicateEntity, deleteEntity);
+
+  function refreshEntityOverlay(): void { preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => item.ref.group === entityGroup) ?? []) : [], selectedEntity); }
+  function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); refreshEntityOverlay(); refreshProjectState(message); }
+
+  let gestureStart: PointerPosition | null = null;
+  let gestureLast: PointerPosition | null = null;
   let gestureChanged = false;
   const finishEdit = (message: string): void => {
     if (!gestureChanged || !levelModel) return;
@@ -305,6 +351,7 @@ export function createEditorShell(host: HTMLElement): void {
     down(tile) {
       if (!levelModel) return;
       canvas.focus(); gestureStart = tile; gestureLast = tile; lastPointerTile = tile; gestureChanged = false;
+      if (activeTool === "entity") { selectedEntity = entityModel?.hitTest(tile.worldX, tile.worldY, entityGroup) ?? null; refreshEntityOverlay(); renderDiagnostics([]); return; }
       if (activeTool === "pencil") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, palette.selectedGid);
       if (activeTool === "eraser") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, 0);
       if (activeTool === "fill") gestureChanged = levelModel.floodFill(activeLayer, tile.x, tile.y, palette.selectedGid);
@@ -314,6 +361,7 @@ export function createEditorShell(host: HTMLElement): void {
     move(tile) {
       if (!levelModel || !gestureStart || !gestureLast) return;
       lastPointerTile = tile;
+      if (activeTool === "entity" && selectedEntity && entityModel) { entityModel.translate(selectedEntity, tile.worldX - gestureLast.worldX, tile.worldY - gestureLast.worldY); gestureChanged = true; refreshEntityOverlay(); gestureLast = tile; return; }
       if (activeTool === "pencil" || activeTool === "eraser") {
         const gid = activeTool === "eraser" ? 0 : palette.selectedGid;
         gestureChanged = levelModel.paintLine(activeLayer, gestureLast.x, gestureLast.y, tile.x, tile.y, gid) || gestureChanged;
@@ -324,7 +372,8 @@ export function createEditorShell(host: HTMLElement): void {
       gestureLast = tile; preview.refresh();
     },
     up() {
-      finishEdit(activeTool === "fill" ? "Zona rellenada" : "Tiles modificados");
+      if (activeTool === "entity" && gestureChanged) commitEntityChange("Entidad movida");
+      else finishEdit(activeTool === "fill" ? "Zona rellenada" : "Tiles modificados");
       gestureStart = null; gestureLast = null; gestureChanged = false;
     },
   });

@@ -1,15 +1,17 @@
 import { getProjectAsset, type Rick2Project } from "./project-io";
 import { tileSource, visibleTileBounds } from "./map-view";
 import type { TileMapDocument, TileRect } from "./level-document";
+import type { EntityBox, EntityRef } from "./entity-document";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 
 interface LevelDocument { map: TileMapDocument; }
 export interface TilePointerHandlers {
-  down(tile: { x: number; y: number }): void;
-  move(tile: { x: number; y: number }): void;
+  down(tile: PointerPosition): void;
+  move(tile: PointerPosition): void;
   up(): void;
 }
+export interface PointerPosition { x: number; y: number; worldX: number; worldY: number; }
 
 export class WorkspacePreview {
   readonly #canvas: HTMLCanvasElement;
@@ -29,6 +31,8 @@ export class WorkspacePreview {
   #editHandlers: TilePointerHandlers | null = null;
   #selection: TileRect | null = null;
   #editingPointer: number | null = null;
+  #entities: Array<{ ref: EntityRef; box: EntityBox }> = [];
+  #selectedEntity: EntityRef | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -125,14 +129,16 @@ export class WorkspacePreview {
 
   setEditHandlers(handlers: TilePointerHandlers): void { this.#editHandlers = handlers; }
   setSelection(selection: TileRect | null): void { this.#selection = selection; this.#scheduleDraw(); }
+  setEntities(entities: Array<{ ref: EntityRef; box: EntityBox }>, selected: EntityRef | null): void { this.#entities = entities; this.#selectedEntity = selected; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
-  tileAtClient(clientX: number, clientY: number): { x: number; y: number } | null {
+  tileAtClient(clientX: number, clientY: number): PointerPosition | null {
     if (!this.#map) return null;
     const bounds = this.#canvas.getBoundingClientRect();
-    const x = Math.floor(((clientX - bounds.left) - this.#offsetX) / this.#zoom / this.#map.tileWidth);
-    const y = Math.floor(((clientY - bounds.top) - this.#offsetY) / this.#zoom / this.#map.tileHeight);
-    return x >= 0 && y >= 0 && x < this.#map.width && y < this.#map.height ? { x, y } : null;
+    const worldX = ((clientX - bounds.left) - this.#offsetX) / this.#zoom;
+    const worldY = ((clientY - bounds.top) - this.#offsetY) / this.#zoom;
+    const x = Math.floor(worldX / this.#map.tileWidth); const y = Math.floor(worldY / this.#map.tileHeight);
+    return x >= 0 && y >= 0 && x < this.#map.width && y < this.#map.height ? { x, y, worldX, worldY } : null;
   }
 
   setZoomListener(listener: (zoom: number) => void): void {
@@ -204,6 +210,7 @@ export class WorkspacePreview {
     if (this.#visibleLayers.tiles) this.#drawTileLayer(map.layers.tiles);
     if (this.#visibleLayers.frontTiles) this.#drawTileLayer(map.layers.frontTiles);
     if (this.#visibleLayers.collisions) this.#drawCollisionLayer(map.layers.collisions);
+    this.#drawEntities();
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
     if (this.#selection) this.#drawSelection(this.#selection);
   }
@@ -270,6 +277,18 @@ export class WorkspacePreview {
     context.fillRect(rect.x * map.tileWidth, rect.y * map.tileHeight, rect.width * map.tileWidth, rect.height * map.tileHeight);
     context.strokeRect(rect.x * map.tileWidth, rect.y * map.tileHeight, rect.width * map.tileWidth, rect.height * map.tileHeight);
     context.setLineDash([]);
+  }
+
+  #drawEntities(): void {
+    const colors = ["#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#2dd4bf", "#60a5fa", "#f97316", "#e879f9", "#4ade80", "#94a3b8"];
+    for (const item of this.#entities) {
+      const selected = this.#selectedEntity?.group === item.ref.group && this.#selectedEntity.index === item.ref.index;
+      this.#context.fillStyle = selected ? "rgba(87, 211, 255, .32)" : "rgba(15, 23, 42, .18)";
+      this.#context.strokeStyle = selected ? "#57d3ff" : colors[item.ref.group.length % colors.length]!;
+      this.#context.lineWidth = (selected ? 2 : 1) / this.#zoom;
+      this.#context.fillRect(item.box.x, item.box.y, Math.max(1, item.box.width), Math.max(1, item.box.height));
+      this.#context.strokeRect(item.box.x, item.box.y, Math.max(1, item.box.width), Math.max(1, item.box.height));
+    }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

@@ -39,6 +39,12 @@ Selection supports `Ctrl+C`, `Ctrl+X` and `Ctrl+V`; paste uses the last canvas
 position and is clipped safely at map boundaries. Every edit immediately marks
 the project as modified and is included in the next ZIP or directory save.
 
+`Entidades` switches to object editing. Choose one of the ten entity groups,
+click a bounding box to select it, drag it with pixel precision, or create,
+duplicate and remove instances from the left panel. The inspector preserves
+numeric and textual JSON types while editing the selected entity. `Nueva` uses
+the first valid entity in that group as its schema-compatible template.
+
 Generate a portable level-1 project from the repository assets for manual
 testing:
 
