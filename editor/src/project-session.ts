@@ -13,6 +13,7 @@ export class ProjectSession {
   }
 
   markSaved(): void { this.#dirty = false; }
+  markDirty(): void { if (this.#project) this.#dirty = true; }
 
   canDiscard(confirmDiscard: () => boolean): boolean {
     return !this.#dirty || confirmDiscard();

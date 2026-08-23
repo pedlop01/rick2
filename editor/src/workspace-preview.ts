@@ -1,15 +1,15 @@
 import { getProjectAsset, type Rick2Project } from "./project-io";
 import { tileSource, visibleTileBounds } from "./map-view";
+import type { TileMapDocument, TileRect } from "./level-document";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 
-interface MapDocument {
-  width: number; height: number; tileWidth: number; tileHeight: number;
-  tileset: { image: string; tileCount: number; columns: number };
-  layers: Record<MapLayerName, number[]>;
+interface LevelDocument { map: TileMapDocument; }
+export interface TilePointerHandlers {
+  down(tile: { x: number; y: number }): void;
+  move(tile: { x: number; y: number }): void;
+  up(): void;
 }
-
-interface LevelDocument { map: MapDocument; }
 
 export class WorkspacePreview {
   readonly #canvas: HTMLCanvasElement;
@@ -17,7 +17,7 @@ export class WorkspacePreview {
   readonly #observer: ResizeObserver;
   readonly #events = new AbortController();
   readonly #visibleLayers: Record<MapLayerName, boolean> = { tiles: true, frontTiles: true, collisions: true };
-  #map: MapDocument | null = null;
+  #map: TileMapDocument | null = null;
   #tileset: ImageBitmap | null = null;
   #zoom = 1;
   #offsetX = 0;
@@ -26,6 +26,9 @@ export class WorkspacePreview {
   #drag: { x: number; y: number; offsetX: number; offsetY: number } | null = null;
   #frame = 0;
   #onZoomChange: (zoom: number) => void = () => undefined;
+  #editHandlers: TilePointerHandlers | null = null;
+  #selection: TileRect | null = null;
+  #editingPointer: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -43,17 +46,36 @@ export class WorkspacePreview {
       this.zoomAt(event.deltaY < 0 ? 1.2 : 1 / 1.2, event.offsetX, event.offsetY);
     }, { passive: false, signal });
     this.#canvas.addEventListener("pointerdown", (event) => {
+      if (event.button === 0 && this.#editHandlers) {
+        const tile = this.tileAtClient(event.clientX, event.clientY);
+        if (!tile) return;
+        this.#canvas.setPointerCapture(event.pointerId);
+        this.#editingPointer = event.pointerId;
+        this.#editHandlers.down(tile);
+        return;
+      }
+      if (event.button !== 1) return;
+      event.preventDefault();
       this.#canvas.setPointerCapture(event.pointerId);
       this.#drag = { x: event.clientX, y: event.clientY, offsetX: this.#offsetX, offsetY: this.#offsetY };
       this.#canvas.classList.add("is-panning");
     }, { signal });
     this.#canvas.addEventListener("pointermove", (event) => {
+      if (this.#editingPointer === event.pointerId && this.#editHandlers) {
+        const tile = this.tileAtClient(event.clientX, event.clientY);
+        if (tile) this.#editHandlers.move(tile);
+        return;
+      }
       if (!this.#drag) return;
       this.#offsetX = this.#drag.offsetX + event.clientX - this.#drag.x;
       this.#offsetY = this.#drag.offsetY + event.clientY - this.#drag.y;
       this.#scheduleDraw();
     }, { signal });
-    const stopDrag = (): void => {
+    const stopDrag = (event: PointerEvent): void => {
+      if (this.#editingPointer === event.pointerId) {
+        this.#editingPointer = null;
+        this.#editHandlers?.up();
+      }
       this.#drag = null;
       this.#canvas.classList.remove("is-panning");
     };
@@ -69,7 +91,7 @@ export class WorkspacePreview {
     if (this.#frame) cancelAnimationFrame(this.#frame);
   }
 
-  async load(project: Rick2Project): Promise<void> {
+  async load(project: Rick2Project, editableMap?: TileMapDocument): Promise<void> {
     const levelPath = project.manifest.initialLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`No se encuentra ${levelPath}`);
@@ -80,7 +102,7 @@ export class WorkspacePreview {
     const bitmap = await createImageBitmap(new Blob([asset.slice().buffer], { type: mime }));
     this.#tileset?.close();
     this.#tileset = bitmap;
-    this.#map = level.map;
+    this.#map = editableMap ?? level.map;
     this.fit();
   }
 
@@ -99,6 +121,18 @@ export class WorkspacePreview {
   setGridVisible(visible: boolean): void {
     this.#grid = visible;
     this.#scheduleDraw();
+  }
+
+  setEditHandlers(handlers: TilePointerHandlers): void { this.#editHandlers = handlers; }
+  setSelection(selection: TileRect | null): void { this.#selection = selection; this.#scheduleDraw(); }
+  refresh(): void { this.#scheduleDraw(); }
+
+  tileAtClient(clientX: number, clientY: number): { x: number; y: number } | null {
+    if (!this.#map) return null;
+    const bounds = this.#canvas.getBoundingClientRect();
+    const x = Math.floor(((clientX - bounds.left) - this.#offsetX) / this.#zoom / this.#map.tileWidth);
+    const y = Math.floor(((clientY - bounds.top) - this.#offsetY) / this.#zoom / this.#map.tileHeight);
+    return x >= 0 && y >= 0 && x < this.#map.width && y < this.#map.height ? { x, y } : null;
   }
 
   setZoomListener(listener: (zoom: number) => void): void {
@@ -171,6 +205,7 @@ export class WorkspacePreview {
     if (this.#visibleLayers.frontTiles) this.#drawTileLayer(map.layers.frontTiles);
     if (this.#visibleLayers.collisions) this.#drawCollisionLayer(map.layers.collisions);
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
+    if (this.#selection) this.#drawSelection(this.#selection);
   }
 
   #visibleBounds(): { left: number; top: number; right: number; bottom: number } {
@@ -196,9 +231,10 @@ export class WorkspacePreview {
   #drawCollisionLayer(layer: number[]): void {
     const map = this.#map!;
     const bounds = this.#visibleBounds();
+    const first = map.tileset.tileCount + 1;
     const colors: Record<number, string> = {
-      309: "rgba(244, 63, 94, .48)", 310: "rgba(251, 191, 36, .48)",
-      311: "rgba(96, 165, 250, .48)", 312: "rgba(45, 212, 191, .48)",
+      [first]: "rgba(244, 63, 94, .48)", [first + 1]: "rgba(251, 191, 36, .48)",
+      [first + 2]: "rgba(96, 165, 250, .48)", [first + 3]: "rgba(45, 212, 191, .48)",
     };
     for (let y = bounds.top; y < bounds.bottom; ++y) for (let x = bounds.left; x < bounds.right; ++x) {
       const gid = layer[y * map.width + x] ?? 0;
@@ -222,6 +258,18 @@ export class WorkspacePreview {
       const py = y * map.tileHeight; context.moveTo(bounds.left * map.tileWidth, py); context.lineTo(bounds.right * map.tileWidth, py);
     }
     context.stroke();
+  }
+
+  #drawSelection(rect: TileRect): void {
+    const map = this.#map!;
+    const context = this.#context;
+    context.fillStyle = "rgba(87, 211, 255, .16)";
+    context.strokeStyle = "#57d3ff";
+    context.lineWidth = 2 / this.#zoom;
+    context.setLineDash([4 / this.#zoom, 3 / this.#zoom]);
+    context.fillRect(rect.x * map.tileWidth, rect.y * map.tileHeight, rect.width * map.tileWidth, rect.height * map.tileHeight);
+    context.strokeRect(rect.x * map.tileWidth, rect.y * map.tileHeight, rect.width * map.tileWidth, rect.height * map.tileHeight);
+    context.setLineDash([]);
   }
 
   #drawEmptyGrid(width: number, height: number): void {

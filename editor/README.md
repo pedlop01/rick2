@@ -29,10 +29,15 @@ disabled while errors remain. Version upgrades enter through the explicit
 migration registry in `src/migrations.ts`.
 
 When a project contains its tileset, the Canvas renders the visible portion of
-`tiles`, `frontTiles` and `collisions`. Drag to pan, use the mouse wheel or `+` /
-`-` to zoom, `Encajar` to frame the complete map, and the layer checkboxes or
-`Rejilla` control to change overlays. Rendering is clipped to visible cells so
-the complete level-1 map remains responsive.
+`tiles`, `frontTiles` and `collisions`. Use the middle mouse button to pan, the
+mouse wheel or `+` / `-` to zoom, and `Encajar` to frame the complete map. Layer
+checkboxes control visibility; clicking a layer name makes it active.
+
+The tile palette and the pencil, eraser and fill tools edit the active layer.
+The collision layer exposes its four semantic GIDs instead of graphic tiles.
+Selection supports `Ctrl+C`, `Ctrl+X` and `Ctrl+V`; paste uses the last canvas
+position and is clipped safely at map boundaries. Every edit immediately marks
+the project as modified and is included in the next ZIP or directory save.
 
 Generate a portable level-1 project from the repository assets for manual
 testing:

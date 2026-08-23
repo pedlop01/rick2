@@ -10,12 +10,15 @@ import {
 } from "./project-io";
 import { ProjectSession } from "./project-session";
 import { hasValidationErrors, validateProject, type Diagnostic } from "./validation";
+import { LevelDocumentModel, type TileClipboard, type TileRect } from "./level-document";
+import { TilePalette } from "./tile-palette";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Colisiones"],
 ] as const;
+type EditTool = "pencil" | "eraser" | "fill" | "select";
 
 function button(label: string, title?: string): HTMLButtonElement {
   const element = document.createElement("button");
@@ -42,7 +45,7 @@ export function createEditorShell(host: HTMLElement): void {
     <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Capas</h2></div>
-      <div class="panel-content" id="layer-list"></div>
+      <div class="panel-content" id="layer-list"></div><div class="tile-palette" id="tile-palette"></div>
     </aside>
     <main class="workspace" aria-label="Lienzo del nivel">
       <canvas tabindex="0" aria-label="Vista previa vacía del mapa"></canvas>
@@ -63,9 +66,17 @@ export function createEditorShell(host: HTMLElement): void {
   const hint = requiredElement<HTMLElement>(host, ".canvas-hint");
   const notification = requiredElement<HTMLElement>(host, ".notification");
   const inspector = requiredElement<HTMLElement>(host, ".inspector-panel .panel-content");
+  const paletteHost = requiredElement<HTMLElement>(host, "#tile-palette");
 
   const session = new ProjectSession();
   const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
+  const layerRows = new Map<MapLayerName, HTMLElement>();
+  let activeLayer: MapLayerName = "tiles";
+  let activeTool: EditTool = "pencil";
+  let levelModel: LevelDocumentModel | null = null;
+  let selection: TileRect | null = null;
+  let clipboard: TileClipboard | null = null;
+  let lastPointerTile: { x: number; y: number } | null = null;
   let directoryHandle: FileSystemDirectoryHandle | null = null;
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -107,9 +118,11 @@ export function createEditorShell(host: HTMLElement): void {
     message: string,
   ): Promise<void> {
     session.replace(project, dirty);
+    levelModel = new LevelDocumentModel(project);
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
-    await preview.load(project);
+    await preview.load(project, levelModel.map);
+    await palette.load(project, levelModel);
     hint.hidden = true;
   }
 
@@ -225,6 +238,17 @@ export function createEditorShell(host: HTMLElement): void {
   const zoomIn = button("+", "Acercar");
   const fit = button("Encajar", "Mostrar el mapa completo");
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
+  const toolButtons = new Map<EditTool, HTMLButtonElement>();
+  const setTool = (tool: EditTool): void => {
+    activeTool = tool;
+    for (const [id, control] of toolButtons) control.setAttribute("aria-pressed", String(id === tool));
+    status.textContent = `Herramienta: ${tool}`;
+  };
+  for (const [id, label] of [["pencil", "Lápiz"], ["eraser", "Borrador"], ["fill", "Relleno"], ["select", "Selección"]] as const) {
+    const control = button(label);
+    control.addEventListener("click", () => setTool(id));
+    toolButtons.set(id, control);
+  }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
   zoomIn.addEventListener("click", () => preview.zoomBy(1.25));
   fit.addEventListener("click", () => preview.fit());
@@ -237,11 +261,13 @@ export function createEditorShell(host: HTMLElement): void {
   });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
-                 zoomOut, zoomIn, fit, grid);
+                 ...toolButtons.values(), separator.cloneNode(), zoomOut, zoomIn, fit, grid);
+  setTool("pencil");
 
   for (const [id, label] of LAYERS) {
-    const row = document.createElement("label");
+    const row = document.createElement("div");
     row.className = "layer-row";
+    layerRows.set(id, row);
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = true;
@@ -249,14 +275,80 @@ export function createEditorShell(host: HTMLElement): void {
     checkbox.dataset.layer = id;
     layerCheckboxes.set(id, checkbox);
     checkbox.addEventListener("change", () => preview.setLayerVisible(id, checkbox.checked));
-    const name = document.createElement("span");
+    const name = document.createElement("button");
+    name.type = "button";
     name.textContent = label;
+    name.addEventListener("click", () => {
+      activeLayer = id;
+      for (const [layer, layerRow] of layerRows) layerRow.classList.toggle("active", layer === id);
+      palette.setLayer(id);
+      status.textContent = `Capa activa: ${label}`;
+    });
     row.append(checkbox, name);
     layerList.append(row);
   }
 
   const preview = new WorkspacePreview(canvas);
+  const palette = new TilePalette(paletteHost);
+  palette.setSelectListener((gid) => { status.textContent = `GID seleccionado: ${gid}`; });
   preview.start();
+  layerRows.get(activeLayer)?.classList.add("active");
+
+  let gestureStart: { x: number; y: number } | null = null;
+  let gestureLast: { x: number; y: number } | null = null;
+  let gestureChanged = false;
+  const finishEdit = (message: string): void => {
+    if (!gestureChanged || !levelModel) return;
+    levelModel.flush(); session.markDirty(); preview.refresh(); refreshProjectState(message);
+  };
+  preview.setEditHandlers({
+    down(tile) {
+      if (!levelModel) return;
+      canvas.focus(); gestureStart = tile; gestureLast = tile; lastPointerTile = tile; gestureChanged = false;
+      if (activeTool === "pencil") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, palette.selectedGid);
+      if (activeTool === "eraser") gestureChanged = levelModel.setCell(activeLayer, tile.x, tile.y, 0);
+      if (activeTool === "fill") gestureChanged = levelModel.floodFill(activeLayer, tile.x, tile.y, palette.selectedGid);
+      if (activeTool === "select") { selection = { x: tile.x, y: tile.y, width: 1, height: 1 }; preview.setSelection(selection); }
+      preview.refresh();
+    },
+    move(tile) {
+      if (!levelModel || !gestureStart || !gestureLast) return;
+      lastPointerTile = tile;
+      if (activeTool === "pencil" || activeTool === "eraser") {
+        const gid = activeTool === "eraser" ? 0 : palette.selectedGid;
+        gestureChanged = levelModel.paintLine(activeLayer, gestureLast.x, gestureLast.y, tile.x, tile.y, gid) || gestureChanged;
+      } else if (activeTool === "select") {
+        selection = levelModel.normalizedRect(gestureStart.x, gestureStart.y, tile.x, tile.y);
+        preview.setSelection(selection);
+      }
+      gestureLast = tile; preview.refresh();
+    },
+    up() {
+      finishEdit(activeTool === "fill" ? "Zona rellenada" : "Tiles modificados");
+      gestureStart = null; gestureLast = null; gestureChanged = false;
+    },
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    const tile = preview.tileAtClient(event.clientX, event.clientY);
+    if (tile) { lastPointerTile = tile; status.textContent = `${activeLayer} · x ${tile.x}, y ${tile.y} · GID ${palette.selectedGid}`; }
+  });
+  canvas.addEventListener("keydown", (event) => {
+    if (!levelModel || !event.ctrlKey || !["c", "x", "v"].includes(event.key.toLowerCase())) return;
+    const key = event.key.toLowerCase();
+    if ((key === "c" || key === "x") && selection) {
+      clipboard = levelModel.copy(activeLayer, selection);
+      if (key === "x") { gestureChanged = levelModel.clear(activeLayer, selection); finishEdit("Selección cortada"); gestureChanged = false; }
+      status.textContent = key === "c" ? "Selección copiada" : "Selección cortada";
+      event.preventDefault(); preview.refresh();
+    } else if (key === "v" && clipboard) {
+      const target = lastPointerTile ?? (selection ? { x: selection.x, y: selection.y } : { x: 0, y: 0 });
+      gestureChanged = levelModel.paste(activeLayer, target.x, target.y, clipboard);
+      finishEdit("Selección pegada respetando los límites del mapa"); gestureChanged = false;
+      selection = { x: target.x, y: target.y, width: Math.min(clipboard.width, levelModel.map.width - target.x), height: Math.min(clipboard.height, levelModel.map.height - target.y) };
+      preview.setSelection(selection); event.preventDefault();
+    }
+  });
   const zoomStatus = requiredElement<HTMLElement>(host, ".statusbar span:last-child");
   preview.setZoomListener((zoom) => { zoomStatus.textContent = `${Math.round(zoom * 100)}%`; });
   window.addEventListener("beforeunload", (event) => {
