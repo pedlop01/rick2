@@ -1,0 +1,19 @@
+{
+  "name": "rick2-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline level editor and web runtime for Rick2",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
