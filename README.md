@@ -147,3 +147,11 @@ g++ -std=c++11 tests/runtime_options_test.cpp \
 The format and versioning policy are documented in `docs/LEVEL_FORMAT.md`; its
 machine-readable contract is `schema/level.schema.json`. Building requires the
 header-only `nlohmann/json` library (`nlohmann-json3-dev` on Debian/Ubuntu).
+
+Rick2 Engine's offline architecture, portable project format and editable data
+catalog are documented in `docs/ENGINE_ARCHITECTURE.md` and
+`docs/EDITOR_DATA_CATALOG.md`. Check their level-1 baseline with:
+
+```sh
+python3 tests/editor_contract_test.py
+```
