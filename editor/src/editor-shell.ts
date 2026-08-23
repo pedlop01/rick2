@@ -90,7 +90,7 @@ export function createEditorShell(host: HTMLElement): void {
   let entityModel: EntityDocumentModel | null = null;
   let assetModel: AssetDocumentModel | null = null;
   let runtime: PreviewRuntime | null = null;
-  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0;
+  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0; let runtimeInvulnerable = true;
   const runtimeInput: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
   let runtimeEditorView: ViewState | null = null;
   let entityGroup: EntityGroup = "items";
@@ -143,7 +143,7 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
-    stopRuntime(); runtimePreviewActive = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); preview.setRuntimeBodies([]);
+    stopRuntime(); runtimePreviewActive = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
@@ -319,10 +319,13 @@ export function createEditorShell(host: HTMLElement): void {
   const zoomOut = button("−", "Alejar");
   const zoomIn = button("+", "Acercar");
   const fit = button("Encajar", "Mostrar el mapa completo");
+  const gameScreen = button("Pantalla de juego", "Ajustar el zoom a una pantalla del juego centrada en Rick");
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
-  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview");
+  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview"); const invulnerable = button("Invulnerable: sí", "Ignorar daño durante la previsualización");
+  invulnerable.setAttribute("aria-pressed", "true");
+  invulnerable.addEventListener("click", () => { runtimeInvulnerable = !runtimeInvulnerable; runtime?.setInvulnerable(runtimeInvulnerable); invulnerable.textContent = `Invulnerable: ${runtimeInvulnerable ? "sí" : "no"}`; invulnerable.setAttribute("aria-pressed", String(runtimeInvulnerable)); renderRuntime(); });
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
-  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) preview.centerOnWorld(runtime.player.x + 12, runtime.player.y + 10); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}`; };
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) preview.centerOnWorld(runtime.player.x + 12, runtime.player.y + 10); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
   const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
   function stopRuntime(): void { runtimePlaying = false; if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
   play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
@@ -343,6 +346,14 @@ export function createEditorShell(host: HTMLElement): void {
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
   zoomIn.addEventListener("click", () => preview.zoomBy(1.25));
   fit.addEventListener("click", () => preview.fit());
+  gameScreen.addEventListener("click", () => {
+    if (!runtime || !levelModel) return;
+    const camera = levelModel.level.camera as { width?: unknown; height?: unknown } | undefined;
+    const width = typeof camera?.width === "number" && camera.width > 0 ? camera.width : 256;
+    const height = typeof camera?.height === "number" && camera.height > 0 ? camera.height : 200;
+    preview.focusWorldViewport(runtime.player.x + 12, runtime.player.y + 10, width, height);
+    status.textContent = `Encuadre de juego: ${width}×${height}`;
+  });
   let gridVisible = true;
   grid.addEventListener("click", () => {
     gridVisible = !gridVisible;
@@ -352,7 +363,7 @@ export function createEditorShell(host: HTMLElement): void {
   });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
-                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, separator.cloneNode(), zoomOut, zoomIn, fit, grid);
+                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
   setTool("pencil");
 
   for (const [id, label] of LAYERS) {

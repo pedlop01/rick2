@@ -192,6 +192,13 @@ export class WorkspacePreview {
   }
 
   centerOnWorld(worldX: number, worldY: number): void { this.#offsetX = this.#canvas.clientWidth / 2 - worldX * this.#zoom; this.#offsetY = this.#canvas.clientHeight / 2 - worldY * this.#zoom; this.#scheduleDraw(); }
+  focusWorldViewport(worldX: number, worldY: number, viewportWidth: number, viewportHeight: number): void {
+    if (viewportWidth <= 0 || viewportHeight <= 0) return;
+    this.#zoom = Math.min(12, Math.max(0.1, Math.min(this.#canvas.clientWidth / viewportWidth, this.#canvas.clientHeight / viewportHeight)));
+    this.#offsetX = this.#canvas.clientWidth / 2 - worldX * this.#zoom;
+    this.#offsetY = this.#canvas.clientHeight / 2 - worldY * this.#zoom;
+    this.#onZoomChange(this.#zoom); this.#scheduleDraw();
+  }
   getViewState(): ViewState { return { zoom: this.#zoom, offsetX: this.#offsetX, offsetY: this.#offsetY }; }
   setViewState(view: ViewState): void { this.#zoom = view.zoom; this.#offsetX = view.offsetX; this.#offsetY = view.offsetY; this.#onZoomChange(this.#zoom); this.#scheduleDraw(); }
 

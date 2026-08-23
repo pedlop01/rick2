@@ -23,6 +23,7 @@ export class WebPlayer {
   }
   get snapshot(): PlayerSnapshot { return { x: this.#x, y: this.#y, state: this.#state, face: this.#face, verticalSpeed: this.#vy }; }
   get activeCheckpoint(): number { return this.#activeCheckpoint; }
+  kill(): void { if (this.#state !== "dead") { this.#state = "dead"; this.#deadTicks = 0; } }
   reset(): void { this.#x = this.#spawn.x; this.#y = this.#spawn.y; this.#face = this.#spawn.face; this.#state = "stop"; this.#vy = SPEED_Y_MAX; this.#ascending = false; this.#jumpOrigin = this.#y; this.#deadTicks = 0; }
   step(input: PlayerInput, platforms: readonly PlayerPlatform[] = []): void {
     if (this.#state === "dead") { if (++this.#deadTicks >= RESPAWN_TICKS) this.reset(); return; }
@@ -46,7 +47,7 @@ export class WebPlayer {
       } else if (!grounded) { this.#state = "jumping"; this.#ascending = false; this.#vy = SPEED_Y_MIN; }
     }
     this.#activateCheckpoint();
-    if (this.#y > this.#map.height * this.#map.tileHeight + HEIGHT) { this.#state = "dead"; this.#deadTicks = 0; }
+    if (this.#y > this.#map.height * this.#map.tileHeight + HEIGHT) this.kill();
   }
   #tileKindAt(x: number, y: number): TileKind {
     const tx = Math.floor(x / this.#map.tileWidth), ty = Math.floor(y / this.#map.tileHeight);
