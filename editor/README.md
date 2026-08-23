@@ -28,6 +28,21 @@ diagnostics appear in the inspector with their file and JSON path; export is
 disabled while errors remain. Version upgrades enter through the explicit
 migration registry in `src/migrations.ts`.
 
+When a project contains its tileset, the Canvas renders the visible portion of
+`tiles`, `frontTiles` and `collisions`. Drag to pan, use the mouse wheel or `+` /
+`-` to zoom, `Encajar` to frame the complete map, and the layer checkboxes or
+`Rejilla` control to change overlays. Rendering is clipped to visible cells so
+the complete level-1 map remains responsive.
+
+Generate a portable level-1 project from the repository assets for manual
+testing:
+
+```sh
+python3 tools/package_editor_project.py
+```
+
+Then open `build/rick2-level1.rick2-project` from the editor.
+
 ## Commands
 
 | Command | Purpose |

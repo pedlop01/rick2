@@ -167,3 +167,12 @@ npm run check
 ```
 
 Then open `editor/dist/index.html` directly; it does not need a web server.
+
+Build the current level and all referenced assets as a deterministic portable
+editor project with:
+
+```sh
+python3 tools/package_editor_project.py
+```
+
+The ignored output is `build/rick2-level1.rick2-project`.

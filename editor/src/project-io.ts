@@ -137,6 +137,10 @@ function jsonBytes(value: unknown): Uint8Array {
   return strToU8(`${JSON.stringify(value, null, JSON_INDENT)}\n`);
 }
 
+function base64Bytes(value: string): Uint8Array {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+}
+
 export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2Project {
   const levelPath = "levels/level1/level.json";
   const manifest: ProjectManifest = {
@@ -161,7 +165,7 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     animation: {
       bitmap: "../../assets/images/placeholder.png",
       frameDurationTicks: 1,
-      sprites: [{ x: 0, y: 0, width: 8, height: 8 }],
+      sprites: [{ x: 0, y: 0, width: 1, height: 1 }],
     },
   };
   const cells = 32 * 25;
@@ -173,8 +177,8 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     display: { width: 1280, height: 960 },
     camera: { x: 0, y: 0, width: 256, height: 200 },
     map: {
-      width: 32, height: 25, tileWidth: 8, tileHeight: 8,
-      tileset: { image: "../../assets/images/tileset.png", tileCount: 1, columns: 1, imageWidth: 8, imageHeight: 8 },
+      width: 32, height: 25, tileWidth: 1, tileHeight: 1,
+      tileset: { image: "../../assets/images/placeholder.png", tileCount: 1, columns: 1, imageWidth: 1, imageHeight: 1 },
       layers: { tiles: Array(cells).fill(0), frontTiles: Array(cells).fill(0), collisions: Array(cells).fill(0) },
     },
     entities: emptyEntities,
@@ -199,6 +203,9 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     ["project.json", jsonBytes(manifest)],
     ["game.json", jsonBytes(game)],
     [levelPath, jsonBytes(level)],
+    ["assets/images/placeholder.png", base64Bytes(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    )],
   ]));
 }
 

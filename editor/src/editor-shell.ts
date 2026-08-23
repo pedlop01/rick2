@@ -1,4 +1,4 @@
-import { WorkspacePreview } from "./workspace-preview";
+import { WorkspacePreview, type MapLayerName } from "./workspace-preview";
 import {
   createEmptyProject,
   downloadProject,
@@ -65,6 +65,7 @@ export function createEditorShell(host: HTMLElement): void {
   const inspector = requiredElement<HTMLElement>(host, ".inspector-panel .panel-content");
 
   const session = new ProjectSession();
+  const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
   let directoryHandle: FileSystemDirectoryHandle | null = null;
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -98,6 +99,18 @@ export function createEditorShell(host: HTMLElement): void {
     status.textContent = invalid
         ? `${message} · ${diagnostics.length} error(es) de validación`
         : message;
+  }
+
+  async function activateProject(
+    project: ReturnType<typeof createEmptyProject>,
+    dirty: boolean,
+    message: string,
+  ): Promise<void> {
+    session.replace(project, dirty);
+    for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
+    refreshProjectState(message);
+    await preview.load(project);
+    hint.hidden = true;
   }
 
   function renderDiagnostics(diagnostics: readonly Diagnostic[]): void {
@@ -155,13 +168,13 @@ export function createEditorShell(host: HTMLElement): void {
   saveProject.disabled = true;
   saveDirectory.disabled = true;
 
-  newProject.addEventListener("click", () => {
+  newProject.addEventListener("click", () => void run(async () => {
     if (!canReplaceProject()) return;
     directoryHandle = null;
-    session.replace(createEmptyProject(), true);
     clearError();
-    refreshProjectState("Proyecto vacío creado; todavía no se ha guardado");
-  });
+    await activateProject(createEmptyProject(), true,
+                          "Proyecto vacío creado; todavía no se ha guardado");
+  }));
   openProject.addEventListener("click", () => {
     if (canReplaceProject()) fileInput.click();
   });
@@ -171,16 +184,14 @@ export function createEditorShell(host: HTMLElement): void {
     if (!file) return;
     const project = await readProjectFile(file);
     directoryHandle = null;
-    session.replace(project, false);
-    refreshProjectState(`Proyecto abierto desde ${file.name}`);
+    await activateProject(project, false, `Proyecto abierto desde ${file.name}`);
   }));
   openDirectory.addEventListener("click", () => void run(async () => {
     if (!canReplaceProject()) return;
     const handle = await pickProjectDirectory();
     const project = await readProjectDirectory(handle);
     directoryHandle = handle;
-    session.replace(project, false);
-    refreshProjectState(`Proyecto abierto desde la carpeta ${handle.name}`);
+    await activateProject(project, false, `Proyecto abierto desde la carpeta ${handle.name}`);
   }));
   saveProject.addEventListener("click", () => void run(async () => {
     const project = session.project;
@@ -210,8 +221,23 @@ export function createEditorShell(host: HTMLElement): void {
   const redo = button("Rehacer", "El historial se implementará en la tarea 25");
   undo.disabled = true;
   redo.disabled = true;
+  const zoomOut = button("−", "Alejar");
+  const zoomIn = button("+", "Acercar");
+  const fit = button("Encajar", "Mostrar el mapa completo");
+  const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
+  zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
+  zoomIn.addEventListener("click", () => preview.zoomBy(1.25));
+  fit.addEventListener("click", () => preview.fit());
+  let gridVisible = true;
+  grid.addEventListener("click", () => {
+    gridVisible = !gridVisible;
+    grid.textContent = `Rejilla: ${gridVisible ? "sí" : "no"}`;
+    grid.setAttribute("aria-pressed", String(gridVisible));
+    preview.setGridVisible(gridVisible);
+  });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
-                 saveDirectory, separator, undo, redo);
+                 saveDirectory, separator, undo, redo, separator.cloneNode(),
+                 zoomOut, zoomIn, fit, grid);
 
   for (const [id, label] of LAYERS) {
     const row = document.createElement("label");
@@ -221,6 +247,8 @@ export function createEditorShell(host: HTMLElement): void {
     checkbox.checked = true;
     checkbox.disabled = true;
     checkbox.dataset.layer = id;
+    layerCheckboxes.set(id, checkbox);
+    checkbox.addEventListener("change", () => preview.setLayerVisible(id, checkbox.checked));
     const name = document.createElement("span");
     name.textContent = label;
     row.append(checkbox, name);
@@ -229,6 +257,8 @@ export function createEditorShell(host: HTMLElement): void {
 
   const preview = new WorkspacePreview(canvas);
   preview.start();
+  const zoomStatus = requiredElement<HTMLElement>(host, ".statusbar span:last-child");
+  preview.setZoomListener((zoom) => { zoomStatus.textContent = `${Math.round(zoom * 100)}%`; });
   window.addEventListener("beforeunload", (event) => {
     preview.stop();
     if (session.dirty) {
