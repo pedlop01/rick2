@@ -13,6 +13,7 @@ export interface TilePointerHandlers {
   up(): void;
 }
 export interface PointerPosition { x: number; y: number; worldX: number; worldY: number; }
+export interface ViewState { zoom: number; offsetX: number; offsetY: number; }
 
 export class WorkspacePreview {
   readonly #canvas: HTMLCanvasElement;
@@ -190,6 +191,10 @@ export class WorkspacePreview {
     this.#scheduleDraw();
   }
 
+  centerOnWorld(worldX: number, worldY: number): void { this.#offsetX = this.#canvas.clientWidth / 2 - worldX * this.#zoom; this.#offsetY = this.#canvas.clientHeight / 2 - worldY * this.#zoom; this.#scheduleDraw(); }
+  getViewState(): ViewState { return { zoom: this.#zoom, offsetX: this.#offsetX, offsetY: this.#offsetY }; }
+  setViewState(view: ViewState): void { this.#zoom = view.zoom; this.#offsetX = view.offsetX; this.#offsetY = view.offsetY; this.#onZoomChange(this.#zoom); this.#scheduleDraw(); }
+
   #resizeAndDraw(): void {
     const scale = window.devicePixelRatio || 1;
     const width = Math.max(1, Math.round(this.#canvas.clientWidth * scale));
@@ -316,7 +321,7 @@ export class WorkspacePreview {
 
   #drawRuntimeBodies(): void {
     if (!this.#runtimeBodies.length) return; const context = this.#context; context.lineWidth = 2 / this.#zoom;
-    for (const body of this.#runtimeBodies) { context.fillStyle = "rgba(34, 211, 238, .3)"; context.strokeStyle = "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
+    for (const body of this.#runtimeBodies) { const player = body.key === "player"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

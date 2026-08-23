@@ -1,4 +1,4 @@
-import { WorkspacePreview, type MapLayerName, type PointerPosition } from "./workspace-preview";
+import { WorkspacePreview, type MapLayerName, type PointerPosition, type ViewState } from "./workspace-preview";
 import {
   createEmptyProject,
   downloadProject,
@@ -18,6 +18,7 @@ import { AssetEditor } from "./asset-editor";
 import { ProjectHistory } from "./project-history";
 import { clearRecovery, loadRecovery, saveRecovery } from "./recovery-store";
 import { PreviewRuntime } from "./preview-runtime";
+import type { PlayerInput } from "./web-player";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -90,6 +91,8 @@ export function createEditorShell(host: HTMLElement): void {
   let assetModel: AssetDocumentModel | null = null;
   let runtime: PreviewRuntime | null = null;
   let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0;
+  const runtimeInput: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
+  let runtimeEditorView: ViewState | null = null;
   let entityGroup: EntityGroup = "items";
   let selectedEntity: EntityRef | null = null;
   let selection: TileRect | null = null;
@@ -140,7 +143,7 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
-    stopRuntime(); runtimePreviewActive = false; runtime = new PreviewRuntime(levelModel.level); preview.setRuntimeBodies([]);
+    stopRuntime(); runtimePreviewActive = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
@@ -319,13 +322,13 @@ export function createEditorShell(host: HTMLElement): void {
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
   const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview");
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
-  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}`; };
-  const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) preview.centerOnWorld(runtime.player.x + 12, runtime.player.y + 10); status.textContent = `Preview · tick ${runtime?.tick ?? 0}${runtimePlaying ? " · reproduciendo" : " · pausa"}`; };
+  const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
   function stopRuntime(): void { runtimePlaying = false; if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
-  play.addEventListener("click", () => { if (!runtime) return; runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
+  play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
   pause.addEventListener("click", () => { stopRuntime(); play.disabled = false; pause.disabled = true; step.disabled = false; renderRuntime(); });
-  step.addEventListener("click", () => { runtimePreviewActive = true; runtime?.step(); resetPreview.disabled = false; renderRuntime(); });
-  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; runtime?.reset(); preview.setRuntimeBodies([]); refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
+  step.addEventListener("click", () => { if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtime?.step(runtimeInput); resetPreview.disabled = false; renderRuntime(); });
+  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; runtime?.reset(); preview.setRuntimeBodies([]); if (runtimeEditorView) preview.setViewState(runtimeEditorView); runtimeEditorView = null; refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
   const toolButtons = new Map<EditTool, HTMLButtonElement>();
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -462,7 +465,12 @@ export function createEditorShell(host: HTMLElement): void {
   });
   const zoomStatus = requiredElement<HTMLElement>(host, ".statusbar span:last-child");
   preview.setZoomListener((zoom) => { zoomStatus.textContent = `${Math.round(zoom * 100)}%`; });
+  const gameKey = (event: KeyboardEvent): keyof PlayerInput | null => ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", Space: "action" } as const)[event.code] ?? null;
+  window.addEventListener("keydown", (event) => { if (!runtimePreviewActive) return; const key = gameKey(event); if (key) { runtimeInput[key] = true; event.preventDefault(); } });
+  window.addEventListener("keyup", (event) => { const key = gameKey(event); if (key) runtimeInput[key] = false; });
+  window.addEventListener("blur", () => { for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; });
   window.addEventListener("keydown", (event) => {
+    if (runtimePreviewActive) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement || event.ctrlKey || event.metaKey || event.altKey) return;
     const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset" }; const tool = shortcuts[event.key.toLowerCase()];

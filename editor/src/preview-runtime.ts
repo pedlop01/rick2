@@ -1,4 +1,5 @@
 import type { EditableLevel } from "./level-document";
+import { WebPlayer, type PlayerInput, type PlayerPlatform, type PlayerSnapshot } from "./web-player";
 
 export interface RuntimeBody { key: string; x: number; y: number; width: number; height: number; frame: number; }
 interface MovingBody extends RuntimeBody { actions: Array<Record<string, unknown>>; action: number; progress: number; wait: number; recursive: boolean; }
@@ -6,16 +7,24 @@ function record(value: unknown): Record<string, unknown> { return value && typeo
 function number(value: unknown, fallback = 0): number { return typeof value === "number" ? value : fallback; }
 function list(value: unknown): unknown[] { return Array.isArray(value) ? value : value === undefined ? [] : [value]; }
 
+const NO_INPUT: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
 export class PreviewRuntime {
-  readonly #source: EditableLevel; #tick = 0; #bodies: MovingBody[] = [];
-  constructor(level: EditableLevel) { this.#source = structuredClone(level); this.reset(); }
+  readonly #source: EditableLevel; readonly #player: WebPlayer; #tick = 0; #bodies: MovingBody[] = [];
+  constructor(level: EditableLevel) { this.#source = structuredClone(level); this.#player = new WebPlayer(this.#source); this.reset(); }
   get tick(): number { return this.#tick; }
-  get bodies(): readonly RuntimeBody[] { return this.#bodies; }
+  get player(): PlayerSnapshot { return this.#player.snapshot; }
+  get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot; return [...this.#bodies, { key: "player", x: player.x, y: player.y, width: 23, height: 21, frame: this.#tick }]; }
   reset(): void {
-    this.#tick = 0; this.#bodies = []; const entities = record(this.#source.entities);
+    this.#tick = 0; this.#player.reset(); this.#bodies = []; const entities = record(this.#source.entities);
     for (const group of ["platforms", "hazards"]) for (const raw of list(entities[group])) { const entity = record(raw); const attributes = record(entity.attributes); const actions = list(record(entity.actions).action).map(record); this.#bodies.push({ key: `${group}:${String(entity.id)}`, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, actions, action: 0, progress: 0, wait: 0, recursive: Boolean(attributes.recursive) }); }
   }
-  step(): void { this.#tick += 1; for (const body of this.#bodies) this.#stepBody(body); }
+  step(input: PlayerInput = NO_INPUT): void {
+    this.#tick += 1;
+    const previous = new Map(this.#bodies.map((body) => [body.key, { x: body.x, y: body.y }]));
+    for (const body of this.#bodies) this.#stepBody(body);
+    const platforms: PlayerPlatform[] = this.#bodies.filter((body) => body.key.startsWith("platforms:")).map((body) => { const old = previous.get(body.key)!; return { key: body.key, x: body.x, y: body.y, width: body.width, height: body.height, dx: body.x - old.x, dy: body.y - old.y }; });
+    this.#player.step(input, platforms);
+  }
   #stepBody(body: MovingBody): void {
     const action = body.actions[body.action]; if (!action) return; if (body.wait > 0) { body.wait -= 1; return; }
     const distance = Math.max(0, number(action.desp)); const speed = Math.max(0, number(action.speed)); const remaining = Math.max(0, distance - body.progress); const movement = Math.min(speed, remaining); const direction = action.direction;
