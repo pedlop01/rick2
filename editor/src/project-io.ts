@@ -175,6 +175,7 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     id: "level1",
     units: { simulationTicksPerSecond: 50, duration: "ticks", distance: "pixels", speed: "pixelsPerTick" },
     display: { width: 1280, height: 960 },
+    session: { initialLives: 3 },
     camera: { x: 0, y: 0, width: 256, height: 200 },
     map: {
       width: 32, height: 25, tileWidth: 1, tileHeight: 1,

@@ -12,6 +12,7 @@ with typed definitions matching this catalog.
 | Identity | `formatVersion`, `kind`, `id` | Version is read-only; project/level ID is validated text. |
 | Units | 50 ticks/s, ticks, pixels, pixels/tick | Read-only for format version 1. Values shown with unit-aware labels. |
 | Display | output `width`, `height` | Positive integer fields and aspect preview. |
+| Session | `initialLives` | Positive number of lives restored when starting or resetting a preview. |
 | Initial camera | `x`, `y`, `width`, `height` | Draggable viewport plus numeric inspector. |
 | Map | width/height, 8×8 tile size in level 1 | Resize operation with explicit crop/expand confirmation. |
 | Tileset | image, tile count, columns and image dimensions | Asset selector and tile palette; metadata checked against decoded image. |

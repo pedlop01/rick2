@@ -126506,6 +126506,9 @@
     "width": 1280,
     "height": 960
   },
+  "session": {
+    "initialLives": 3
+  },
   "camera": {
     "x": 0,
     "y": 0,

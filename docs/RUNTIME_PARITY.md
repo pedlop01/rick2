@@ -32,6 +32,11 @@ transient actors but never serializes them into the project.
 - Apoyo y arrastre sobre plataformas móviles; los hazards no se confunden con
   superficies transitables.
 - Activación de checkpoints, caída fuera del mapa y respawn determinista.
+- Mejora exclusiva del preview web: sesión de depuración con vidas configurables
+  mediante `session.initialLives`, decremento en cada muerte y estado de game
+  over. El C++ todavía reinicia indefinidamente y no consume este valor. Esta
+  extensión sirve para comprobar checkpoints y estimar la dificultad sin
+  convertir el editor en el modo de juego definitivo; Reset restaura la sesión.
 - Colisión letal con hazards visibles y láseres activos por defecto; las fases
   `deactivate` de los hazards se ocultan y dejan de producir daño.
 - Movimiento horizontal, vertical y diagonal de láseres según su velocidad y

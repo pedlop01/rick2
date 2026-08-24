@@ -132,6 +132,7 @@ def convert(project_root, tmx_path, level_dir, config_path):
         },
         "entities": entities,
         "display": config["display"],
+        "session": config.get("session", {"initialLives": 3}),
         "camera": config["camera"],
         "player": config["player"],
         "projectiles": config["projectiles"],

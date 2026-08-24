@@ -12,17 +12,19 @@ function list(value: unknown): unknown[] { return Array.isArray(value) ? value :
 
 const NO_INPUT: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
 export class PreviewRuntime {
-  readonly #source: EditableLevel; readonly #player: WebPlayer; #tick = 0; #bodies: MovingBody[] = []; #triggers: RuntimeTrigger[] = []; #invulnerable = false; #dangerContact = false;
-  constructor(level: EditableLevel) { this.#source = structuredClone(level); this.#player = new WebPlayer(this.#source); this.reset(); }
+  readonly #source: EditableLevel; readonly #player: WebPlayer; readonly #initialLives: number; #tick = 0; #bodies: MovingBody[] = []; #triggers: RuntimeTrigger[] = []; #invulnerable = false; #dangerContact = false; #lives = 3; #gameOver = false;
+  constructor(level: EditableLevel) { this.#source = structuredClone(level); this.#player = new WebPlayer(this.#source); this.#initialLives = Math.max(1, Math.floor(number(record(this.#source.session).initialLives, 3))); this.reset(); }
   get tick(): number { return this.#tick; }
   get player(): PlayerSnapshot { return this.#player.snapshot; }
   get invulnerable(): boolean { return this.#invulnerable; }
   get dangerContact(): boolean { return this.#dangerContact; }
+  get lives(): number { return this.#lives; }
+  get gameOver(): boolean { return this.#gameOver; }
   setInvulnerable(enabled: boolean): void { this.#invulnerable = enabled; }
-  placePlayerAt(worldX: number, worldY: number): void { this.#player.placeAtFeet(worldX, worldY); this.#dangerContact = false; }
+  placePlayerAt(worldX: number, worldY: number): void { if (this.#gameOver) { this.#gameOver = false; this.#lives = 1; } this.#player.placeAtFeet(worldX, worldY); this.#dangerContact = false; }
   get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot; return [...this.#bodies.filter((body) => body.visible), { key: "player", x: player.x, y: player.y, width: 23, height: 21, frame: this.#tick }]; }
   reset(): void {
-    this.#tick = 0; this.#player.reset(); this.#dangerContact = false; this.#bodies = []; this.#triggers = []; const entities = record(this.#source.entities);
+    this.#tick = 0; this.#lives = this.#initialLives; this.#gameOver = false; this.#player.reset(); this.#dangerContact = false; this.#bodies = []; this.#triggers = []; const entities = record(this.#source.entities);
     for (const group of ["platforms", "hazards"]) for (const raw of list(entities[group])) { const entity = record(raw); const attributes = record(entity.attributes); const actions = list(record(entity.actions).action).map(record); const active = group === "hazards" ? Boolean(attributes.trigger) : attributes.ini_state === undefined || attributes.ini_state === "moving"; this.#bodies.push({ key: `${group}:${String(entity.id)}`, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, actions, action: 0, progress: 0, wait: 0, recursive: group === "hazards" ? Boolean(attributes.trigger) : Boolean(attributes.recursive), visible: group === "platforms" ? attributes.visible !== 0 : active || !Boolean(attributes.stop_inactive), active, lethal: group === "hazards", condActions: false }); }
     for (const raw of list(entities.lasers)) {
       const laser = record(raw), startX = number(laser.x) + number(laser.bb_x), startY = number(laser.y) + number(laser.bb_y), speed = Math.max(0, number(laser.speed));
@@ -38,11 +40,13 @@ export class PreviewRuntime {
     const previous = new Map(this.#bodies.map((body) => [body.key, { x: body.x, y: body.y }]));
     for (const body of this.#bodies) this.#stepBody(body);
     const platforms: PlayerPlatform[] = this.#bodies.filter((body) => body.key.startsWith("platforms:")).map((body) => { const old = previous.get(body.key)!; return { key: body.key, x: body.x, y: body.y, width: body.width, height: body.height, dx: body.x - old.x, dy: body.y - old.y }; });
-    this.#player.step(input, platforms);
-    this.#stepTriggers(input);
+    const wasDead = this.#player.snapshot.state === "dead";
+    if (!this.#gameOver) this.#player.step(input, platforms);
+    if (!wasDead && this.#player.snapshot.state === "dead") this.#loseLife();
+    if (!this.#gameOver && this.#player.snapshot.state !== "dead") this.#stepTriggers(input);
     const player = this.#player.snapshot, left = player.x + 5, right = left + 13, top = player.y, bottom = top + 21;
     this.#dangerContact = player.state !== "dead" && this.#bodies.some((body) => body.visible && body.lethal && left < body.x + body.width && right > body.x && top < body.y + body.height && bottom > body.y);
-    if (this.#dangerContact && !this.#invulnerable) { this.#player.kill(); this.#resetTriggersAndLasers(); }
+    if (this.#dangerContact && !this.#invulnerable) { this.#player.kill(); this.#loseLife(); }
   }
   #stepBody(body: MovingBody): void {
     if (!body.active) return;
@@ -102,4 +106,5 @@ export class PreviewRuntime {
     for (const trigger of this.#triggers) { trigger.wasIn = false; trigger.alreadyTriggered = false; trigger.firing = false; trigger.steps = 0; trigger.previousAction = false; for (const target of trigger.targets) target.completed = false; }
     for (const body of this.#bodies) if (body.laser) { body.x = body.laser.startX; body.y = body.laser.startY; body.active = body.laser.defaultActive; body.visible = body.laser.defaultActive; body.wait = 0; }
   }
+  #loseLife(): void { this.#lives = Math.max(0, this.#lives - 1); this.#gameOver = this.#lives === 0; this.#resetTriggersAndLasers(); }
 }

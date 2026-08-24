@@ -21,6 +21,12 @@
       }
     },
     "display": { "$ref": "#/$defs/viewport" },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initialLives"],
+      "properties": { "initialLives": { "$ref": "#/$defs/positiveInteger" } }
+    },
     "camera": {
       "allOf": [
         { "$ref": "#/$defs/viewport" },
