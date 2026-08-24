@@ -1,4 +1,5 @@
 #include "trigger.h"
+#include "trigger_rules.h"
 
 TriggerTarget::TriggerTarget(Object* _target,
                               int _delay,
@@ -48,6 +49,7 @@ Trigger::~Trigger() {
 
 void Trigger::Reset() {
   player_was_in_trigger = false;
+  player_prev_state = CHAR_STATE_STOP;
   already_triggered = false;
   trigger_targets = false;
 
@@ -68,17 +70,8 @@ void Trigger::AddTarget(Object* _object, int _delay, bool _trigger, bool _trigge
 }
 
 bool Trigger::InTrigger(int _x, int _y, int _width, int _height) {
-  return (((_x >= x) && (_x <= (x + width)) &&
-           (_y >= y) && (_y <= (y + height))) ||
-
-          (((_x + _width) >= x) && ((_x + _width) <= (x + width)) &&
-           (_y >= y) && (_y <= (y + height))) ||
-
-          ((_x >= x) && (_x <= (x + width)) &&
-           ((_y + _height) >= y) && ((_y + _height) <= (y + height))) ||
-
-          (((_x + _width) >= x) && ((_x + _width) <= (x + width)) &&
-           ((_y + _height) >= y) && ((_y + _height) <= (y + height))));
+  return RectanglesOverlap(_x, _y, _width, _height,
+                           x, y, width, height);
 }
 
 void Trigger::TriggerStep(int _x, int _y, int _width, int _height,
@@ -101,30 +94,18 @@ void Trigger::TriggerStep(int _x, int _y, int _width, int _height,
       return;
     }
       
-    bool player_enters     = false;
-    bool player_stays      = false;
-    bool player_exits      = false;
     bool player_in_trigger = false;
     bool expected_face     = false;
     bool expected_event    = false;
 
     player_in_trigger = InTrigger(_x, _y, _width, _height);
 
-    player_enters =  player_in_trigger && !player_was_in_trigger;
-    player_stays  =  player_in_trigger &&  player_was_in_trigger;
-    player_exits  = !player_in_trigger &&  player_was_in_trigger;
-
-    expected_face = ((action_face == ACTION_FACE_RIGHT) ? (_face == CHAR_DIR_RIGHT) :
-                     (action_face == ACTION_FACE_LEFT)  ? (_face == CHAR_DIR_LEFT)  :
-                                                          true);
-
-    expected_event = ((action_event == ACTION_EVENT_ENTERS) ? player_enters :
-                      (action_event == ACTION_EVENT_STAYS)  ? player_stays  :
-                      (action_event == ACTION_EVENT_EXITS)  ? player_exits  :
-                      (action_event == ACTION_EVENT_HITS)   ? (player_stays &&
-                                                               (player_prev_state != CHAR_STATE_HITTING) &&
-                                                               (_state == CHAR_STATE_HITTING)) :
-                                                              false);
+    expected_face = DoesTriggerFaceMatch(action_face, _face);
+    expected_event = DoesTriggerEventMatch(action_event,
+                                            player_in_trigger,
+                                            player_was_in_trigger,
+                                            _state,
+                                            player_prev_state);
 
     player_was_in_trigger = player_in_trigger;
     player_prev_state = _state;

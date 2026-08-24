@@ -2,9 +2,8 @@
 #define ENEMYIA_H
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
 #include <vector>
-#include <time.h>
 
 #include "rick_params.h"
 #include "keyboard.h"
@@ -33,19 +32,24 @@ class EnemyIA {
     bool limited_ver;
     int  randomness;
     int  block_steps;
+    std::uint32_t random_state;
 
     int  wait_for_decision;
 
   private:
     bool RandomDecision(Keyboard& keyboard, int direction, int steps_in_x);
     bool WalkerDecision(Keyboard& keyboard, int direction, bool col_right, bool col_left, bool no_floor_right, bool no_floor_left);  // Returns true if change of direction
-    void ChaserDecision(Keyboard& keyboard, bool block_hor, int player_x, int player_y, int enemy_x, int enemy_y, int _enemy_state, bool over_stairs, bool in_floor);
+    void ChaserDecision(Keyboard& keyboard, bool block_hor,
+                        int player_x, int player_y, int enemy_x, int enemy_y,
+                        int _enemy_state, bool in_stairs, bool over_stairs,
+                        bool in_floor);
     bool CorrectDecisionBasedOnLimits(Keyboard& keyboard, int x, int y, int direction);
 
   public:    
 	  EnemyIA();
     EnemyIA(int _type,
             int _random_decisions, int _randomness, int _block_steps,
+            int _enemy_id,
             int _initial_x, int _initial_y, int _orig_x, int _orig_y,
             int limit_x, int limit_y);
     ~EnemyIA();

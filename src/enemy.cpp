@@ -2,6 +2,7 @@
 #include "character.h"
 #include "world.h"
 #include "game_time.h"
+#include "animation_rules.h"
 
 // class constructor
 Enemy::Enemy() : Character() {
@@ -44,7 +45,9 @@ Enemy::Enemy(const char* file,
   freezed = false;
   freeze_elapsed_ticks = 0;
 
-  ia = new EnemyIA(_ia_type, _ia_random, _ia_randomness, _ia_block_steps, pos_x, pos_y, _ia_orig_x, _ia_orig_y, _ia_limit_x, _ia_limit_y);
+  ia = new EnemyIA(_ia_type, _ia_random, _ia_randomness, _ia_block_steps,
+                   id, pos_x, pos_y, _ia_orig_x, _ia_orig_y,
+                   _ia_limit_x, _ia_limit_y);
 }
 
 // class destructor
@@ -60,7 +63,16 @@ void Enemy::CharacterStep(World* map, Character* player) {
 
   keyboard_enemy.SetKeys(0);
 
-  if (!freezed) {
+  // Lethal hits have priority over the freeze pause. Objects are stepped
+  // before enemies, so a laser can set killed during this same world tick.
+  if (killed) {
+    freezed = false;
+    freeze_elapsed_ticks = 0;
+    Character::CharacterStep(map, keyboard_enemy);
+    return;
+  }
+
+  if (!ShouldPauseFrozenEnemy(freezed, killed)) {
     if (state != CHAR_STATE_DYING) {
 
       this->GetCollisionsInternalWeightBoxExt(map, weightColExt);
@@ -77,6 +89,9 @@ void Enemy::CharacterStep(World* map, Character* player) {
       freeze_elapsed_ticks = 0;
       freezed = false;
     }
+    // Frozen enemies preserve state, position and animation frame. Resume the
+    // normal simulation on the following tick after the timer expires.
+    return;
   }
 
   Character::CharacterStep(map, keyboard_enemy);
@@ -89,6 +104,11 @@ void Enemy::SetKilled() {
 bool Enemy::GetOverStairs() {
   return overStairs;
 }
+
+bool Enemy::GetInStairs() {
+  return inStairs;
+}
+
 bool Enemy::GetInFloor() {
   return inFloor;
 }

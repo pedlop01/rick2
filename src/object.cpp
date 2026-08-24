@@ -1,4 +1,6 @@
 #include "object.h"
+#include "object_collision_rules.h"
+#include "vertical_collision_rules.h"
 #include "world.h"
 #include "character.h"
 #include "block.h"
@@ -329,8 +331,8 @@ void Object::SetY(World* map, int _y) {
       y = y + desp_y;
     } else {
       // Collision. Move to safe position
-      int correction = ((y + bb_y + desp_y + obj_height) % tile_height);      
-      y = y + desp_y - correction - 1;
+      y = ResolveDownwardCollisionY(y + desp_y, bb_y,
+                                    obj_height + 1, tile_height);
     }
   } else if ((_y > 0) && (_y < y)) {
     // Collision moving up
@@ -340,9 +342,9 @@ void Object::SetY(World* map, int _y) {
       // No collision      
       y = y - desp_y;      
     } else {
-      // Collision. Move to safe position      
-      int correction = tile_height - ((y + bb_y - desp_y) % tile_height);      
-      y = y + desp_y + correction;      
+      // Collision. Move below the tile instead of adding the attempted upward
+      // displacement, which previously pushed objects down by twice the step.
+      y = ResolveUpwardCollisionY(y - desp_y, bb_y, tile_height);
     }
   }
 }
@@ -472,30 +474,30 @@ void Object::ComputeCollisionBlocks(World* map) {
   for (list<Block*>::iterator it = blocks->begin() ; it != blocks->end(); ++it) {
     Block* block = *it;
 
-    if ((block->GetState() == OBJ_STATE_DYING) || (block->GetState() == OBJ_STATE_DEAD)) {
-      break;
+    if (!IsBlockCollisionCandidate(block->GetState())) {
+      continue;
     }
 
     if (block->CoordsWithinObject(x + bb_x + col_width, y + bb_y) ||        
-        block->CoordsWithinObject(x + bb_x + col_width, y + bb_y + bb_height)) {
+        block->CoordsWithinObject(x + bb_x + col_width, y + bb_y + col_height)) {
       blockColRight = true;
       blockColPtr = block;
       // Take first block with collision
       break;
     } else if (block->CoordsWithinObject(x + bb_x, y + bb_y) ||
-               block->CoordsWithinObject(x + bb_x, y + bb_y + bb_height)) {
+               block->CoordsWithinObject(x + bb_x, y + bb_y + col_height)) {
       blockColLeft = true;
       blockColPtr = block;
       // Take first block with collision
       break;
     } else if (block->CoordsWithinObject(x + bb_x, y + bb_y) ||
-               block->CoordsWithinObject(x + bb_x + bb_width, y + bb_y)) {
+               block->CoordsWithinObject(x + bb_x + col_width, y + bb_y)) {
       blockColUp = true;
       blockColPtr = block;
       // Take first block with collision
       break;
-    } else if (block->CoordsWithinObject(x + bb_x, y + bb_y + bb_height) ||
-               block->CoordsWithinObject(x + bb_x + bb_width, y + bb_y + bb_height)) {
+    } else if (block->CoordsWithinObject(x + bb_x, y + bb_y + col_height) ||
+               block->CoordsWithinObject(x + bb_x + col_width, y + bb_y + col_height)) {
       blockColDown = true;
       blockColPtr = block;
       // Take first block with collision
@@ -518,32 +520,30 @@ void Object::ComputeCollisionObjects(World* map) {
   for (list<Object*>::iterator it = blocks->begin() ; it != blocks->end(); ++it) {
     Object* object = *it;    
 
-    if ((object->GetType() != OBJ_ITEM)         ||
-        (object->GetState() == OBJ_STATE_DYING) ||
-        (object->GetState() == OBJ_STATE_DEAD)) {
-      break;
+    if (!IsItemCollisionCandidate(object->GetType(), object->GetState())) {
+      continue;
     }
 
     if (object->CoordsWithinObject(x + bb_x + col_width, y + bb_y) ||        
-        object->CoordsWithinObject(x + bb_x + col_width, y + bb_y + bb_height)) {
+        object->CoordsWithinObject(x + bb_x + col_width, y + bb_y + col_height)) {
       itemCol = true;
       itemColPtr = object;
       // Take first object with collision
       break;
     } else if (object->CoordsWithinObject(x + bb_x, y + bb_y) ||
-               object->CoordsWithinObject(x + bb_x, y + bb_y + bb_height)) {
+               object->CoordsWithinObject(x + bb_x, y + bb_y + col_height)) {
       itemCol = true;
       itemColPtr = object;
       // Take first object with collision
       break;
     } else if (object->CoordsWithinObject(x + bb_x, y + bb_y) ||
-               object->CoordsWithinObject(x + bb_x + bb_width, y + bb_y)) {
+               object->CoordsWithinObject(x + bb_x + col_width, y + bb_y)) {
       itemCol = true;
       itemColPtr = object;
       // Take first object with collision
       break;
-    } else if (object->CoordsWithinObject(x + bb_x, y + bb_y + bb_height) ||
-               object->CoordsWithinObject(x + bb_x + bb_width, y + bb_y + bb_height)) {
+    } else if (object->CoordsWithinObject(x + bb_x, y + bb_y + col_height) ||
+               object->CoordsWithinObject(x + bb_x + col_width, y + bb_y + col_height)) {
       itemCol = true;
       itemColPtr = object;
       // Take first object with collision
@@ -673,8 +673,8 @@ void Object::ComputeCollisions(World* map, Character* player) {
 void Object::UpdateFSMState(World* map) {
   bool inAir;
 
-  inAir = ((extColExt.GetLeftDownCol() == 0) &&
-           (extColExt.GetRightDownCol() == 0));
+  inAir = IsBodyUnsupported(extColExt.GetLeftDownCol(),
+                            extColExt.GetRightDownCol());
 
   switch(state) {
     case OBJ_STATE_STOP:
@@ -813,7 +813,10 @@ void Object::ObjectStep(World* map, Character* player) {
   // wait until the animation completes to transition to the next state.
 //  printf("[Object] ComputeAnimationStep\n");
   if (state != OBJ_STATE_DEAD) {
-    if ((prev_direction != direction) && (direction == OBJ_DIR_STOP) && (obj_type != OBJ_BOMB))  // BOMBs are an exception!
+    if (prev_state != state) {
+      // ComputeNextState already reset the newly entered animation. Keep frame
+      // zero for a complete simulation tick before advancing it.
+    } else if ((prev_direction != direction) && (direction == OBJ_DIR_STOP) && (obj_type != OBJ_BOMB))  // BOMBs are an exception!
       AnimationForState(state)->ResetAnim();
     else
       AnimationForState(state)->AnimStep();

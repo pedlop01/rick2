@@ -180,6 +180,7 @@ class Character {
 
   protected:
     void FixHorizontalDirection(Keyboard& keyboard);
+    bool AlignToStairs(World* map);
 };
 
 #endif // CHARACTER_H

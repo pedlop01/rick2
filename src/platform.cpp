@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "action_rules.h"
 
 Platform::Platform() {
   obj_type = OBJ_PLATFORM;
@@ -81,21 +82,15 @@ float Platform::GetSpeedPixelsPerTick() {
 
 // REVISIT: same function than in Hazard. Maybe we can unify this code
 void Platform::HandleConditionalActions(list<Action*>::iterator& _current_action) {
-  if (_current_action == actions.end()) {
-    return;
-  } else {
+  while (_current_action != actions.end()) {
     Action* current_action_ptr = *_current_action;
-    int condition = current_action_ptr->GetCondition();
-    if ((condition == ACTION_COND_ALWAYS) ||
-        (cond_actions && (condition == ACTION_COND_TRIG_ON)) ||
-        (!cond_actions && (condition == ACTION_COND_TRIG_OFF))) {
+    if (DoesActionConditionMatch(current_action_ptr->GetCondition(),
+                                 cond_actions)) {
       return;
-    } else {
-      // As in any advance action, need to reset the desp and wait time
-      current_desp = 0;
-      current_wait_time = 0;
-      HandleConditionalActions(++_current_action);
     }
+    current_desp = 0;
+    current_wait_time = 0;
+    ++_current_action;
   }
 }
 
@@ -103,6 +98,7 @@ void Platform::HandleConditionalActions(list<Action*>::iterator& _current_action
 void Platform::PlatformStep() {
   bool advance_action = false;
   int  current_speed;
+  int  movement;
 
   // If no actions, then return
   if (actions.size() == 0) return;
@@ -132,6 +128,10 @@ void Platform::PlatformStep() {
       return;
     } else if (recursive) {
       current_action = actions.begin();
+      // A recursive wrap is a new selection point: do not execute the first
+      // action for one tick if its condition belongs to the inactive branch.
+      this->HandleConditionalActions(current_action);
+      if (current_action == actions.end()) return;
     } else {      
       state = OBJ_STATE_STOP;
       // Make sure trigger is cleared when sequence is completed.
@@ -154,24 +154,28 @@ void Platform::PlatformStep() {
   switch (current_action_ptr->GetDirection()) {    
     case OBJ_DIR_STOP:
       // only wait time can be used here
-      if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+      if (IsActionWaitComplete(current_wait_time,
+                               current_action_ptr->GetWaitTicks())) {
         advance_action = true;
       }
       break;
     case OBJ_DIR_RIGHT:
     case OBJ_DIR_LEFT:
       if (current_action_ptr->GetDesp() != 0) {
+        movement = ActionMovementForTick(current_action_ptr->GetDesp(),
+                                         current_desp, current_speed);
         if (current_action_ptr->GetDirection() == OBJ_DIR_RIGHT) {
-          x += current_speed;
+          x += movement;
         } else {
-          x -= current_speed;
+          x -= movement;
         }
-        current_desp += current_speed;
+        current_desp += movement;
         if (current_desp >= current_action_ptr->GetDesp()) {
           advance_action = true;
         }
       } else {
-        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+        if (IsActionWaitComplete(current_wait_time,
+                                 current_action_ptr->GetWaitTicks())) {
           advance_action = true;
         }
       }
@@ -179,17 +183,20 @@ void Platform::PlatformStep() {
     case OBJ_DIR_UP:
     case OBJ_DIR_DOWN:
       if (current_action_ptr->GetDesp() != 0) {
+        movement = ActionMovementForTick(current_action_ptr->GetDesp(),
+                                         current_desp, current_speed);
         if (current_action_ptr->GetDirection() == OBJ_DIR_DOWN) {
-          y += current_speed;
+          y += movement;
         } else {
-          y -= current_speed;
+          y -= movement;
         }
-        current_desp += current_speed;
+        current_desp += movement;
         if (current_desp >= current_action_ptr->GetDesp()) {          
           advance_action = true;
         }
       } else {        
-        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+        if (IsActionWaitComplete(current_wait_time,
+                                 current_action_ptr->GetWaitTicks())) {
           advance_action = true;
         }
       }

@@ -1,5 +1,6 @@
 #include "item.h"
 #include "game_time.h"
+#include "vertical_collision_rules.h"
 
 Item::Item() {
   steps_dying = 0;
@@ -20,8 +21,8 @@ void Item::UpdateFSMState(World* map) {
   bool inAir;
   Animation* current_anim;
 
-  inAir = ((extColExt.GetLeftDownCol() == 0) &&
-           (extColExt.GetRightDownCol() == 0));
+  inAir = IsBodyUnsupported(extColExt.GetLeftDownCol(),
+                            extColExt.GetRightDownCol());
 
   switch(state) {
     case OBJ_STATE_STOP:

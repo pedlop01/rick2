@@ -47,6 +47,7 @@ class Enemy : public Character {
 
     void SetKilled();
     bool GetOverStairs();
+    bool GetInStairs();
     bool GetInFloor();
     bool GetFreezed() { return freezed; }
     unsigned int GetFreezeElapsedTicks() { return freeze_elapsed_ticks; }

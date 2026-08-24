@@ -144,6 +144,85 @@ g++ -std=c++11 tests/runtime_options_test.cpp \
 /tmp/rick2-runtime-options-test
 ```
 
+Enemy AI tuning keeps each level-defined random-decision frequency and safely
+normalizes invalid zero values. Check the rule independently with:
+
+```sh
+g++ -std=c++11 tests/enemy_ia_rules_test.cpp \
+  -o /tmp/rick2-enemy-ia-rules-test
+/tmp/rick2-enemy-ia-rules-test
+```
+
+The character ladder-volume regression checks all four collision samples and
+both regular and top ladder tiles:
+
+```sh
+g++ -std=c++11 tests/character_collision_rules_test.cpp \
+  -o /tmp/rick2-character-collision-rules-test
+/tmp/rick2-character-collision-rules-test
+```
+
+The shared support rule verifies air, solid, one-way and ladder-top behaviour
+for characters and falling objects:
+
+```sh
+g++ -std=c++11 tests/vertical_collision_rules_test.cpp \
+  -o /tmp/rick2-vertical-collision-rules-test
+/tmp/rick2-vertical-collision-rules-test
+```
+
+The level-1 animation contract maps every state emitted by C++ to a definition,
+state name, non-empty frame list and positive duration:
+
+```sh
+python3 tests/native_animation_contract_test.py
+```
+
+Object collision filters keep scanning after inactive blocks and unrelated
+objects, while excluding dying/dead targets:
+
+```sh
+g++ -std=c++11 tests/object_collision_rules_test.cpp \
+  -o /tmp/rick2-object-collision-rules-test
+/tmp/rick2-object-collision-rules-test
+```
+
+Action timing and final-step clamping are covered independently of graphics:
+
+```sh
+g++ -std=c++11 tests/action_rules_test.cpp \
+  -o /tmp/rick2-action-rules-test
+/tmp/rick2-action-rules-test
+```
+
+One-shot animation clocks and stationary-character policy have a standalone
+regression test:
+
+```sh
+g++ -std=c++11 tests/animation_rules_test.cpp \
+  -o /tmp/rick2-animation-rules-test
+/tmp/rick2-animation-rules-test
+```
+
+Death-arc thresholds, camera freezing and the respawn boundary are fixed by:
+
+```sh
+g++ -std=c++11 tests/death_rules_test.cpp \
+  -o /tmp/rick2-death-rules-test
+/tmp/rick2-death-rules-test
+```
+
+Trigger overlap, face/event transitions and checkpoint links are covered by:
+
+```sh
+g++ -std=c++11 tests/trigger_rules_test.cpp \
+  -o /tmp/rick2-trigger-rules-test
+/tmp/rick2-trigger-rules-test
+g++ -std=c++11 tests/checkpoint_test.cpp src/checkpoint.cpp \
+  -o /tmp/rick2-checkpoint-test
+/tmp/rick2-checkpoint-test
+```
+
 The format and versioning policy are documented in `docs/LEVEL_FORMAT.md`; its
 machine-readable contract is `schema/level.schema.json`. Building requires the
 header-only `nlohmann/json` library (`nlohmann-json3-dev` on Debian/Ubuntu).

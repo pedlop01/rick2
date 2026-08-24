@@ -7,17 +7,9 @@
 #include "rick_params.h"
 #include "character.h"
 #include "object.h"
+#include "trigger_rules.h"
 
 using namespace std;
-
-#define ACTION_EVENT_ENTERS 0
-#define ACTION_EVENT_STAYS  1
-#define ACTION_EVENT_EXITS  2
-#define ACTION_EVENT_HITS   3
-
-#define ACTION_FACE_ANY   0
-#define ACTION_FACE_RIGHT 1
-#define ACTION_FACE_LEFT  2
 
 class TriggerTarget {
   private:

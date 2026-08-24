@@ -1,4 +1,5 @@
 #include "animation.h" // class's header file
+#include "animation_rules.h"
 
 // class constructor
 Animation::Animation() {
@@ -40,6 +41,15 @@ void Animation::AnimStep() {
     current_anim = (current_anim + 1) % sprites.size();
     steps_in_anim = 0;
   }
+}
+
+void Animation::AnimStepOnce() {
+  const AnimationClockStep next = AdvanceAnimationOnce(
+      current_anim, steps_in_anim, static_cast<int>(sprites.size()),
+      static_cast<int>(frame_duration_ticks));
+  prev_anim = current_anim;
+  current_anim = next.frame;
+  steps_in_anim = next.ticks;
 }
 
 bool Animation::CompletedLastAnim() {

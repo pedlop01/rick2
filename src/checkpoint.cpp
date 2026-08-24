@@ -1,4 +1,5 @@
 #include "checkpoint.h"
+#include "trigger_rules.h"
 
 Checkpoint::Checkpoint(
   int _chk_id,
@@ -24,15 +25,6 @@ void Checkpoint::AddNextCheckpoint(Checkpoint* next_checkpoint) {
 }
 
 bool Checkpoint::InCheckpoint(int x, int y, int width, int height) {
-  return (((x >= chk_x) && (x <= (chk_x + chk_width)) &&
-           (y >= chk_y) && (y <= (chk_y + chk_height))) ||
-
-          (((x + width) >= chk_x) && ((x + width) <= (chk_x + chk_width)) &&
-           (y >= chk_y) && (y <= (chk_y + chk_height))) ||
-
-          ((x >= chk_x) && (x <= (chk_x + chk_width)) &&
-           ((y + height) >= chk_y) && ((y + height) <= (chk_y + chk_height))) ||
-
-          (((x + width) >= chk_x) && ((x + width) <= (chk_x + chk_width)) &&
-           ((y + height) >= chk_y) && ((y + height) <= (chk_y + chk_height))));
+  return RectanglesOverlap(x, y, width, height,
+                           chk_x, chk_y, chk_width, chk_height);
 }

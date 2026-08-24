@@ -1,4 +1,9 @@
 #include "character.h" // class's header file
+#include "character_collision_rules.h"
+#include "vertical_collision_rules.h"
+#include "object_collision_rules.h"
+#include "animation_rules.h"
+#include "death_rules.h"
 #include "camera.h"
 #include "game_time.h"
 
@@ -171,22 +176,27 @@ Character::~Character() {
 void Character::Reset() {
   pos_x = initial_x;
   pos_y = initial_y;
-  state = CHAR_STATE_STOP;
   direction = initial_direction;
   speed_x = initial_speed_x;
   speed_y = initial_speed_y;
   state = initial_state;
   face = initial_direction;
-  height = 21;
-  width = 23;
-  height_orig = height;
-  width_orig = width;
-  bb_width = 13;
-  bb_width_orig = bb_width;
-  bb_height = 21;
-  bb_height_orig = bb_height;
+  height = height_orig;
+  width = width_orig;
+  bb_width = bb_width_orig;
+  bb_height = bb_height_orig;
 
   killed = false;
+  stepsInState = 0;
+  stepsInDirectionX = 0;
+  stepsInDirectionY = 0;
+  animation_scaling_factor = 1.0;
+  inPlatform = false;
+  inPlatformPtr = 0;
+  blockCollisionLeft = false;
+  blockCollisionRight = false;
+  blockCollisionPtr = 0;
+  stop_move_block_col = false;
 }
 
 void Character::SetKilled(World* map) {
@@ -283,8 +293,8 @@ void Character::SetPosY(World* map, int y, bool all) {
       pos_y = pos_y + desp_y;
     } else {      
       // Collision. Move to safe position
-      int correction = (pos_y + bb_y + desp_y + character_height) % tile_height;
-      pos_y = pos_y + desp_y - correction - 1;
+      pos_y = ResolveDownwardCollisionY(pos_y + desp_y, bb_y,
+                                        character_height + 1, tile_height);
     }
   } else if ((y > 0) && (y < pos_y)) {
     // Collision moving up    
@@ -298,8 +308,7 @@ void Character::SetPosY(World* map, int y, bool all) {
       pos_y = pos_y - desp_y;
     } else {
       // Collision. Move to safe position
-      int correction = tile_height - ((pos_y + bb_y - desp_y) % tile_height);
-      pos_y = pos_y - desp_y + correction;
+      pos_y = ResolveUpwardCollisionY(pos_y - desp_y, bb_y, tile_height);
     }
   }
 }
@@ -313,8 +322,21 @@ bool Character::ComputeCollisionBlocks(World* map) {
   for (list<Block*>::iterator it = blocks->begin() ; it != blocks->end(); ++it) {
     Block* block = *it;
 
-    if (block->CoordsWithinObject(pos_x + bb_x + 1 + bb_width, pos_y + bb_y) ||        
-        block->CoordsWithinObject(pos_x + bb_x + 1 + bb_width, pos_y + bb_y + bb_height - 1)) {
+    if (!IsBlockCollisionCandidate(block->GetState())) continue;
+
+    if (IsLandingOnBlock(pos_x + bb_x, pos_y + bb_y,
+                         bb_width, bb_height,
+                         block->GetX(), block->GetY(),
+                         block->GetWidth(), block->GetHeight())) {
+      pos_y = block->GetY() - bb_y - bb_height;
+      inFloor = true;
+      inAir = false;
+      continue;
+    }
+
+    if (block->CoordsWithinObject(pos_x + bb_x + bb_width, pos_y + bb_y) ||
+        block->CoordsWithinObject(pos_x + bb_x + bb_width,
+                                  pos_y + bb_y + bb_height - 1)) {
       blockCollisionRight = true;
       blockCollisionPtr = block;
       // Take first block with collision
@@ -433,12 +455,10 @@ void Character::ComputeCollisions(World* map) {
 
   //printf("[ComputeCollisions] Getting simple collisions checks\n");
   // Check if there is a collision with the tiles
-  inStairs = ((heightColInt.GetLeftUpCol() == TILE_STAIRS) ||
-              (heightColInt.GetRightUpCol() == TILE_STAIRS) ||
-              (heightColInt.GetLeftUpCol() == TILE_STAIRS) ||
-              (heightColInt.GetRightUpCol() == TILE_STAIRS) ||
-              (heightColInt.GetLeftDownCol() == TILE_STAIRS_TOP) ||
-              (heightColInt.GetRightDownCol() == TILE_STAIRS_TOP));
+  inStairs = IsInsideStairs(heightColInt.GetLeftUpCol(),
+                            heightColInt.GetRightUpCol(),
+                            heightColInt.GetLeftDownCol(),
+                            heightColInt.GetRightDownCol());
 
   overStairs = (heightColExt.GetLeftDownCol() == TILE_STAIRS_TOP) &&
                (heightColExt.GetRightDownCol() == TILE_STAIRS_TOP);
@@ -448,10 +468,8 @@ void Character::ComputeCollisions(World* map) {
             (heightColExt.GetRightDownCol() == TILE_COL);
 
   inAir = !inPlatform &&
-          ((heightColExt.GetLeftDownCol() == 0) ||             // No tile is air
-           (heightColExt.GetLeftDownCol() == TILE_STAIRS)) &&  // Stairs is also air
-          ((heightColExt.GetRightDownCol() == 0) ||
-           (heightColExt.GetRightDownCol() == TILE_STAIRS));
+          IsBodyUnsupported(heightColExt.GetLeftDownCol(),
+                            heightColExt.GetRightDownCol());
 
   inAirInt = ((heightColInt.GetLeftDownCol() == 0) &&
               (heightColInt.GetRightDownCol() == 0));
@@ -484,6 +502,52 @@ void Character::FixHorizontalDirection(Keyboard& keyboard) {
     direction &= ~CHAR_DIR_LEFT;
     direction &= ~CHAR_DIR_RIGHT;
   }
+}
+
+bool Character::AlignToStairs(World* map) {
+  const int tile_width = map->GetTilesetTileWidth();
+  const int tile_height = map->GetTilesetTileHeight();
+  if (tile_width <= 0 || tile_height <= 0 || bb_width <= 0) return false;
+
+  const int collision_x = pos_x + bb_x;
+  const int center_x = collision_x + bb_width / 2;
+  if (center_x < 0 || center_x >= map->GetMapWidth() * tile_width) return false;
+
+  const int sample_y[] = {
+    pos_y + bb_y + bb_height / 2,
+    pos_y + bb_y + bb_height - 1,
+    pos_y + bb_y + bb_height + 1
+  };
+  int row = -1;
+  const int column = center_x / tile_width;
+  for (unsigned int i = 0; i < sizeof(sample_y) / sizeof(sample_y[0]); ++i) {
+    if (sample_y[i] < 0 ||
+        sample_y[i] >= map->GetMapHeight() * tile_height) continue;
+    const int candidate_row = sample_y[i] / tile_height;
+    if (IsStairCollisionTile(map->GetTile(column, candidate_row)->GetType())) {
+      row = candidate_row;
+      break;
+    }
+  }
+  if (row < 0) return false;
+
+  int left_column = column;
+  int right_column = column;
+  while (left_column > 0 &&
+         IsStairCollisionTile(map->GetTile(left_column - 1, row)->GetType())) {
+    --left_column;
+  }
+  while (right_column + 1 < map->GetMapWidth() &&
+         IsStairCollisionTile(map->GetTile(right_column + 1, row)->GetType())) {
+    ++right_column;
+  }
+
+  const int target_collision_x = StairAlignmentTargetX(
+      collision_x, bb_width, tile_width, left_column, right_column);
+  if (target_collision_x == collision_x) return false;
+  const int previous_x = pos_x;
+  SetPosX(map, target_collision_x - bb_x);
+  return pos_x != previous_x;
 }
 
 void Character::ComputeNextState(World* map, Keyboard& keyboard) {
@@ -554,9 +618,13 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
               state = CHAR_STATE_RUNNING;
               direction = CHAR_DIR_LEFT;
             } else {
-              height = 15;                             // REVISIT: Hard-coded. Need to be obtained from state (now it is in animation)              
-              bb_height = height;                      // REVISIT: think on how to adapt this
-              pos_y = pos_y + (height_orig - height);
+              Animation* crouching_animation =
+                  AnimationForState(CHAR_STATE_CROUCHING);
+              const int crouching_height =
+                  crouching_animation->sprites.front()->height;
+              pos_y += height_orig - crouching_height;
+              height = crouching_height;
+              bb_height = crouching_height;
               state = CHAR_STATE_CROUCHING;
               direction = CHAR_DIR_STOP;
             }
@@ -605,8 +673,8 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
       case CHAR_STATE_CROUCHING:
         if ((!collisionHeadOrig && !keyboard.PressedDown()) || inAir) {          
           pos_y = pos_y - (height_orig - height);
-          height = 21;                            // REVISIT: Hard-coded. Need to be obtained from state (now it is in animation)
-          bb_height = height;                     // REVISIT: think on how to adapt this
+          height = height_orig;
+          bb_height = bb_height_orig;
           state = CHAR_STATE_STOP;
         }
   
@@ -616,10 +684,15 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
   
       case CHAR_STATE_CLIMBING:
   
-        if (inAirInt && !overStairs & !inStairs) {
+        if (inAirInt && !overStairs && !inStairs) {
           // height rectangle is out of the stairs. Make Rick to fall
           state = CHAR_STATE_JUMPING;
           direction = CHAR_DIR_DOWN;
+        } else if (ShouldExitStairsHorizontally(inFloor,
+                                                keyboard.PressedLeft(),
+                                                keyboard.PressedRight())) {
+          state = CHAR_STATE_RUNNING;
+          direction = keyboard.PressedRight() ? CHAR_DIR_RIGHT : CHAR_DIR_LEFT;
         } else if (keyboard.PressedUp()) {
           if (inAirInt && overStairs) {
           // Just arrived at the top of the stairs
@@ -642,7 +715,8 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
           direction = CHAR_DIR_STOP;
         }
   
-        // Fix horizontal direction based on keyboard input
+        // Fix horizontal direction based on keyboard input. This also keeps the
+        // selected direction when the state just changed to RUNNING.
         this->FixHorizontalDirection(keyboard);
         break;
 
@@ -696,7 +770,7 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
 
       case CHAR_STATE_DYING:
         if (direction & CHAR_DIR_UP) {
-          if (abs(pos_y_chk - pos_y) >= 10*8) {                   // REVISIT: hard coded the maximum distance for jumping
+          if (ShouldStartDeathFall(pos_y_chk, pos_y)) {
             direction &= ~CHAR_DIR_UP;
             direction |=  CHAR_DIR_DOWN;
           }
@@ -707,7 +781,8 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
           else
             camera_y = map->GetMapHeight()*map->GetTilesetTileHeight() -
                        GetCameraConfig().height;
-          if (pos_y >= (camera_y + GetCameraConfig().height)) {
+          if (HasCrossedDeathBoundary(pos_y, camera_y,
+                                      GetCameraConfig().height)) {
             state = CHAR_STATE_DEAD;
           }
         }
@@ -810,16 +885,9 @@ void Character::ComputeNextPosition(World* map) {
       break;
     case CHAR_STATE_CLIMBING:
       if (direction & CHAR_DIR_UP) {
-        // First, correct x to facilitate moving up
-        if ((extColExt.GetLeftUpCol() == TILE_COL) &&
-            (heightColExt.GetLeftUpCol() == TILE_COL) &&
-            (heightColExt.GetRightUpCol() == TILE_STAIRS)) {
-          SetPosX(map, GetPosX() + speed_x_max);
-        } else if ((extColExt.GetRightUpCol() == TILE_COL) &&
-                   (heightColExt.GetRightUpCol() == TILE_COL) &&
-                   (heightColExt.GetLeftUpCol() == TILE_STAIRS)) {
-          SetPosX(map, GetPosX() - speed_x_max);
-        }
+        // A partially aligned character can hit the ceiling beside the ladder.
+        // Recenter its collision box inside the complete ladder span first.
+        if (collisionHead) AlignToStairs(map);
 
         SetPosY(map, GetPosY() - speed_y, false);
       } else if (direction & CHAR_DIR_DOWN) {
@@ -972,10 +1040,18 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
   this->ComputeNextSpeed();
   // Compute next animation frame
   //printf("[CharacterStep] ComputeNextAnimation\n");
-  if (direction == CHAR_DIR_STOP)
-    AnimationForState(state)->ResetAnim();
-  else if (state != CHAR_STATE_DEAD)
-    AnimationForState(state)->AnimStep();
+  if (state != CHAR_STATE_DEAD) {
+    Animation* animation = AnimationForState(state);
+    if (prevState != state) {
+      animation->ResetAnim();
+    } else if (ShouldAnimateCharacterOnce(state, direction)) {
+      animation->AnimStepOnce();
+    } else if (direction == CHAR_DIR_STOP) {
+      animation->ResetAnim();
+    } else {
+      animation->AnimStep();
+    }
+  }
 
   // Animation scaling factor is only used when dying
   if (state == CHAR_STATE_DYING)

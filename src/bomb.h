@@ -7,8 +7,11 @@
 #include "rick_params.h"
 #include "object.h"
 
+class Block;
+
 class Bomb : public Object {
   private:
+    Block* contact_block;
     void UpdateFSMState(World* map) override;
 
   public:

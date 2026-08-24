@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "death_rules.h"
 #include "enemy.h"
 #include "game_time.h"
 
@@ -67,8 +68,8 @@ void Camera::PositionBasedOnPlayer(Character* player) {
   int camera_width  = (view_width > pixels_width ? pixels_width : view_width);
   int camera_height = (view_height > pixels_height ? pixels_height : view_height);
 
-  // Do not move the camera when DYING
-  if (player->GetState() == CHAR_STATE_DYING) return;
+  // Keep the last playable frame through DYING and the one-tick DEAD handoff.
+  if (ShouldFreezeCameraForState(player->GetState())) return;
   SetPosX(player->GetCorrectedPosX() - camera_width/2);
   SetPosY(player->GetCorrectedPosY() - camera_height/2);
 }
@@ -550,10 +551,12 @@ bool Camera::CoordsWithinCamera(int x, int y) {
 }
 
 void Camera::CameraStep(World* world, Character *player, ALLEGRO_FONT *font) {
-  // Check in which camera view the player is
-  //printf("[CameraStep] Calling to set camera view\n");
-  CameraView* camera_view = world->GetCurrentCameraView(player);
-  this->SetCameraView(camera_view);
+  if (!ShouldFreezeCameraForState(player->GetState())) {
+    // The camera view is part of the frozen frame too: do not switch regions
+    // while the death arc moves Rick through overlapping view rectangles.
+    CameraView* camera_view = world->GetCurrentCameraView(player);
+    this->SetCameraView(camera_view);
+  }
 
   this->PositionBasedOnPlayer(player);
   //printf("[CameraStep] Camera draw screen\n");

@@ -2,9 +2,11 @@
 #include "block.h"
 #include "character.h"
 #include "enemy.h"
+#include "vertical_collision_rules.h"
 
 Bomb::Bomb() {
   obj_type = OBJ_BOMB;
+  contact_block = 0;
 }
 
 Bomb::Bomb(const char* file,
@@ -15,6 +17,7 @@ Bomb::Bomb(const char* file,
              int _direction) : 
   Object(_x, _y, _width, _height, true, true) {
   obj_type = OBJ_BOMB;
+  contact_block = 0;
 
   // Initialize animations from parent class
   Object::Init(file, _x, _y, _width, _height, true, true, OBJ_STATE_MOVING, _direction, 1.0, 1.0, 1.0, 0.4, 5.0, 1.0);
@@ -30,10 +33,8 @@ void Bomb::UpdateFSMState(World* map) {
   Animation* current_anim;
 
   inAir = !inPlatform &&
-          ((heightColExt.GetLeftDownCol() == 0) ||
-           (heightColExt.GetLeftDownCol() == TILE_STAIRS)) &&
-          ((heightColExt.GetRightDownCol() == 0) || 
-           (heightColExt.GetRightDownCol() == TILE_STAIRS));
+          IsBodyUnsupported(heightColExt.GetLeftDownCol(),
+                            heightColExt.GetRightDownCol());
 
   ComputeCollisionPlatforms(map);
   ComputeCollisionBlocks(map);
@@ -42,6 +43,9 @@ void Bomb::UpdateFSMState(World* map) {
                    blockColUp   ||
                    blockColLeft ||
                    blockColRight;
+  if (state == OBJ_STATE_MOVING && blockCollision) {
+    contact_block = (Block*)blockColPtr;
+  }
 
   switch(state) {
     case OBJ_STATE_STOP:
@@ -67,7 +71,17 @@ void Bomb::UpdateFSMState(World* map) {
 
     case OBJ_STATE_DYING:
       direction = OBJ_DIR_STOP;
-      if (blockCollision) {
+      if (contact_block) {
+        Block* live_contact = 0;
+        list<Block*>* blocks = map->GetBlocks();
+        for (list<Block*>::iterator it = blocks->begin(); it != blocks->end(); ++it) {
+          if (*it == contact_block) {
+            live_contact = *it;
+            break;
+          }
+        }
+        if (live_contact) live_contact->SetTriggered(true);
+      } else if (blockCollision) {
         ((Block*)blockColPtr)->SetTriggered(true);
       }
       if (playerCol) {

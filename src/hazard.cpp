@@ -1,4 +1,5 @@
 #include "hazard.h"
+#include "action_rules.h"
 
 Hazard::Hazard() {
   obj_type = OBJ_HAZARD;
@@ -60,21 +61,15 @@ void Hazard::AddAction(int direction, int desp, int wait, float speed, bool _ena
 }
 
 void Hazard::HandleConditionalActions(list<Action*>::iterator& _current_action) {
-  if (_current_action == actions.end()) {
-    return;
-  } else {
+  while (_current_action != actions.end()) {
     Action* current_action_ptr = *_current_action;
-    int condition = current_action_ptr->GetCondition();
-    if ((condition == ACTION_COND_ALWAYS) ||
-        (cond_actions && (condition == ACTION_COND_TRIG_ON)) ||
-        (!cond_actions && (condition == ACTION_COND_TRIG_OFF))) {
+    if (DoesActionConditionMatch(current_action_ptr->GetCondition(),
+                                 cond_actions)) {
       return;
-    } else {
-      // As in any advance action, need to reset the desp and wait time
-      current_desp = 0;
-      current_wait_time = 0;
-      HandleConditionalActions(++_current_action);
     }
+    current_desp = 0;
+    current_wait_time = 0;
+    ++_current_action;
   }
 }
 
@@ -134,6 +129,7 @@ void Hazard::ComputeCollisionsPlayer(World* map, Character* player) {
 void Hazard::HazardStep(World* map, Character* player) {
   bool advance_action = false;
   int  current_speed;
+  int  movement;
 
   // If no actions, then return
   if (actions.size() == 0) return;
@@ -166,6 +162,8 @@ void Hazard::HazardStep(World* map, Character* player) {
   if (current_action == actions.end()) {
     if (always_trigger) {
       current_action = actions.begin();
+      this->HandleConditionalActions(current_action);
+      if (current_action == actions.end()) return;
     } else {
       state = OBJ_STATE_STOP;
       trigger = false;
@@ -184,7 +182,8 @@ void Hazard::HazardStep(World* map, Character* player) {
       visible = current_action_ptr->GetEnabled();      
       // Active and inactive stop actions enters here
       // only wait time can be used here
-      if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+      if (IsActionWaitComplete(current_wait_time,
+                               current_action_ptr->GetWaitTicks())) {
         advance_action = true;
         // Also make hazard visible, as any change in action
         // requires it to be updated
@@ -195,17 +194,20 @@ void Hazard::HazardStep(World* map, Character* player) {
     case OBJ_DIR_LEFT:      
       state = OBJ_STATE_MOVING;      
       if (current_action_ptr->GetDesp() != 0) {
+        movement = ActionMovementForTick(current_action_ptr->GetDesp(),
+                                         current_desp, current_speed);
         if (current_action_ptr->GetDirection() == OBJ_DIR_RIGHT) {
-          x += current_speed;
+          x += movement;
         } else {
-          x -= current_speed;
+          x -= movement;
         }
-        current_desp += current_speed;
+        current_desp += movement;
         if (current_desp >= current_action_ptr->GetDesp()) {
           advance_action = true;
         }
       } else {
-        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+        if (IsActionWaitComplete(current_wait_time,
+                                 current_action_ptr->GetWaitTicks())) {
           advance_action = true;
         }
       }
@@ -214,17 +216,20 @@ void Hazard::HazardStep(World* map, Character* player) {
     case OBJ_DIR_DOWN:
       state = OBJ_STATE_MOVING;
       if (current_action_ptr->GetDesp() != 0) {
+        movement = ActionMovementForTick(current_action_ptr->GetDesp(),
+                                         current_desp, current_speed);
         if (current_action_ptr->GetDirection() == OBJ_DIR_DOWN) {
-          y += current_speed;
+          y += movement;
         } else {
-          y -= current_speed;
+          y -= movement;
         }
-        current_desp += current_speed;
+        current_desp += movement;
         if (current_desp >= current_action_ptr->GetDesp()) {          
           advance_action = true;
         }
       } else {        
-        if (current_wait_time >= current_action_ptr->GetWaitTicks()) {
+        if (IsActionWaitComplete(current_wait_time,
+                                 current_action_ptr->GetWaitTicks())) {
           advance_action = true;
         }
       }

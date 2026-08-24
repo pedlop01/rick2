@@ -1,15 +1,20 @@
 #include "enemy_ia.h"
+#include "enemy_ia_rules.h"
 #include "enemy.h"
 #include "player.h"
 
 EnemyIA::EnemyIA() {
   type = ENEMY_IA_WALKER;
   random_decisions = true;
-  srand(time(0));
+  randomness = RANDOM_DECISION_VALUE;
+  random_state = InitialEnemyIARandomState(0);
+  block_steps = 0;
+  wait_for_decision = 0;
 }
 
 EnemyIA::EnemyIA(int _type,
                  int _random_decisions, int _randomness, int _block_steps,
+                 int _enemy_id,
                  int _initial_x, int _initial_y, int _orig_x, int _orig_y, 
                  int _limit_x, int _limit_y) {
   type = _type;
@@ -25,9 +30,9 @@ EnemyIA::EnemyIA(int _type,
   limited_hor = (limit_x > 0);
   limited_ver = (limit_y > 0);
 
-  srand(time(0));
   wait_for_decision = block_steps;
-  randomness = RANDOM_DECISION_VALUE;
+  randomness = NormalizeEnemyIARandomness(_randomness);
+  random_state = InitialEnemyIARandomState(_enemy_id);
 }
 
 EnemyIA::~EnemyIA() {
@@ -59,8 +64,9 @@ bool EnemyIA::IsLimited() {
 }
 
 bool EnemyIA::RandomDecision(Keyboard& keyboard, int direction, int steps_in_x) {
-  if (random_decisions) {    
-    if ((rand() % randomness) == 0) {  // REVISIT: totally arbitrary number
+  if (random_decisions) {
+    random_state = NextEnemyIARandomState(random_state);
+    if ((random_state % static_cast<std::uint32_t>(randomness)) == 0) {
       if (direction & CHAR_DIR_LEFT)
         keyboard.SetKeys(KEY_RIGHT);
       else
@@ -91,7 +97,10 @@ bool EnemyIA::WalkerDecision(Keyboard& keyboard,
   return false;
 }
 
-void EnemyIA::ChaserDecision(Keyboard& keyboard, bool block_hor, int player_x, int player_y, int enemy_x, int enemy_y, int enemy_state, bool over_stairs, bool in_floor) {
+void EnemyIA::ChaserDecision(Keyboard& keyboard, bool block_hor,
+                             int player_x, int player_y,
+                             int enemy_x, int enemy_y, int enemy_state,
+                             bool in_stairs, bool over_stairs, bool in_floor) {
   if (!block_hor) {
     if (player_x > enemy_x) {
       keyboard.SetKeys(KEY_RIGHT);
@@ -100,24 +109,14 @@ void EnemyIA::ChaserDecision(Keyboard& keyboard, bool block_hor, int player_x, i
     }
   }
 
-  if (over_stairs && (player_y > enemy_y)) {
+  const int vertical_direction = EnemyChaserVerticalDirection(
+      player_y, enemy_y, enemy_state, in_stairs, over_stairs, in_floor);
+  if (vertical_direction == CHAR_DIR_UP) {
+    keyboard.SetKeys(KEY_UP);
+  } else if (vertical_direction == CHAR_DIR_DOWN) {
     keyboard.SetKeys(KEY_DOWN);
-  } else {
-    if (enemy_state == CHAR_STATE_CLIMBING) {
-      if (!in_floor) {
-        if (player_y + 10 > enemy_y) {  // REVISIT
-          keyboard.SetKeys(KEY_DOWN);
-        } else {
-          keyboard.SetKeys(KEY_UP);
-        }
-      } else {
-        if (player_x > enemy_x) {
-          keyboard.SetKeys(KEY_RIGHT);
-        } else {
-          keyboard.SetKeys(KEY_LEFT);
-        }
-      }
-    }
+  } else if (enemy_state == CHAR_STATE_CLIMBING && in_floor) {
+    keyboard.SetKeys(player_x > enemy_x ? KEY_RIGHT : KEY_LEFT);
   }
 }
 
@@ -213,6 +212,7 @@ void EnemyIA::IAStepChaser(Keyboard &keyboard,
   int x = enemy->GetPosX();
   int y = enemy->GetPosY();
   bool over_stairs = enemy->GetOverStairs();
+  bool in_stairs = enemy->GetInStairs();
   int steps_in_x = enemy->GetStepsInDirectionX();
 
   bool col_right = (enemy->GetWeightColExt()->GetRightDownCol() == TILE_COL) ||
@@ -244,7 +244,8 @@ void EnemyIA::IAStepChaser(Keyboard &keyboard,
     wait_for_decision = 0;
   }
   
-  this->ChaserDecision(keyboard, disable_decisions, player_x, player_y, x, y, state, over_stairs, in_floor);
+  this->ChaserDecision(keyboard, disable_decisions, player_x, player_y, x, y,
+                       state, in_stairs, over_stairs, in_floor);
   wait_for_decision++;
 
   // If crossing limits, then recompute decision
@@ -252,8 +253,10 @@ void EnemyIA::IAStepChaser(Keyboard &keyboard,
     wait_for_decision = 0;
   }
 
-  // If in stairs, don´t allow movements right or left
-  if (state == CHAR_STATE_CLIMBING) {
+  // Keep the character centred while climbing in the shaft. Once it reaches
+  // floor, preserve the horizontal key selected above so Character can leave
+  // CLIMBING and transition to RUNNING.
+  if (state == CHAR_STATE_CLIMBING && !in_floor) {
     int keys = keyboard.GetKeys();
     keys &= ~KEY_LEFT;
     keys &= ~KEY_RIGHT;

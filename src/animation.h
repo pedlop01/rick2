@@ -31,6 +31,7 @@ class Animation
     void AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, int _width, int _height);
 
     void AnimStep();
+    void AnimStepOnce();
     void ResetAnim();
 
     int GetCurrentAnim() { return current_anim;  }
