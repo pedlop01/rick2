@@ -83,7 +83,7 @@ la representación visual correspondiente.
 | 29 | Automatizar pruebas, empaquetado y publicación estática | Alta | 17-28 | Completada | Pruebas unitarias cubren modelo, comandos, conversión y validación; pruebas de integración abren, editan y reexportan el nivel 1 sin diferencias inesperadas; CI verifica la compatibilidad juego/engine, genera un artefacto estático versionado y documenta su uso offline. |
 | 30 | Portar el runtime jugable a JavaScript | Media | 27, 29 | En curso | El navegador carga el mismo paquete que C++, ejecuta movimiento, colisiones, IA, triggers, cámara, audio y ciclo de vidas con comportamiento comparable; editor y runtime comparten modelo y reloj, sin una segunda variante del formato. |
 | 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30 | Pendiente | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
-| 32 | Pulir la visualización e interacción de entidades y relaciones | Media | 23, 28 | En curso | Filtros, leyenda, colores, selección, solapamientos y densidad de guías hacen comprensibles las relaciones del nivel real; crear y localizar entidades resulta natural con ratón, touchpad y teclado. |
+| 32 | Pulir la visualización e interacción de entidades y relaciones | Media | 23, 28 | Completada | Filtros, leyenda, colores, selección, solapamientos y densidad de guías hacen comprensibles las relaciones del nivel real; crear y localizar entidades resulta natural con ratón, touchpad y teclado. |
 
 ## Orden recomendado
 

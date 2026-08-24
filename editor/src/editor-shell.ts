@@ -404,10 +404,11 @@ export function createEditorShell(host: HTMLElement): void {
   for (const group of ENTITY_GROUPS) { const option = document.createElement("option"); option.value = group; option.textContent = group; groupSelect.append(option); }
   groupSelect.value = entityGroup;
   groupSelect.addEventListener("change", () => { entityGroup = groupSelect.value as EntityGroup; selectedEntity = null; refreshEntityOverlay(); refreshProjectState(`Grupo de entidades: ${entityGroup}`); });
-  const newEntity = button("Nueva"); const duplicateEntity = button("Duplicar seleccionada"); const deleteEntity = button("Eliminar seleccionada");
+  const newEntity = button("Nueva"); const duplicateEntity = button("Duplicar seleccionada", "Ctrl+D"); const deleteEntity = button("Eliminar seleccionada", "Supr"); const centerEntity = button("Centrar seleccionada", "C");
   newEntity.addEventListener("click", () => { if (!entityModel || !entityModel.groups[entityGroup].length) { status.textContent = `No hay un modelo de ${entityGroup} que clonar`; return; } selectedEntity = entityModel.duplicate({ group: entityGroup, index: 0 }); if (selectedEntity && lastPointerTile) entityModel.move(selectedEntity, lastPointerTile.worldX, lastPointerTile.worldY); commitEntityChange(lastPointerTile ? "Entidad creada en la posición del cursor" : "Entidad creada desde el modelo del grupo"); });
   duplicateEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; selectedEntity = entityModel.duplicate(selectedEntity); commitEntityChange("Entidad duplicada"); });
   deleteEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; entityModel.remove(selectedEntity); selectedEntity = null; commitEntityChange("Entidad eliminada"); });
+  centerEntity.addEventListener("click", () => { if (!selectedEntity || !entityModel) return; const box = entityModel.box(selectedEntity); if (box) { preview.centerOnWorld(box.x + box.width / 2, box.y + box.height / 2); status.textContent = "Entidad centrada"; } });
   const filterControl = (label: string, checked: boolean, onChange: (checked: boolean) => void): HTMLLabelElement => { const row = document.createElement("label"); row.className = "entity-filter"; const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = checked; checkbox.addEventListener("change", () => onChange(checkbox.checked)); row.append(checkbox, document.createTextNode(label)); return row; };
   const showAllControl = filterControl("Mostrar todos los grupos", false, (checked) => { showAllEntities = checked; refreshEntityOverlay(); });
   const relationsControl = filterControl("Relaciones", true, (checked) => { showRelations = checked; refreshEntityOverlay(); });
@@ -420,7 +421,7 @@ export function createEditorShell(host: HTMLElement): void {
   const entityResults = document.createElement("select"); entityResults.size = 4; entityResults.setAttribute("aria-label", "Resultados de entidades");
   entitySearch.addEventListener("input", () => refreshEntityFinder());
   entityResults.addEventListener("change", () => { const [group, index] = entityResults.value.split(":"); if (!group || index === undefined || !entityModel) return; selectedEntity = { group: group as EntityGroup, index: Number(index) }; entityGroup = selectedEntity.group; groupSelect.value = entityGroup; const box = entityModel.box(selectedEntity); if (box) preview.centerOnWorld(box.x + box.width / 2, box.y + box.height / 2); refreshEntityOverlay(); renderDiagnostics([]); });
-  entityControls.append(groupSelect, showAllControl, relationsControl, routesControl, zonesControl, selectedGuidesControl, legend, entitySearch, entityResults, newEntity, duplicateEntity, deleteEntity);
+  entityControls.append(groupSelect, showAllControl, relationsControl, routesControl, zonesControl, selectedGuidesControl, legend, entitySearch, entityResults, newEntity, duplicateEntity, centerEntity, deleteEntity);
 
   function refreshEntityFinder(): void {
     entityResults.innerHTML = ""; if (!entityModel) return; const query = entitySearch.value.trim().toLowerCase();
@@ -488,6 +489,13 @@ export function createEditorShell(host: HTMLElement): void {
   canvas.addEventListener("keydown", (event) => {
     if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); void restoreHistory(event.shiftKey ? history.redo() : history.undo(), event.shiftKey ? "Cambio rehecho" : "Cambio deshecho"); return; }
     if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); void restoreHistory(history.redo(), "Cambio rehecho"); return; }
+    if (activeTool === "entity" && selectedEntity && entityModel && !runtimePreviewActive) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") { duplicateEntity.click(); event.preventDefault(); return; }
+      if (event.key === "Delete" || event.key === "Backspace") { deleteEntity.click(); event.preventDefault(); return; }
+      if (!event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "c") { centerEntity.click(); event.preventDefault(); return; }
+      const movement: Partial<Record<string, readonly [number, number]>> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }, delta = movement[event.key];
+      if (delta) { const step = event.shiftKey ? 8 : 1; entityModel.translate(selectedEntity, delta[0] * step, delta[1] * step); commitEntityChange(`Entidad desplazada ${step} px`); event.preventDefault(); return; }
+    }
     if (!levelModel || !event.ctrlKey || !["c", "x", "v"].includes(event.key.toLowerCase())) return;
     const key = event.key.toLowerCase();
     if ((key === "c" || key === "x") && selection) {

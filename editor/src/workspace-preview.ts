@@ -323,7 +323,11 @@ export class WorkspacePreview {
     context.lineWidth = 1.5 / this.#zoom; context.setLineDash([5 / this.#zoom, 3 / this.#zoom]);
     const zoneColors = { ai: ["rgba(74, 222, 128, .08)", "#4ade80"], camera: ["rgba(96, 165, 250, .06)", "#60a5fa"], trigger: ["rgba(249, 115, 22, .1)", "#f97316"] } as const;
     for (const zone of this.#gameplayZones) { const colors = zoneColors[zone.kind]; context.fillStyle = colors[0]; context.strokeStyle = colors[1]; context.fillRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); context.strokeRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); }
-    for (const line of this.#gameplayLines) { context.strokeStyle = colors[line.kind]; context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.stroke(); }
+    for (const line of this.#gameplayLines) {
+      context.strokeStyle = colors[line.kind]; context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.stroke();
+      const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1), size = 6 / this.#zoom;
+      if (Math.hypot(line.x2 - line.x1, line.y2 - line.y1) > size * 2) { context.setLineDash([]); context.beginPath(); context.moveTo(line.x2, line.y2); context.lineTo(line.x2 - Math.cos(angle - Math.PI / 6) * size, line.y2 - Math.sin(angle - Math.PI / 6) * size); context.moveTo(line.x2, line.y2); context.lineTo(line.x2 - Math.cos(angle + Math.PI / 6) * size, line.y2 - Math.sin(angle + Math.PI / 6) * size); context.stroke(); context.setLineDash([5 / this.#zoom, 3 / this.#zoom]); }
+    }
     context.setLineDash([]);
   }
 
