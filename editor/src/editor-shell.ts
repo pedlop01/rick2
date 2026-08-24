@@ -2,6 +2,7 @@ import { WorkspacePreview, type MapLayerName, type PointerPosition, type ViewSta
 import {
   createEmptyProject,
   downloadProject,
+  getProjectAsset,
   pickProjectDirectory,
   readProjectDirectory,
   readProjectFile,
@@ -90,7 +91,8 @@ export function createEditorShell(host: HTMLElement): void {
   let entityModel: EntityDocumentModel | null = null;
   let assetModel: AssetDocumentModel | null = null;
   let runtime: PreviewRuntime | null = null;
-  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0; let runtimeInvulnerable = true; let placingPlayer = false;
+  let runtimePlaying = false; let runtimePreviewActive = false; let runtimeFrame = 0; let runtimeLastTime = 0; let runtimeAccumulator = 0; let runtimeInvulnerable = true; let runtimeCameraViewsEnabled = true; let runtimeSpritesVisible = true; let runtimeBoundsVisible = true; let runtimeAudioEnabled = true; let placingPlayer = false;
+  let runtimeMusic: HTMLAudioElement | null = null; let runtimeEffectUrls: string[] = []; let runtimeAudioUrls: string[] = [];
   const runtimeInput: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
   let runtimeEditorView: ViewState | null = null;
   let entityGroup: EntityGroup = "items";
@@ -114,6 +116,13 @@ export function createEditorShell(host: HTMLElement): void {
   function clearError(): void {
     notification.hidden = true;
     notification.textContent = "";
+  }
+
+  function configureRuntimeAudio(project: ReturnType<typeof createEmptyProject>, level: Record<string, unknown>): void {
+    runtimeMusic?.pause(); runtimeMusic = null; for (const url of runtimeAudioUrls) URL.revokeObjectURL(url); runtimeAudioUrls = []; runtimeEffectUrls = [];
+    const audio = level.audio && typeof level.audio === "object" ? level.audio as { initialMusic?: number; music?: string[]; effects?: string[]; playback?: { initialLoop?: boolean; followUpMusic?: number | null; followUpLoop?: boolean } } : {};
+    const urlFor = (reference: string): string => { const bytes = getProjectAsset(project, project.manifest.initialLevel, reference); const url = URL.createObjectURL(new Blob([bytes.slice().buffer])); runtimeAudioUrls.push(url); return url; };
+    try { const musicUrls = (audio.music ?? []).map((item) => urlFor(item)), initial = audio.initialMusic ?? 0, playback = audio.playback ?? {}; const reference = musicUrls[initial]; if (reference) { runtimeMusic = new Audio(reference); runtimeMusic.loop = playback.initialLoop ?? false; const followUp = playback.followUpMusic; if (!runtimeMusic.loop && typeof followUp === "number" && musicUrls[followUp]) runtimeMusic.addEventListener("ended", () => { if (!runtimeMusic) return; runtimeMusic.src = musicUrls[followUp]!; runtimeMusic.loop = playback.followUpLoop ?? true; if (runtimeAudioEnabled && runtimePlaying) void runtimeMusic.play().catch(() => undefined); }, { once: true }); } runtimeEffectUrls = (audio.effects ?? []).map((item) => urlFor(item)); } catch { runtimeMusic = null; runtimeEffectUrls = []; }
   }
 
   function refreshProjectState(message: string): void {
@@ -144,7 +153,7 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
-    stopRuntime(); runtimePreviewActive = false; placingPlayer = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); preview.setRuntimeBodies([]);
+    stopRuntime(); runtimePreviewActive = false; placingPlayer = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); configureRuntimeAudio(project, levelModel.level); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
@@ -322,18 +331,24 @@ export function createEditorShell(host: HTMLElement): void {
   const fit = button("Encajar", "Mostrar el mapa completo");
   const gameScreen = button("Pantalla de juego", "Ajustar el zoom a una pantalla del juego centrada en Rick");
   const grid = button("Rejilla: sí", "Mostrar u ocultar la rejilla");
-  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview"); const invulnerable = button("Invulnerable: sí", "Ignorar daño durante la previsualización"); const placePlayer = button("Colocar Rick", "El siguiente clic en el mapa indica dónde apoya los pies Rick");
+  const play = button("Play", "Ejecutar preview a 50 Hz"); const pause = button("Pause"); const step = button("Step", "Avanzar un tick"); const resetPreview = button("Reset", "Reiniciar preview"); const invulnerable = button("Invulnerable: sí", "Ignorar daño durante la previsualización"); const cameraViews = button("Vistas cámara: sí", "Aplicar o ignorar los límites cameraViews durante el preview"); const sprites = button("Sprites: sí", "Mostrar u ocultar sprites animados"); const bounds = button("Cajas: sí", "Mostrar u ocultar bounding boxes del runtime"); const audio = button("Audio: sí", "Activar o silenciar música y efectos"); const placePlayer = button("Colocar Rick", "El siguiente clic en el mapa indica dónde apoya los pies Rick");
   invulnerable.setAttribute("aria-pressed", "true");
   invulnerable.addEventListener("click", () => { runtimeInvulnerable = !runtimeInvulnerable; runtime?.setInvulnerable(runtimeInvulnerable); invulnerable.textContent = `Invulnerable: ${runtimeInvulnerable ? "sí" : "no"}`; invulnerable.setAttribute("aria-pressed", String(runtimeInvulnerable)); renderRuntime(); });
+  cameraViews.setAttribute("aria-pressed", "true");
+  cameraViews.addEventListener("click", () => { runtimeCameraViewsEnabled = !runtimeCameraViewsEnabled; runtime?.setCameraViewsEnabled(runtimeCameraViewsEnabled); cameraViews.textContent = `Vistas cámara: ${runtimeCameraViewsEnabled ? "sí" : "no"}`; cameraViews.setAttribute("aria-pressed", String(runtimeCameraViewsEnabled)); renderRuntime(); });
+  sprites.setAttribute("aria-pressed", "true"); bounds.setAttribute("aria-pressed", "true");
+  sprites.addEventListener("click", () => { runtimeSpritesVisible = !runtimeSpritesVisible; sprites.textContent = `Sprites: ${runtimeSpritesVisible ? "sí" : "no"}`; sprites.setAttribute("aria-pressed", String(runtimeSpritesVisible)); preview.setRuntimeSpritesVisible(runtimeSpritesVisible); });
+  bounds.addEventListener("click", () => { runtimeBoundsVisible = !runtimeBoundsVisible; bounds.textContent = `Cajas: ${runtimeBoundsVisible ? "sí" : "no"}`; bounds.setAttribute("aria-pressed", String(runtimeBoundsVisible)); preview.setRuntimeBoundsVisible(runtimeBoundsVisible); });
+  audio.setAttribute("aria-pressed", "true"); audio.addEventListener("click", () => { runtimeAudioEnabled = !runtimeAudioEnabled; audio.textContent = `Audio: ${runtimeAudioEnabled ? "sí" : "no"}`; audio.setAttribute("aria-pressed", String(runtimeAudioEnabled)); if (!runtimeAudioEnabled) runtimeMusic?.pause(); else if (runtimePlaying) void runtimeMusic?.play().catch(() => undefined); });
   placePlayer.addEventListener("click", () => { if (!runtime) return; placingPlayer = !placingPlayer; placePlayer.setAttribute("aria-pressed", String(placingPlayer)); status.textContent = placingPlayer ? "Haz clic en el punto donde Rick debe apoyar los pies" : "Colocación de Rick cancelada"; canvas.focus(); });
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
-  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) preview.centerOnWorld(runtime.player.x + 12, runtime.player.y + 10); status.textContent = `Preview · tick ${runtime?.tick ?? 0} · vidas ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); for (const slot of runtime?.drainAudioEvents() ?? []) if (runtimeAudioEnabled && runtimeEffectUrls[slot]) void new Audio(runtimeEffectUrls[slot]).play().catch(() => undefined); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) { const camera = runtime.cameraFrame; preview.centerOnWorld(camera.x + camera.width / 2, camera.y + camera.height / 2); } status.textContent = `Preview · tick ${runtime?.tick ?? 0} · vidas ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
   const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
-  function stopRuntime(): void { runtimePlaying = false; if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
-  play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
+  function stopRuntime(): void { runtimePlaying = false; runtimeMusic?.pause(); if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
+  play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; if (runtimeAudioEnabled) void runtimeMusic?.play().catch(() => undefined); play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
   pause.addEventListener("click", () => { stopRuntime(); play.disabled = false; pause.disabled = true; step.disabled = false; renderRuntime(); });
   step.addEventListener("click", () => { if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtime?.step(runtimeInput); resetPreview.disabled = false; renderRuntime(); });
-  resetPreview.addEventListener("click", () => { stopRuntime(); runtimePreviewActive = false; placingPlayer = false; placePlayer.setAttribute("aria-pressed", "false"); for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; runtime?.reset(); preview.setRuntimeBodies([]); if (runtimeEditorView) preview.setViewState(runtimeEditorView); runtimeEditorView = null; refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
+  resetPreview.addEventListener("click", () => { stopRuntime(); if (runtimeMusic) runtimeMusic.currentTime = 0; runtimePreviewActive = false; placingPlayer = false; placePlayer.setAttribute("aria-pressed", "false"); for (const key of Object.keys(runtimeInput) as Array<keyof PlayerInput>) runtimeInput[key] = false; runtime?.reset(); preview.setRuntimeBodies([]); if (runtimeEditorView) preview.setViewState(runtimeEditorView); runtimeEditorView = null; refreshEntityOverlay(); play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true; status.textContent = "Preview reiniciado"; });
   const toolButtons = new Map<EditTool, HTMLButtonElement>();
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -365,7 +380,7 @@ export function createEditorShell(host: HTMLElement): void {
   });
   toolbar.append(newProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
-                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, placePlayer, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
+                 ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, cameraViews, sprites, bounds, audio, placePlayer, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
   setTool("pencil");
 
   for (const [id, label] of LAYERS) {
@@ -528,6 +543,7 @@ export function createEditorShell(host: HTMLElement): void {
   });
   window.addEventListener("beforeunload", (event) => {
     stopRuntime();
+    for (const url of runtimeAudioUrls) URL.revokeObjectURL(url);
     preview.stop();
     if (session.dirty) {
       event.preventDefault();

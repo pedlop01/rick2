@@ -195,6 +195,7 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
     },
     audio: {
       initialMusic: 0,
+      playback: { initialLoop: false, followUpMusic: null, followUpLoop: true },
       music: ["../../assets/audio/music.ogg"],
       effects: Array(7).fill("../../assets/audio/effect.wav"),
     },

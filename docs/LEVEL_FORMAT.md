@@ -16,7 +16,10 @@ Version 1 contains:
 - `projectiles`: definitions, dimensions, offsets and optional collision boxes
   used for dynamically created bombs and shots.
 - `definitions`: animation and sprite definitions indexed by stable JSON IDs.
-- `audio`: initial track plus ordered music and effect asset lists.
+- `audio`: pista inicial, listas ordenadas de música/efectos y política opcional
+  `playback`. `initialLoop` controla la repetición inicial; `followUpMusic`
+  puede ser `null` o el índice de una segunda pista, cuyo bucle se decide con
+  `followUpLoop`.
 
 Asset paths are relative to the package JSON, so levels can be loaded from a
 different location without depending on the process working directory.

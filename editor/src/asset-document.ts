@@ -4,6 +4,7 @@ import type { EditableLevel, LevelDocumentModel } from "./level-document";
 export interface SpriteRect { x: number; y: number; width: number; height: number; }
 export interface AnimationState { name: string; id: number; animation: { bitmap: string; frameDurationTicks: number; sprites: SpriteRect[] }; }
 export interface AnimationDefinition { kind: "object" | "character"; name: string; states: AnimationState[]; }
+export interface AudioConfiguration { initialMusic: number; playback: { initialLoop: boolean; followUpMusic: number | null; followUpLoop: boolean }; music: string[]; effects: string[]; }
 
 function safeFilename(name: string): string {
   const normalized = name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
@@ -17,7 +18,7 @@ export class AssetDocumentModel {
   get project(): Rick2Project { return this.#levelModel.project; }
   get level(): EditableLevel { return this.#levelModel.level; }
   get definitions(): Record<string, AnimationDefinition> { return this.level.definitions as Record<string, AnimationDefinition>; }
-  get audio(): { initialMusic: number; music: string[]; effects: string[] } { return this.level.audio as { initialMusic: number; music: string[]; effects: string[] }; }
+  get audio(): AudioConfiguration { const audio = this.level.audio as Omit<AudioConfiguration, "playback"> & { playback?: AudioConfiguration["playback"] }; audio.playback ??= { initialLoop: false, followUpMusic: null, followUpLoop: true }; return audio as AudioConfiguration; }
   flush(): void { this.#levelModel.flush(); }
 
   addDefinition(id: string, kind: "object" | "character", bitmap: string): void {

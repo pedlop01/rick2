@@ -43,6 +43,11 @@
   },
   "audio": {
     "initialMusic": 0,
+    "playback": {
+      "initialLoop": false,
+      "followUpMusic": null,
+      "followUpLoop": true
+    },
     "music": [
       "music/level1.ogg"
     ],

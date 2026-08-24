@@ -65,6 +65,11 @@ juego y Rick2 Engine quedan en versiones incompatibles. Mientras el runtime web
 no exista, se actualizarán como mínimo el modelo del editor, sus validaciones y
 la representación visual correspondiente.
 
+La sincronización también se aplicará en sentido inverso: las correcciones,
+invariantes y fixtures descubiertos al portar el runtime web se evaluarán en el
+motor C++. La tarea 33 concentrará esa revisión para no introducir cambios
+laterales en el juego mientras todavía se está cerrando la paridad del navegador.
+
 | # | Mejora | Prioridad | Dependencias | Estado | Criterio de aceptación y comprobación |
 |---:|---|---|---|---|---|
 | 16 | Especificar la arquitectura y el formato de proyecto del editor | Crítica | 14 | Completada | Se documentan módulos, flujo de datos y límites entre editor, formato y runtime; se decide un proyecto portable con JSON y assets, importable/exportable sin servidor; quedan catalogados todos los elementos editables del nivel 1. |
@@ -81,9 +86,10 @@ la representación visual correspondiente.
 | 27 | Crear una previsualización fiel dentro del editor | Media | 23, 24, 26 | Completada | Se previsualizan capas, colisiones, cámara, animaciones, movimientos, triggers y zonas sin modificar el documento; play/pause/step y reinicio producen resultados deterministas con el timestep de 50 Hz. |
 | 28 | Asegurar accesibilidad, atajos y rendimiento del editor | Media | 20, 25, 26 | Completada | Atajos y foco no interfieren con formularios; las herramientas principales pueden usarse con teclado, incluyendo `Espacio + arrastrar` como alternativa al botón central para desplazar el lienzo; mapas grandes mantienen interacción fluida y las operaciones costosas informan progreso o se ejecutan fuera del hilo de UI. |
 | 29 | Automatizar pruebas, empaquetado y publicación estática | Alta | 17-28 | Completada | Pruebas unitarias cubren modelo, comandos, conversión y validación; pruebas de integración abren, editan y reexportan el nivel 1 sin diferencias inesperadas; CI verifica la compatibilidad juego/engine, genera un artefacto estático versionado y documenta su uso offline. |
-| 30 | Portar el runtime jugable a JavaScript | Media | 27, 29 | En curso | El navegador carga el mismo paquete que C++, ejecuta movimiento, colisiones, IA, triggers, cámara, audio y ciclo de vidas con comportamiento comparable; editor y runtime comparten modelo y reloj, sin una segunda variante del formato. |
-| 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30 | Pendiente | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
+| 30 | Portar el runtime jugable a JavaScript | Media | 27, 29 | Completada | El navegador carga el mismo paquete que C++, ejecuta movimiento, colisiones, IA, triggers, cámara, audio y ciclo de vidas con comportamiento comparable; editor y runtime comparten modelo y reloj, sin una segunda variante del formato. |
+| 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30, 33 | Pendiente | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
 | 32 | Pulir la visualización e interacción de entidades y relaciones | Media | 23, 28 | Completada | Filtros, leyenda, colores, selección, solapamientos y densidad de guías hacen comprensibles las relaciones del nivel real; crear y localizar entidades resulta natural con ratón, touchpad y teclado. |
+| 33 | Revisar y reforzar el runtime C++ con lo aprendido en el port web | Alta | 30 | Pendiente | Se catalogan las correcciones e invariantes descubiertos durante la tarea 30 —escaleras e IA, aterrizajes, bloques, bombas adyacentes, estados y relojes de animación, muerte y herramientas de depuración—; se compara cada caso con C++, se corrigen únicamente las divergencias confirmadas y se trasladan fixtures reproducibles a pruebas nativas. Juego y runtime web conservan comportamiento compatible sobre el mismo nivel 1. |
 
 ## Orden recomendado
 
@@ -111,7 +117,8 @@ Las tareas se ejecutarán inicialmente en este orden:
 5. Tareas 25-26: seguridad de edición y validación integral.
 6. Tareas 27-29: previsualización, experiencia de uso, pruebas y distribución.
 7. Tarea 30: runtime completo en navegador sobre el mismo formato.
-8. Tarea 31: generalización del núcleo una vez comprobado con el juego real.
+8. Tarea 33: revisión del runtime C++ con las lecciones y regresiones del port.
+9. Tarea 31: generalización del núcleo una vez comprobados ambos runtimes.
 
 El orden puede ajustarse si una prueba revela un bloqueo, pero cada cambio debe
 mantener el juego ejecutable.

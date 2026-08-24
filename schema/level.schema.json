@@ -68,6 +68,16 @@
       "required": ["initialMusic", "music", "effects"],
       "properties": {
         "initialMusic": { "type": "integer", "minimum": 0 },
+        "playback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["initialLoop", "followUpMusic", "followUpLoop"],
+          "properties": {
+            "initialLoop": { "type": "boolean" },
+            "followUpMusic": { "type": ["integer", "null"], "minimum": 0 },
+            "followUpLoop": { "type": "boolean" }
+          }
+        },
         "music": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "effects": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
       }

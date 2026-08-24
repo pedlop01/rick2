@@ -7,6 +7,8 @@ import type { RuntimeBody } from "./preview-runtime";
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 
 interface LevelDocument { map: TileMapDocument; }
+interface AnimationFrame { x: number; y: number; width: number; height: number; }
+interface RuntimeAnimation { bitmap: ImageBitmap; duration: number; frames: AnimationFrame[]; }
 export interface TilePointerHandlers {
   down(tile: PointerPosition): void;
   move(tile: PointerPosition): void;
@@ -39,6 +41,9 @@ export class WorkspacePreview {
   #gameplayLines: GameplayLine[] = [];
   #gameplayZones: GameplayZone[] = [];
   #runtimeBodies: readonly RuntimeBody[] = [];
+  #runtimeAnimations = new Map<string, RuntimeAnimation>();
+  #runtimeSpritesVisible = true;
+  #runtimeBoundsVisible = true;
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -105,6 +110,7 @@ export class WorkspacePreview {
     this.#observer.disconnect();
     this.#events.abort();
     this.#tileset?.close();
+    for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close();
     if (this.#frame) cancelAnimationFrame(this.#frame);
   }
 
@@ -112,13 +118,19 @@ export class WorkspacePreview {
     const levelPath = project.manifest.initialLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`No se encuentra ${levelPath}`);
-    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument;
+    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }> };
     const asset = getProjectAsset(project, levelPath, level.map.tileset.image);
     const extension = level.map.tileset.image.split(".").pop()?.toLowerCase();
     const mime = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
     const bitmap = await createImageBitmap(new Blob([asset.slice().buffer], { type: mime }));
     this.#tileset?.close();
     this.#tileset = bitmap;
+    for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close(); this.#runtimeAnimations.clear();
+    const bitmapCache = new Map<string, ImageBitmap>();
+    for (const [definitionId, definition] of Object.entries(level.definitions ?? {})) for (const state of definition.states ?? []) {
+      const animation = state.animation, reference = animation?.bitmap; if (!state.name || !reference || !animation?.sprites?.length) continue;
+      try { let image = bitmapCache.get(reference); if (!image) { const imageBytes = getProjectAsset(project, levelPath, reference); image = await createImageBitmap(new Blob([imageBytes.slice().buffer])); bitmapCache.set(reference, image); } this.#runtimeAnimations.set(`${definitionId}:${state.name}`, { bitmap: image, duration: Math.max(1, animation.frameDurationTicks ?? 1), frames: animation.sprites }); } catch { /* Validation reports missing assets; the debug box remains visible. */ }
+    }
     this.#map = editableMap ?? level.map;
     if (fitView) this.fit(); else this.#scheduleDraw();
   }
@@ -126,6 +138,7 @@ export class WorkspacePreview {
   clear(): void {
     this.#tileset?.close();
     this.#tileset = null;
+    for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close(); this.#runtimeAnimations.clear();
     this.#map = null;
     this.#scheduleDraw();
   }
@@ -145,6 +158,8 @@ export class WorkspacePreview {
   setEntities(entities: Array<{ ref: EntityRef; box: EntityBox; label?: string }>, selected: EntityRef | null): void { this.#entities = entities; this.#selectedEntity = selected; this.#scheduleDraw(); }
   setGameplayGuides(lines: GameplayLine[], zones: GameplayZone[]): void { this.#gameplayLines = lines; this.#gameplayZones = zones; this.#scheduleDraw(); }
   setRuntimeBodies(bodies: readonly RuntimeBody[]): void { this.#runtimeBodies = bodies; this.#scheduleDraw(); }
+  setRuntimeSpritesVisible(visible: boolean): void { this.#runtimeSpritesVisible = visible; this.#scheduleDraw(); }
+  setRuntimeBoundsVisible(visible: boolean): void { this.#runtimeBoundsVisible = visible; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
   tileAtClient(clientX: number, clientY: number): PointerPosition | null {
@@ -332,8 +347,15 @@ export class WorkspacePreview {
   }
 
   #drawRuntimeBodies(): void {
-    if (!this.#runtimeBodies.length) return; const context = this.#context; context.lineWidth = 2 / this.#zoom;
-    for (const body of this.#runtimeBodies) { const player = body.key === "player"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
+    if (!this.#runtimeBodies.length) return; const context = this.#context;
+    if (this.#runtimeSpritesVisible) for (const body of this.#runtimeBodies) {
+      if (body.spriteVisible === false || !body.definition || !body.state) continue; const legacyState = body.state.startsWith("OBJ_STATE_") ? body.state.replace("OBJ_STATE_", "CHAR_STATE_") : body.state.startsWith("CHAR_STATE_") ? body.state.replace("CHAR_STATE_", "OBJ_STATE_") : body.state, animation = this.#runtimeAnimations.get(`${body.definition}:${body.state}`) ?? this.#runtimeAnimations.get(`${body.definition}:${legacyState}`); if (!animation) continue;
+      const elapsedFrame = Math.floor(body.frame / animation.duration), frameIndex = body.animationOnce ? Math.min(animation.frames.length - 1, elapsedFrame) : elapsedFrame % animation.frames.length, frame = animation.frames[frameIndex]!; const x = body.spriteX ?? body.x, y = body.spriteY ?? body.y, scale = body.spriteScale ?? 1, width = frame.width * scale, height = frame.height * scale;
+      if (body.face === "left") { context.save(); context.translate(x + width, y); context.scale(-1, 1); context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, 0, 0, width, height); context.restore(); }
+      else context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, x, y, width, height);
+    }
+    if (!this.#runtimeBoundsVisible) return; context.lineWidth = 2 / this.#zoom;
+    for (const body of this.#runtimeBodies) { const player = body.key === "player", shoot = body.key.startsWith("shoot:"), bomb = body.key.startsWith("bomb:"), enemy = body.key.startsWith("enemies:"); context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

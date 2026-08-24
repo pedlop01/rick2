@@ -20,7 +20,7 @@ with typed definitions matching this catalog.
 | Player | character definition | Definition selector. Initial position and face come from checkpoints. |
 | Projectiles | shoot/bomb definition, size, Y offset, optional bounding box | Typed forms with sprite/bounds overlay. |
 | Definitions | object/character, name, numeric state IDs, state names, bitmap, frame duration and sprite rectangles | Definition library and animation timeline. IDs and names are unique per definition. |
-| Audio | initial music index, music list and seven ordered effects | Asset list with playback; the fixed effect ordering is a current runtime constraint. |
+| Audio | initial music index, music list, playback policy and seven ordered effects | Asset list with one-shot/loop and optional intro-to-loop chaining; the fixed effect ordering is a current runtime constraint. |
 
 GID `0` is empty. Visual GIDs start at `1`. Collision-layer values also use the
 runtime tile constants, so the editor must initially present named collision
@@ -79,7 +79,7 @@ toggles conditional actions. Target IDs must resolve in the selected type.
 |---|---|---|
 | Tileset bitmap | `map.tileset.image` | Raster dimensions, columns, tile count and tile dimensions agree. |
 | Sprite bitmap | every animation state | Every sprite rectangle lies inside the decoded bitmap. Shared paths remain shared. |
-| Music | `audio.music` | Ordered list; initial index resolves. |
+| Music | `audio.music`, `audio.playback` | Ordered list; initial track may be one-shot or loop and may chain to a second looping/one-shot track. |
 | Sound effects | `audio.effects` | Exactly seven ordered slots in version 1. |
 
 The committed level 1 baseline contains a 160×255 map of 8×8 tiles, 24 embedded

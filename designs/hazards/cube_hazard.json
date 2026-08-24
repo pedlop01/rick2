@@ -3,7 +3,7 @@
   "name": "cube",
   "states": [
     {
-      "name": "CHAR_STATE_STOP",
+      "name": "OBJ_STATE_STOP",
       "id": 0,
       "animation": {
         "bitmap": "../characters/enemies.png",
@@ -19,7 +19,7 @@
       }
     },
     {
-      "name": "CHAR_STATE_MOVING",
+      "name": "OBJ_STATE_MOVING",
       "id": 1,
       "animation": {
         "bitmap": "../characters/enemies.png",
