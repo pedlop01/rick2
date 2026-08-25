@@ -243,7 +243,8 @@ void Object::Init(const char* file,
 
       num_sprites++;
     }
-    const int state_id = state->at("id").get<int>();
+    const int state_id = ResolveObjectAnimationStateId(
+        state->at("name").get<std::string>(), state->at("id").get<int>());
     if (!animations.insert(std::make_pair(state_id, obj_anim)).second) {
       delete obj_anim;
       throw DataLoadError(std::string("Duplicate animation state id in '") +

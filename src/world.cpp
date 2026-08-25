@@ -9,7 +9,8 @@
 World::World()
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr)
+    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
+    level_completed(false)
 {
   boundary_tile.SetType(TILE_COL);
 }
@@ -17,11 +18,13 @@ World::World()
 World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOption)
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr)
+    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
+    level_completed(false)
 {
   boundary_tile.SetType(TILE_COL);
 
   LoadLevelPackage(file);
+  objective = GetLevelObjectiveConfig();
   const nlohmann::json& map = GetLevelMap();
   map_width = map.at("width").get<int>();
   map_height = map.at("height").get<int>();
@@ -1213,17 +1216,29 @@ void World::WorldStep(Character* player) {
   // traversing some of the list. Triggers for instance is traversed two times.
   if (player->GetKilled()) {
     printf("[WorldStep] Player killed!\n");
-    // If player got killed, then reset the triggers
-    for (list<Trigger*>:: iterator it = triggers.begin(); it != triggers.end(); it++) {
-      Trigger* trigger = *it;
-      trigger->Reset();
+    if (GetRuntimeSessionRules().reset_triggers_on_death) {
+      for (list<Trigger*>:: iterator it = triggers.begin(); it != triggers.end(); it++) {
+        Trigger* trigger = *it;
+        trigger->Reset();
+      }
+      for (list<Object*>::iterator it = objects.begin() ; it != objects.end(); ++it) {
+        Object* object = *it;
+        if (object->GetType() == OBJ_LASER)
+          ((Laser*)object)->Reset();
+      }
     }
-    // Traverse some objects to reset them if required
-    for (list<Object*>::iterator it = objects.begin() ; it != objects.end(); ++it) {
-      Object* object = *it;
-      if (object->GetType() == OBJ_LASER)
-        ((Laser*)object)->Reset();
-    }
+  }
+
+  if (!level_completed && objective.enabled && !player->GetKilled() &&
+      player->GetState() != CHAR_STATE_DYING &&
+      player->GetState() != CHAR_STATE_DEAD) {
+    const int left = player->GetPosX() + player->GetBBX();
+    const int top = player->GetPosY() + player->GetBBY();
+    level_completed = left < objective.x + objective.width &&
+                      left + player->GetBBWidth() > objective.x &&
+                      top < objective.y + objective.height &&
+                      top + player->GetBBHeight() > objective.y;
+    if (level_completed) printf("[WorldStep] Level objective completed!\n");
   }
 
   //printf("[WorldStep] Completed!\n");  

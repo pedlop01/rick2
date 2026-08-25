@@ -1,6 +1,7 @@
 import { WorkspacePreview, type MapLayerName, type PointerPosition, type ViewState } from "./workspace-preview";
 import {
   createEmptyProject,
+  createPlatformerDemoProject,
   downloadProject,
   getProjectAsset,
   pickProjectDirectory,
@@ -20,13 +21,14 @@ import { ProjectHistory } from "./project-history";
 import { clearRecovery, loadRecovery, saveRecovery } from "./recovery-store";
 import { PreviewRuntime } from "./preview-runtime";
 import type { PlayerInput } from "./web-player";
+import { RICK_ACTION_BINDINGS, RICK_PLAYER_CAPABILITIES, RICK_PLAYER_CONTROLLER, RICK_RUNTIME_BINDINGS, RICK_SESSION_RULES } from "./platformer-core";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Colisiones"],
 ] as const;
-type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset";
+type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile";
 
 function button(label: string, title?: string): HTMLButtonElement {
   const element = document.createElement("button");
@@ -108,6 +110,15 @@ export function createEditorShell(host: HTMLElement): void {
   fileInput.hidden = true;
   host.append(fileInput);
 
+  const objectiveZones = (): import("./entity-document").GameplayZone[] => {
+    const objective = levelModel?.level.objective;
+    if (!objective || typeof objective !== "object") return [];
+    const value = objective as Record<string, unknown>;
+    return value.type === "reachZone" && [value.x, value.y, value.width, value.height].every((part) => typeof part === "number")
+      ? [{ box: { x: Number(value.x), y: Number(value.y), width: Number(value.width), height: Number(value.height) }, kind: "objective", owner: "objective" }]
+      : [];
+  };
+
   function showError(error: unknown): void {
     notification.textContent = error instanceof Error ? error.message : String(error);
     notification.hidden = false;
@@ -161,6 +172,7 @@ export function createEditorShell(host: HTMLElement): void {
     await preview.load(project, levelModel.map, resetHistory);
     await palette.load(project, levelModel);
     assetEditor.load(assetModel);
+    if (activeTool === "profile") renderProfileInspector();
     refreshEntityOverlay();
     if (resetHistory) history.reset(project, !dirty);
     refreshHistoryControls();
@@ -240,6 +252,58 @@ export function createEditorShell(host: HTMLElement): void {
     }
   }
 
+  type ProfileValue = string | number | boolean | null;
+  type ProfileField = { path: string[]; label: string; fallback: ProfileValue; kind: "number" | "boolean" | "text" | "choice" | "nullable-number"; choices?: readonly ProfileValue[] };
+  const profileSections: ReadonlyArray<{ title: string; fields: readonly ProfileField[] }> = [
+    { title: "Controlador", fields: Object.entries(RICK_PLAYER_CONTROLLER).map(([key, fallback]) => ({ path: ["runtimeProfile", "controller", key], label: key, fallback, kind: "number" })) },
+    { title: "Capacidades", fields: Object.entries(RICK_PLAYER_CAPABILITIES).map(([key, fallback]) => ({ path: ["runtimeProfile", "capabilities", key], label: key, fallback, kind: "boolean" })) },
+    { title: "Acciones", fields: Object.entries(RICK_ACTION_BINDINGS).map(([key, fallback]) => ({ path: ["runtimeProfile", "actionBindings", key], label: key, fallback, kind: "choice", choices: [null, "shooting", "bombing", "hitting"] })) },
+    { title: "Sesión", fields: [
+      { path: ["runtimeProfile", "session", "initialLives"], label: "initialLives", fallback: RICK_SESSION_RULES.initialLives, kind: "number" },
+      { path: ["runtimeProfile", "session", "damageEnabled"], label: "damageEnabled", fallback: RICK_SESSION_RULES.damageEnabled, kind: "boolean" },
+      { path: ["runtimeProfile", "session", "respawn"], label: "respawn", fallback: RICK_SESSION_RULES.respawn, kind: "choice", choices: ["checkpoint", "none"] },
+      { path: ["runtimeProfile", "session", "resetTriggersOnDeath"], label: "resetTriggersOnDeath", fallback: RICK_SESSION_RULES.resetTriggersOnDeath, kind: "boolean" },
+      { path: ["runtimeProfile", "session", "deathAudioSlot"], label: "deathAudioSlot", fallback: RICK_SESSION_RULES.deathAudioSlot, kind: "nullable-number" },
+    ] },
+    ...(["playerStates", "enemyStates", "objectStates", "audio"] as const).map((family) => ({ title: `Bindings · ${family}`, fields: Object.entries(RICK_RUNTIME_BINDINGS[family]).map(([key, fallback]) => ({ path: ["runtimeProfile", "bindings", family, key], label: key, fallback, kind: family === "audio" ? "nullable-number" as const : "text" as const })) })),
+  ];
+
+  function valueAt(root: Record<string, unknown>, path: readonly string[]): unknown { let value: unknown = root; for (const key of path) { if (!value || typeof value !== "object") return undefined; value = (value as Record<string, unknown>)[key]; } return value; }
+  function setValueAt(root: Record<string, unknown>, path: readonly string[], value: ProfileValue): void { let cursor = root; for (const key of path.slice(0, -1)) { const child = cursor[key]; if (!child || typeof child !== "object" || Array.isArray(child)) cursor[key] = {}; cursor = cursor[key] as Record<string, unknown>; } cursor[path.at(-1)!] = value; }
+  function deleteValueAt(root: Record<string, unknown>, path: readonly string[]): void { const parents: Record<string, unknown>[] = [root]; let cursor = root; for (const key of path.slice(0, -1)) { const child = cursor[key]; if (!child || typeof child !== "object" || Array.isArray(child)) return; cursor = child as Record<string, unknown>; parents.push(cursor); } delete cursor[path.at(-1)!]; for (let index = parents.length - 1; index > 0; --index) { if (Object.keys(parents[index]!).length) break; delete parents[index - 1]![path[index - 1]!]; } }
+  function commitProfileChange(message: string): void { if (!levelModel) return; levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); if (session.project) configureRuntimeAudio(session.project, levelModel.level); refreshProjectState(message); renderProfileInspector(); }
+
+  function renderProfileInspector(): void {
+    inspector.innerHTML = ""; inspector.classList.remove("empty-inspector");
+    const heading = document.createElement("h3"); heading.textContent = "Perfil de runtime";
+    const help = document.createElement("p"); help.className = "profile-help"; help.textContent = "Los campos sin override heredan el perfil base de Rick."; inspector.append(heading, help);
+    if (!levelModel) return;
+    for (const section of profileSections) {
+      const details = document.createElement("details"); details.className = "profile-section"; details.open = section.title === "Controlador";
+      const summary = document.createElement("summary"); summary.textContent = section.title; details.append(summary);
+      for (const field of section.fields) {
+        const stored = valueAt(levelModel.level, field.path); const effective = stored === undefined ? field.fallback : stored as ProfileValue;
+        const row = document.createElement("div"); row.className = "profile-field"; const label = document.createElement("label"); const caption = document.createElement("span"); caption.textContent = field.label; label.append(caption);
+        let control: HTMLInputElement | HTMLSelectElement;
+        if (field.kind === "boolean" || field.kind === "choice" || field.kind === "nullable-number") {
+          control = document.createElement("select"); const effectCount = (levelModel.level.audio as { effects?: unknown[] } | undefined)?.effects?.length ?? 0; const choices = field.kind === "boolean" ? [true, false] : field.kind === "nullable-number" ? [null, ...Array.from({ length: Math.max(8, effectCount) }, (_, index) => index)] : field.choices!;
+          for (const choice of choices) { const option = document.createElement("option"); option.value = choice === null ? "__null" : String(choice); option.textContent = choice === null ? "ninguno" : String(choice); control.append(option); }
+          control.value = effective === null ? "__null" : String(effective);
+        } else { control = document.createElement("input"); control.type = field.kind; control.value = String(effective); if (field.kind === "number") control.step = "any"; }
+        control.addEventListener("change", () => { let value: ProfileValue = control.value; if (field.kind === "number") value = Number(control.value); else if (field.kind === "boolean") value = control.value === "true"; else if (field.kind === "nullable-number") value = control.value === "__null" ? null : Number(control.value); else if (field.kind === "choice" && control.value === "__null") value = null; if (typeof value === "number" && !Number.isFinite(value)) return; setValueAt(levelModel!.level, field.path, value); commitProfileChange(`${field.label} configurado`); });
+        const reset = button("↺", `Restablecer ${field.label}`); reset.className = "profile-reset"; reset.disabled = stored === undefined; reset.addEventListener("click", () => { deleteValueAt(levelModel!.level, field.path); commitProfileChange(`${field.label} restablecido`); });
+        label.append(control); row.append(label, reset); details.append(row);
+      }
+      inspector.append(details);
+    }
+    const objective = (levelModel.level.objective && typeof levelModel.level.objective === "object" ? levelModel.level.objective : { type: "none" }) as Record<string, unknown>;
+    const details = document.createElement("details"); details.className = "profile-section"; details.open = true; const summary = document.createElement("summary"); summary.textContent = "Objetivo"; details.append(summary);
+    const objectiveFields: ProfileField[] = [{ path: ["objective", "type"], label: "type", fallback: "none", kind: "choice", choices: ["none", "reachZone"] }];
+    if (objective.type === "reachZone") objectiveFields.push(...["x", "y", "width", "height"].map((key) => ({ path: ["objective", key], label: key, fallback: key === "width" || key === "height" ? 16 : 0, kind: "number" as const })), { path: ["objective", "onComplete"], label: "onComplete", fallback: "freeze", kind: "choice", choices: ["freeze", "continue"] });
+    for (const field of objectiveFields) { const label = document.createElement("label"); label.className = "property-field"; const caption = document.createElement("span"); caption.textContent = field.label; const control = field.kind === "choice" ? document.createElement("select") : document.createElement("input"); if (control instanceof HTMLSelectElement) for (const choice of field.choices!) { const option = document.createElement("option"); option.value = String(choice); option.textContent = String(choice); control.append(option); } else { control.type = "number"; control.step = "1"; } control.value = String(valueAt(levelModel.level, field.path) ?? field.fallback); control.addEventListener("change", () => { if (field.label === "type") levelModel!.level.objective = control.value === "none" ? { type: "none" } : { type: "reachZone", x: 0, y: 0, width: 16, height: 16, onComplete: "freeze" }; else setValueAt(levelModel!.level, field.path, field.kind === "number" ? Number(control.value) : control.value); commitProfileChange(`Objetivo: ${field.label} actualizado`); }); label.append(caption, control); details.append(label); }
+    inspector.append(details);
+  }
+
   function canReplaceProject(): boolean {
     return session.canDiscard(() => window.confirm(
       "El proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
@@ -257,6 +321,7 @@ export function createEditorShell(host: HTMLElement): void {
   }
 
   const newProject = button("Nuevo");
+  const demoProject = button("Demo genérica", "Crear un proyecto mínimo que no utiliza el perfil de Rick");
   const openProject = button("Abrir ZIP");
   const openDirectory = button("Abrir carpeta");
   const saveProject = button("Guardar ZIP");
@@ -272,6 +337,11 @@ export function createEditorShell(host: HTMLElement): void {
     clearError();
     await activateProject(createEmptyProject(), true,
                           "Proyecto vacío creado; todavía no se ha guardado");
+  }));
+  demoProject.addEventListener("click", () => void run(async () => {
+    if (!canReplaceProject()) return;
+    directoryHandle = null;
+    await activateProject(createPlatformerDemoProject(), true, "Demo genérica creada; alcanza la zona situada a la derecha");
   }));
   openProject.addEventListener("click", () => {
     if (canReplaceProject()) fileInput.click();
@@ -342,7 +412,7 @@ export function createEditorShell(host: HTMLElement): void {
   audio.setAttribute("aria-pressed", "true"); audio.addEventListener("click", () => { runtimeAudioEnabled = !runtimeAudioEnabled; audio.textContent = `Audio: ${runtimeAudioEnabled ? "sí" : "no"}`; audio.setAttribute("aria-pressed", String(runtimeAudioEnabled)); if (!runtimeAudioEnabled) runtimeMusic?.pause(); else if (runtimePlaying) void runtimeMusic?.play().catch(() => undefined); });
   placePlayer.addEventListener("click", () => { if (!runtime) return; placingPlayer = !placingPlayer; placePlayer.setAttribute("aria-pressed", String(placingPlayer)); status.textContent = placingPlayer ? "Haz clic en el punto donde Rick debe apoyar los pies" : "Colocación de Rick cancelada"; canvas.focus(); });
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
-  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); for (const slot of runtime?.drainAudioEvents() ?? []) if (runtimeAudioEnabled && runtimeEffectUrls[slot]) void new Audio(runtimeEffectUrls[slot]).play().catch(() => undefined); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], guides?.zones ?? []); if (runtimePreviewActive && runtime) { const camera = runtime.cameraFrame; preview.centerOnWorld(camera.x + camera.width / 2, camera.y + camera.height / 2); } status.textContent = `Preview · tick ${runtime?.tick ?? 0} · vidas ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); for (const slot of runtime?.drainAudioEvents() ?? []) if (runtimeAudioEnabled && runtimeEffectUrls[slot]) void new Audio(runtimeEffectUrls[slot]).play().catch(() => undefined); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], [...(guides?.zones ?? []), ...objectiveZones()]); if (runtimePreviewActive && runtime) { const camera = runtime.cameraFrame; preview.centerOnWorld(camera.x + camera.width / 2, camera.y + camera.height / 2); } status.textContent = `Preview · tick ${runtime?.tick ?? 0} · vidas ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · reproduciendo" : " · pausa"}${runtime?.completed ? " · OBJETIVO COMPLETADO" : ""}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · contacto peligroso" : ""}`; };
   const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
   function stopRuntime(): void { runtimePlaying = false; runtimeMusic?.pause(); if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
   play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; if (runtimeAudioEnabled) void runtimeMusic?.play().catch(() => undefined); play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
@@ -355,9 +425,9 @@ export function createEditorShell(host: HTMLElement): void {
     for (const [id, control] of toolButtons) control.setAttribute("aria-pressed", String(id === tool));
     status.textContent = `Herramienta: ${tool}`;
   };
-  for (const [id, label, shortcut] of [["pencil", "Lápiz", "P"], ["eraser", "Borrador", "E"], ["fill", "Relleno", "F"], ["select", "Selección", "S"], ["entity", "Entidades", "O"], ["asset", "Assets", "A"]] as const) {
+  for (const [id, label, shortcut] of [["pencil", "Lápiz", "P"], ["eraser", "Borrador", "E"], ["fill", "Relleno", "F"], ["select", "Selección", "S"], ["entity", "Entidades", "O"], ["asset", "Assets", "A"], ["profile", "Perfil", "R"]] as const) {
     const control = button(label, `Atajo: ${shortcut}`); control.setAttribute("aria-keyshortcuts", shortcut);
-    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset"; paletteHost.hidden = id === "entity" || id === "asset"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
+    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset" || id === "profile"; paletteHost.hidden = id === "entity" || id === "asset" || id === "profile"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); if (id === "profile") renderProfileInspector(); else if (id !== "asset") renderDiagnostics(session.project ? validateProject(session.project) : []); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
@@ -378,7 +448,7 @@ export function createEditorShell(host: HTMLElement): void {
     grid.setAttribute("aria-pressed", String(gridVisible));
     preview.setGridVisible(gridVisible);
   });
-  toolbar.append(newProject, openProject, openDirectory, saveProject,
+  toolbar.append(newProject, demoProject, openProject, openDirectory, saveProject,
                  saveDirectory, separator, undo, redo, separator.cloneNode(),
                  ...toolButtons.values(), separator.cloneNode(), play, pause, step, resetPreview, invulnerable, cameraViews, sprites, bounds, audio, placePlayer, separator.cloneNode(), zoomOut, zoomIn, fit, gameScreen, grid);
   setTool("pencil");
@@ -447,7 +517,7 @@ export function createEditorShell(host: HTMLElement): void {
     preview.setEntities(activeTool === "entity" ? (entityModel?.all().filter((item) => showAllEntities || item.ref.group === entityGroup).map((item) => ({ ...item, label: `${item.ref.group} #${String(item.entity.id ?? item.ref.index)}` })) ?? []) : [], selectedEntity);
     const guides = activeTool === "entity" ? entityModel?.gameplayGuides() : null;
     const selectedRecord = selectedEntity ? entityModel?.entity(selectedEntity) : null; const selectedKey = selectedEntity && selectedRecord ? `${selectedEntity.group}:${String(selectedRecord.id)}` : null;
-    preview.setGameplayGuides(guides?.lines.filter((line) => (line.kind === "route" ? showRoutes : showRelations) && (!selectedGuidesOnly || !selectedKey || line.from === selectedKey || line.to === selectedKey)) ?? [], showZones ? (guides?.zones.filter((zone) => !selectedGuidesOnly || !selectedKey || zone.owner === selectedKey) ?? []) : []);
+    preview.setGameplayGuides(guides?.lines.filter((line) => (line.kind === "route" ? showRoutes : showRelations) && (!selectedGuidesOnly || !selectedKey || line.from === selectedKey || line.to === selectedKey)) ?? [], [...(showZones ? (guides?.zones.filter((zone) => !selectedGuidesOnly || !selectedKey || zone.owner === selectedKey) ?? []) : []), ...objectiveZones()]);
     refreshEntityFinder();
   }
   function commitEntityChange(message: string): void { if (!entityModel) return; entityModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshEntityOverlay(); refreshProjectState(message); }
@@ -536,7 +606,7 @@ export function createEditorShell(host: HTMLElement): void {
     if (runtimePreviewActive) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement || event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset" }; const tool = shortcuts[event.key.toLowerCase()];
+    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset", r: "profile" }; const tool = shortcuts[event.key.toLowerCase()];
     if (tool) { toolButtons.get(tool)?.click(); event.preventDefault(); return; }
     if (event.key.toLowerCase() === "g") { grid.click(); event.preventDefault(); }
     if (event.key === "0") { fit.click(); event.preventDefault(); }

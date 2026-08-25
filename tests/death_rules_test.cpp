@@ -6,6 +6,8 @@ int main() {
   assert(!ShouldStartDeathFall(1000, 921));
   assert(ShouldStartDeathFall(1000, 920));
   assert(ShouldStartDeathFall(1000, 900));
+  assert(!ShouldStartDeathFall(1000, 951, 50));
+  assert(ShouldStartDeathFall(1000, 950, 50));
 
   assert(!HasCrossedDeathBoundary(1199, 1000, 200));
   assert(HasCrossedDeathBoundary(1200, 1000, 200));

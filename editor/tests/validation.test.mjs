@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { strFromU8, strToU8 } from "fflate";
-import { createEmptyProject, resolveProjectReference } from "../test-dist/project-io.mjs";
+import { createEmptyProject, createPlatformerDemoProject, resolveProjectReference } from "../test-dist/project-io.mjs";
 import { prepareLevelForEditing } from "../test-dist/migrations.mjs";
 import { hasValidationErrors, validateProject } from "../test-dist/validation.mjs";
 
@@ -17,6 +17,12 @@ function writeLevel(project, level) {
 test("new project satisfies structural and semantic contracts", () => {
   const diagnostics = validateProject(createEmptyProject());
   assert.deepEqual(diagnostics, []);
+  assert.equal(hasValidationErrors(diagnostics), false);
+});
+
+test("generic platformer demo validates without errors", () => {
+  const diagnostics = validateProject(createPlatformerDemoProject());
+  assert.deepEqual(diagnostics.filter((item) => item.severity === "error"), []);
   assert.equal(hasValidationErrors(diagnostics), false);
 });
 
@@ -67,6 +73,22 @@ test("integral validation rejects invalid GIDs, geometry and tileset metadata", 
 test("warnings are visible but do not block export", () => {
   const project = createEmptyProject(); const level = readLevel(project); level.definitions["objects/unused"] = structuredClone(level.definitions["objects/bomb"]); writeLevel(project, level);
   const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.severity === "warning")); assert.equal(hasValidationErrors(diagnostics), false);
+});
+
+test("runtime profiles validate states, audio, geometry, objectives and disabled actions", () => {
+  const project = createEmptyProject(); const level = readLevel(project);
+  level.runtimeProfile = {
+    controller: { spriteWidth: 8, collisionWidth: 8, collisionOffsetX: 2 },
+    capabilities: { bomb: false }, actionBindings: { down: "bombing" },
+    bindings: { playerStates: { running: "MISSING_RUN" }, audio: { shot: 99 } },
+  };
+  level.objective = { type: "reachZone", x: level.map.width * level.map.tileWidth, y: 0, width: 8, height: 8, onComplete: "freeze" };
+  writeLevel(project, level); const diagnostics = validateProject(project);
+  assert.ok(diagnostics.some((item) => item.path.includes("/playerStates/running") && item.message.includes("MISSING_RUN")));
+  assert.ok(diagnostics.some((item) => item.path.endsWith("/audio/shot") && item.message.includes("no existe")));
+  assert.ok(diagnostics.some((item) => item.path === "/runtimeProfile/controller"));
+  assert.ok(diagnostics.some((item) => item.path === "/objective"));
+  assert.ok(diagnostics.some((item) => item.severity === "warning" && item.path.endsWith("/actionBindings/down")));
 });
 
 test("migration registry accepts v1 clones and rejects future versions", () => {

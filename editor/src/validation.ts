@@ -53,6 +53,8 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   };
   const warn = (path: string, message: string): void => { diagnostics.push({ severity: "warning", file, path, message, source: "semantic" }); };
   const referencedDefinitions = new Set<string>();
+  const enemyDefinitions = new Set<string>();
+  const objectDefinitions = new Set<string>();
   const asset = (reference: unknown, path: string): Uint8Array | null => {
     if (typeof reference !== "string") return null;
     try { const resolved = resolveProjectReference(file, reference); const bytes = project.files.get(resolved); if (!bytes) add(path, `Asset inexistente: ${resolved}`); return bytes ?? null; }
@@ -91,6 +93,8 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
         add(`/entities/${group}/${index}`, `Definición inexistente: ${definition}`);
       }
       if (typeof definition === "string") referencedDefinitions.add(definition);
+      if (typeof definition === "string" && group === "enemies") enemyDefinitions.add(definition);
+      if (typeof definition === "string" && ["platforms", "items", "backgroundObjects", "blocks", "hazards", "lasers"].includes(group)) objectDefinitions.add(definition);
     });
   }
 
@@ -112,12 +116,44 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
     add("/player/definition", `Definición inexistente: ${playerDefinition}`);
   }
   if (typeof playerDefinition === "string") referencedDefinitions.add(playerDefinition);
+  const definitionStateNames = (definitionId: string): Set<string> => new Set(
+    Array.isArray(object(definitions[definitionId]).states)
+      ? (object(definitions[definitionId]).states as unknown[]).map((state) => object(state).name).filter((name): name is string => typeof name === "string")
+      : [],
+  );
+  const profile = object(level.runtimeProfile); const bindings = object(profile.bindings);
+  const controller = object(profile.controller);
+  if ([controller.spriteWidth, controller.collisionWidth, controller.collisionOffsetX].every((part) => typeof part === "number") && Number(controller.collisionOffsetX) + Number(controller.collisionWidth) > Number(controller.spriteWidth)) add("/runtimeProfile/controller", "El bounding box horizontal del jugador sale de su anchura visual");
+  const playerStates = object(bindings.playerStates);
+  if (typeof playerDefinition === "string") {
+    const available = definitionStateNames(playerDefinition);
+    for (const [semantic, stateName] of Object.entries(playerStates)) if (typeof stateName === "string" && !available.has(stateName)) add(`/runtimeProfile/bindings/playerStates/${semantic}`, `La definición del jugador no contiene el estado ${stateName}`);
+  }
+  const validateFamilyStates = (family: "enemyStates" | "objectStates", definitionIds: ReadonlySet<string>): void => {
+    for (const [semantic, stateName] of Object.entries(object(bindings[family]))) {
+      if (typeof stateName !== "string") continue;
+      if (![...definitionIds].some((definitionId) => definitionStateNames(definitionId).has(stateName))) add(`/runtimeProfile/bindings/${family}/${semantic}`, `Ninguna definición utilizada contiene el estado ${stateName}`);
+    }
+  };
+  for (const rawProjectile of Object.values(object(level.projectiles))) { const definition = object(rawProjectile).definition; if (typeof definition === "string") objectDefinitions.add(definition); }
+  validateFamilyStates("enemyStates", enemyDefinitions);
+  validateFamilyStates("objectStates", objectDefinitions);
+  const effects = Array.isArray(object(level.audio).effects) ? object(level.audio).effects as unknown[] : [];
+  const validateAudioSlots = (slots: Record<string, unknown>, basePath: string): void => { for (const [name, slot] of Object.entries(slots)) if (slot !== null && slot !== undefined && Number.isInteger(slot) && Number(slot) >= effects.length) add(`${basePath}/${name}`, `El slot ${String(slot)} no existe en audio.effects`); };
+  validateAudioSlots(object(bindings.audio), "/runtimeProfile/bindings/audio");
+  validateAudioSlots({ deathAudioSlot: object(profile.session).deathAudioSlot }, "/runtimeProfile/session");
+  const capabilities = object(profile.capabilities); const actions = object(profile.actionBindings);
+  for (const [chord, action] of Object.entries(actions)) if (typeof action === "string" && capabilities[action === "shooting" ? "shoot" : action === "bombing" ? "bomb" : "hit"] === false) warn(`/runtimeProfile/actionBindings/${chord}`, `La acción ${action} está enlazada pero su capacidad está desactivada`);
   for (const [name, rawProjectile] of Object.entries(object(level.projectiles))) {
     const definition = object(rawProjectile).definition;
     if (typeof definition === "string" && !(definition in definitions)) {
       add(`/projectiles/${name}/definition`, `Definición inexistente: ${definition}`);
     }
-    if (typeof definition === "string") referencedDefinitions.add(definition);
+    if (typeof definition === "string") { referencedDefinitions.add(definition); objectDefinitions.add(definition); }
+  }
+  const objective = object(level.objective);
+  if (objective.type === "reachZone" && [objective.x, objective.y, objective.width, objective.height].every((part) => typeof part === "number")) {
+    if (Number(objective.x) < 0 || Number(objective.y) < 0 || Number(objective.x) + Number(objective.width) > worldWidth || Number(objective.y) + Number(objective.height) > worldHeight) add("/objective", "La zona del objetivo sale de los límites del mapa");
   }
   for (const id of Object.keys(definitions)) if (!referencedDefinitions.has(id)) warn(`/definitions/${id}`, "Definición no utilizada por el nivel");
 

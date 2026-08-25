@@ -42,6 +42,14 @@ int main() {
   assert(EnemyChaserVerticalDirection(140, 100, CHAR_STATE_CLIMBING,
                                       true, false, false) == CHAR_DIR_DOWN);
 
+  // A stale CLIMBING state must not keep an enemy floating beside a ladder.
+  assert(EnemyChaserVerticalDirection(80, 120, CHAR_STATE_CLIMBING,
+                                      false, false, false) == CHAR_DIR_STOP);
+  assert(!ShouldCenterClimbingEnemy(CHAR_STATE_CLIMBING,
+                                    false, false, false));
+  assert(ShouldCenterClimbingEnemy(CHAR_STATE_CLIMBING,
+                                   true, false, false));
+
   // Small vertical differences do not make a grounded chaser oscillate.
   assert(EnemyChaserVerticalDirection(105, 100, CHAR_STATE_RUNNING,
                                       true, true, true) == CHAR_DIR_STOP);

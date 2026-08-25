@@ -39,6 +39,29 @@ class LevelSchemaTest(unittest.TestCase):
         invalid_action["entities"]["platforms"][0]["actions"]["action"] = []
         self.assertTrue(list(self.validator.iter_errors(invalid_action)))
 
+    def test_optional_runtime_profile_is_typed_without_breaking_v1_levels(self):
+        configured = copy.deepcopy(self.level)
+        configured["runtimeProfile"] = {
+            "controller": {"runSpeed": 4},
+            "capabilities": {"bomb": False},
+            "actionBindings": {"up": "hitting", "down": None},
+            "session": {"respawn": "none", "deathAudioSlot": None},
+            "bindings": {"playerStates": {"running": "HERO_RUN"}, "audio": {"shot": 9}},
+        }
+        self.assertEqual(list(self.validator.iter_errors(configured)), [])
+
+        configured["runtimeProfile"]["controller"]["runSpeed"] = -1
+        self.assertTrue(list(self.validator.iter_errors(configured)))
+
+    def test_optional_reach_zone_objective_is_typed(self):
+        configured = copy.deepcopy(self.level)
+        configured["objective"] = {"type": "reachZone", "x": 10, "y": 20,
+                                   "width": 16, "height": 24,
+                                   "onComplete": "freeze"}
+        self.assertEqual(list(self.validator.iter_errors(configured)), [])
+        configured["objective"]["width"] = 0
+        self.assertTrue(list(self.validator.iter_errors(configured)))
+
 
 if __name__ == "__main__":
     unittest.main()

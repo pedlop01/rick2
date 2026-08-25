@@ -55,6 +55,20 @@ class Character {
     float speed_y_max;
     float speed_y_min;
     float speed_y_step;
+    float climb_speed;
+    float death_speed_multiplier;
+    int jump_height;
+    int death_rise;
+    int crouching_height;
+    int hit_hold_ticks;
+    bool can_jump;
+    bool can_crouch;
+    bool can_climb;
+    int action_up_state;
+    int action_down_state;
+    int action_horizontal_state;
+    bool damage_enabled;
+    bool respawn_from_checkpoint;
 
     int stepsInState;
     int stepsInDirectionX;
@@ -181,6 +195,8 @@ class Character {
   protected:
     void FixHorizontalDirection(Keyboard& keyboard);
     bool AlignToStairs(World* map);
+    int GroundActionState(Keyboard& keyboard) const;
+    bool IsActionStatePressed(int action_state, Keyboard& keyboard) const;
 };
 
 #endif // CHARACTER_H

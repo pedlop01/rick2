@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   createEmptyProject,
+  createPlatformerDemoProject,
   decodeProjectArchive,
   encodeProjectArchive,
   getProjectAsset,
@@ -58,4 +59,11 @@ test("project requires its manifests and every declared level", () => {
   const project = createEmptyProject();
   project.files.delete(project.manifest.initialLevel);
   assert.throws(() => loadProjectFiles(project.files), /Falta el nivel/);
+});
+
+test("generic platformer demo survives the standard ZIP round trip", () => {
+  const project = createPlatformerDemoProject();
+  const reopened = decodeProjectArchive(encodeProjectArchive(project));
+  assert.equal(reopened.manifest.id, "tiny-runner");
+  assert.deepEqual([...reopened.files.keys()].sort(), [...project.files.keys()].sort());
 });

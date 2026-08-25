@@ -10,7 +10,7 @@ export type EntityRecord = Record<string, unknown>;
 export interface EntityRef { group: EntityGroup; index: number; }
 export interface EntityBox { x: number; y: number; width: number; height: number; }
 export interface GameplayLine { x1: number; y1: number; x2: number; y2: number; kind: "checkpoint" | "target" | "route"; from?: string; to?: string; }
-export interface GameplayZone { box: EntityBox; kind: "ai" | "camera" | "trigger"; owner?: string; }
+export interface GameplayZone { box: EntityBox; kind: "ai" | "camera" | "trigger" | "objective"; owner?: string; }
 const placedGroups: readonly EntityGroup[] = ["platforms", "items", "backgroundObjects", "blocks", "hazards"];
 function record(value: unknown): EntityRecord { return value && typeof value === "object" ? value as EntityRecord : {}; }
 function finite(value: unknown, fallback = 0): number { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }

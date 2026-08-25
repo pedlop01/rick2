@@ -69,6 +69,15 @@ button:focus-visible, canvas:focus-visible, input:focus-visible { outline: 2px s
 .property-field span { overflow-wrap: anywhere; color: #8495ab; font-size: 12px; }
 .empty-inspector .property-field span, .property-field > span { font-size: 12px; }
 .property-field input, .property-field select { width: 100%; }
+.profile-help { margin: -5px 0 12px; color: #8495ab; font-size: 11px; line-height: 1.4; }
+.profile-section { margin-bottom: 8px; padding: 7px; border: 1px solid #26344a; border-radius: 5px; }
+.profile-section summary { cursor: pointer; color: #b9c7d8; font-size: 12px; font-weight: 700; }
+.profile-section[open] summary { margin-bottom: 9px; }
+.profile-field { display: grid; grid-template-columns: minmax(0, 1fr) 30px; align-items: end; gap: 5px; margin-bottom: 7px; }
+.profile-field label { display: grid; min-width: 0; gap: 3px; }
+.profile-field label > span { overflow-wrap: anywhere; color: #8495ab; font-size: 11px; }
+.profile-field input, .profile-field select, .profile-reset { min-width: 0; padding: 6px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
+.profile-reset { width: 30px; }
 .animation-preview { width: 100%; height: 120px; margin-bottom: 12px; background: repeating-conic-gradient(#111827 0 25%, #1e293b 0 50%) 0 / 16px 16px; border: 1px solid #31425e; image-rendering: pixelated; }
 .empty-inspector { display: grid; place-items: center; align-content: center; color: #64748b; text-align: center; }
 .empty-inspector span { font-size: 34px; }

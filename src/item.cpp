@@ -1,6 +1,7 @@
 #include "item.h"
 #include "game_time.h"
 #include "vertical_collision_rules.h"
+#include "json_level_loader.h"
 
 Item::Item() {
   steps_dying = 0;
@@ -31,16 +32,19 @@ void Item::UpdateFSMState(World* map) {
       if (playerCol) {
         if(strcmp(name, "bonus") != 0) {
           state = OBJ_STATE_DEAD;
-          sound_handler->PlaySound(FX_RING, false);
+          const int slot = GetRuntimeAudioBindings().item_pickup;
+          if (slot >= 0) sound_handler->PlaySound(slot, false);
         } else {
           state = OBJ_STATE_DYING;
-          sound_handler->PlaySound(FX_BONUS, false);
+          const int slot = GetRuntimeAudioBindings().bonus_pickup;
+          if (slot >= 0) sound_handler->PlaySound(slot, false);
         }
       } else if (killed) {
         if(strcmp(name, "bonus") != 0) {
           state = OBJ_STATE_DYING;
           direction = OBJ_DIR_STOP;
-          sound_handler->PlaySound(FX_EXPLOSION, false);
+          const int slot = GetRuntimeAudioBindings().explosion;
+          if (slot >= 0) sound_handler->PlaySound(slot, false);
         } else {
           state = OBJ_STATE_DEAD;
         }

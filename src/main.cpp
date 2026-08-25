@@ -235,8 +235,10 @@ int main(int argc, char *argv[]) {
     for (unsigned int tick = 0; tick < simulation_ticks; ++tick) {
       // Perform a fixed-time step for the world and player. If rendering was
       // briefly delayed, process a bounded number of ticks to catch up.
-      world->WorldStep(player.get());
-      player->CharacterStep(world.get(), keyboard);
+      if (!(world->IsLevelCompleted() && world->FreezeOnComplete())) {
+        world->WorldStep(player.get());
+        player->CharacterStep(world.get(), keyboard);
+      }
       ++processed_ticks;
     }
 

@@ -213,6 +213,42 @@ export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2
   ]));
 }
 
+export function createPlatformerDemoProject(): Rick2Project {
+  const project = createEmptyProject("tiny-runner", "Tiny Runner");
+  const path = project.manifest.initialLevel;
+  const level = parseJson<Record<string, any>>(project.files.get(path)!, path);
+  const state = (name: string, id: number) => ({ name, id, animation: { bitmap: "../../assets/images/placeholder.png", frameDurationTicks: 4, sprites: [{ x: 0, y: 0, width: 1, height: 1 }] } });
+  const playerStates = { stop: "HERO_IDLE", running: "HERO_RUN", jumping: "HERO_JUMP", crouching: "HERO_DUCK", climbing: "HERO_CLIMB", shooting: "HERO_CAST", bombing: "HERO_DROP", hitting: "HERO_PUSH", dead: "HERO_OUT" };
+  const enemyStates = { running: "CRITTER_WALK", climbing: "CRITTER_CLIMB", dying: "CRITTER_GONE" };
+  const objectStates = { stop: "PROP_IDLE", moving: "PROP_MOVE", dying: "PROP_GONE" };
+  level.id = "tiny-runner-level"; level.display = { width: 960, height: 600 }; level.camera = { x: 0, y: 0, width: 160, height: 120 };
+  level.map.width = 32; level.map.height = 25; level.map.tileWidth = 8; level.map.tileHeight = 8;
+  const cells = level.map.width * level.map.height;
+  level.map.layers = { tiles: Array(cells).fill(0), frontTiles: Array(cells).fill(0), collisions: Array(cells).fill(0) };
+  for (let x = 0; x < level.map.width; ++x) level.map.layers.collisions[20 * level.map.width + x] = 2;
+  level.entities.checkpoints = [{ id: 0, chk_x: 8, chk_y: 136, chk_width: 16, chk_height: 24, pl_x: 16, pl_y: 152, pl_face: "right", nxt_chks: [] }];
+  level.entities.enemies = [{ id: 0, x: 112, y: 152, bb_x: 0, bb_y: 0, bb_width: 8, bb_height: 8, direction: "left", speed_x: 1, speed_y: 2, ia_type: "walker", ia_random: 0, ia_randomness: 0, ia_block_steps: 20, ia_orig_x: 96, ia_orig_y: 136, ia_limit_x: 48, ia_limit_y: 24, definition: "characters/critter" }];
+  level.player = { definition: "characters/tiny-hero" };
+  level.projectiles = { shoot: { definition: "objects/spark", width: 3, height: 2, yOffset: 3 }, bomb: { definition: "objects/pebble", width: 3, height: 3, yOffset: 3 } };
+  level.definitions = {
+    "characters/tiny-hero": { kind: "character", name: "tiny-hero", states: Object.values(playerStates).map(state) },
+    "characters/critter": { kind: "character", name: "critter", states: Object.values(enemyStates).map(state) },
+    "objects/spark": { kind: "object", name: "spark", states: Object.values(objectStates).map(state) },
+    "objects/pebble": { kind: "object", name: "pebble", states: Object.values(objectStates).map(state) },
+  };
+  level.runtimeProfile = {
+    controller: { spriteWidth: 8, collisionWidth: 6, standingHeight: 8, crouchingHeight: 5, collisionOffsetX: 1, runSpeed: 1.5, climbSpeed: 1, jumpHeight: 24 },
+    capabilities: { jump: true, crouch: true, climb: false, shoot: true, bomb: false, hit: false },
+    actionBindings: { up: "shooting", down: null, horizontal: null },
+    session: { initialLives: 1, damageEnabled: false, respawn: "none", resetTriggersOnDeath: false, deathAudioSlot: null },
+    bindings: { playerStates, enemyStates, objectStates, audio: { shot: null, bomb: null, explosion: null, bonusPickup: null, itemPickup: null } },
+  };
+  level.objective = { type: "reachZone", x: 216, y: 136, width: 24, height: 24, onComplete: "freeze" };
+  level.audio = { initialMusic: 0, playback: { initialLoop: false, followUpMusic: null, followUpLoop: false }, music: ["../../assets/audio/music.ogg"], effects: [] };
+  project.files.set(path, jsonBytes(level));
+  return loadProjectFiles(project.files);
+}
+
 export async function readProjectFile(file: File): Promise<Rick2Project> {
   return decodeProjectArchive(new Uint8Array(await file.arrayBuffer()));
 }

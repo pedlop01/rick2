@@ -37,6 +37,20 @@ Character::Character() {
   speed_y_max = RICK_VERT_SPEED_MAX;
   speed_y_min = RICK_VERT_SPEED_MIN;
   speed_y_step = RICK_VERT_SPEED_STEP;
+  climb_speed = RICK_HOR_SPEED_MAX;
+  death_speed_multiplier = 2.0;
+  jump_height = 40;
+  death_rise = 80;
+  crouching_height = 15;
+  hit_hold_ticks = GameTime::PLAYER_HIT_HOLD_DURATION_TICKS;
+  can_jump = true;
+  can_crouch = true;
+  can_climb = true;
+  action_up_state = CHAR_STATE_SHOOTING;
+  action_down_state = CHAR_STATE_BOMBING;
+  action_horizontal_state = CHAR_STATE_HITTING;
+  damage_enabled = true;
+  respawn_from_checkpoint = true;
 
   stepsInState = 0;
   stepsInDirectionX = 0;
@@ -87,6 +101,20 @@ Character::Character(const char* file) {
   speed_y_max = RICK_VERT_SPEED_MAX;
   speed_y_min = RICK_VERT_SPEED_MIN;
   speed_y_step = RICK_VERT_SPEED_STEP;
+  climb_speed = RICK_HOR_SPEED_MAX;
+  death_speed_multiplier = 2.0;
+  jump_height = 40;
+  death_rise = 80;
+  crouching_height = 15;
+  hit_hold_ticks = GameTime::PLAYER_HIT_HOLD_DURATION_TICKS;
+  can_jump = true;
+  can_crouch = true;
+  can_climb = true;
+  action_up_state = CHAR_STATE_SHOOTING;
+  action_down_state = CHAR_STATE_BOMBING;
+  action_horizontal_state = CHAR_STATE_HITTING;
+  damage_enabled = true;
+  respawn_from_checkpoint = true;
   stepsInState = 0;
   stepsInDirectionX = 0;
   stepsInDirectionY = 0;
@@ -156,7 +184,9 @@ Character::Character(const char* file) {
                              sprite_height);      
       num_sprites++;
     }
-    const int state_id = state->at("id").get<int>();
+    const int state_id = ResolveCharacterAnimationStateId(
+        file, state->at("name").get<std::string>(),
+        state->at("id").get<int>());
     if (!animations.insert(std::make_pair(state_id, player_anim)).second) {
       delete player_anim;
       throw DataLoadError(std::string("Duplicate animation state id in '") +
@@ -200,6 +230,7 @@ void Character::Reset() {
 }
 
 void Character::SetKilled(World* map) {
+  if (type == CHARACTER_PLAYER && !damage_enabled) return;
   killed = true;
   initial_x         = map->GetCurrentCheckpoint()->GetPlayerX();
   initial_y         = map->GetCurrentCheckpoint()->GetPlayerY();
@@ -504,6 +535,24 @@ void Character::FixHorizontalDirection(Keyboard& keyboard) {
   }
 }
 
+int Character::GroundActionState(Keyboard& keyboard) const {
+  if (!keyboard.PressedSpace()) return -1;
+  if (keyboard.PressedUp()) return action_up_state;
+  if (keyboard.PressedDown()) return action_down_state;
+  if (keyboard.PressedLeft() || keyboard.PressedRight())
+    return action_horizontal_state;
+  return -1;
+}
+
+bool Character::IsActionStatePressed(int action_state,
+                                     Keyboard& keyboard) const {
+  if (!keyboard.PressedSpace()) return false;
+  return (action_up_state == action_state && keyboard.PressedUp()) ||
+         (action_down_state == action_state && keyboard.PressedDown()) ||
+         (action_horizontal_state == action_state &&
+          (keyboard.PressedLeft() || keyboard.PressedRight()));
+}
+
 bool Character::AlignToStairs(World* map) {
   const int tile_width = map->GetTilesetTileWidth();
   const int tile_height = map->GetTilesetTileHeight();
@@ -519,17 +568,27 @@ bool Character::AlignToStairs(World* map) {
     pos_y + bb_y + bb_height + 1
   };
   int row = -1;
-  const int column = center_x / tile_width;
+  int column = -1;
+  const int first_body_column = collision_x / tile_width;
+  const int last_body_column = (collision_x + bb_width - 1) / tile_width;
   for (unsigned int i = 0; i < sizeof(sample_y) / sizeof(sample_y[0]); ++i) {
     if (sample_y[i] < 0 ||
         sample_y[i] >= map->GetMapHeight() * tile_height) continue;
     const int candidate_row = sample_y[i] / tile_height;
-    if (IsStairCollisionTile(map->GetTile(column, candidate_row)->GetType())) {
-      row = candidate_row;
-      break;
+    for (int candidate_column = first_body_column;
+         candidate_column <= last_body_column; ++candidate_column) {
+      if (candidate_column < 0 || candidate_column >= map->GetMapWidth())
+        continue;
+      if (IsStairCollisionTile(
+              map->GetTile(candidate_column, candidate_row)->GetType())) {
+        row = candidate_row;
+        column = candidate_column;
+        break;
+      }
     }
+    if (column >= 0) break;
   }
-  if (row < 0) return false;
+  if (row < 0 || column < 0) return false;
 
   int left_column = column;
   int right_column = column;
@@ -553,6 +612,7 @@ bool Character::AlignToStairs(World* map) {
 void Character::ComputeNextState(World* map, Keyboard& keyboard) {
   bool created = false;
   int prevDirection;
+  const int action_state = GroundActionState(keyboard);
   
   // Save current state before computing next state
   prevState = state;
@@ -578,37 +638,33 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
         if (inAir) {
           state = CHAR_STATE_JUMPING;
           direction = CHAR_DIR_DOWN;
-        } else if (keyboard.PressedSpace()) {
-          if (keyboard.PressedUp()) {
-            state = CHAR_STATE_SHOOTING;
-          } else if (keyboard.PressedDown()) {            
-            state = CHAR_STATE_BOMBING;
-          } else if (keyboard.PressedLeft()) {
-            state = CHAR_STATE_HITTING;
-            direction = CHAR_DIR_LEFT;
-          } else if (keyboard.PressedRight()) {
-            state = CHAR_STATE_HITTING;
-            direction = CHAR_DIR_RIGHT;
-          }
+        } else if (action_state >= 0) {
+          state = action_state;
+          if (keyboard.PressedLeft()) direction = CHAR_DIR_LEFT;
+          else if (keyboard.PressedRight()) direction = CHAR_DIR_RIGHT;
+          else if (state == CHAR_STATE_HITTING) direction = face;
         } else if (keyboard.PressedUp()) {
-          if (inStairs) {
+          if (can_climb && inStairs) {
             // In stairs
             state = CHAR_STATE_CLIMBING;
             direction = CHAR_DIR_UP;
           } else {
-            if (!inAir) {
+            if (can_jump && !inAir) {
               // Start jump
               state = CHAR_STATE_JUMPING;
               direction = CHAR_DIR_UP;
               // Save pos y
               pos_y_chk = pos_y;
-            } else {
+            } else if (can_jump) {
               state = CHAR_STATE_JUMPING;
               direction = CHAR_DIR_DOWN;
+            } else {
+              state = CHAR_STATE_STOP;
+              direction = CHAR_DIR_STOP;
             }
           }
         } else if (keyboard.PressedDown()) {
-            if (overStairs) {
+            if (can_climb && overStairs) {
               state = CHAR_STATE_CLIMBING;
               direction = CHAR_DIR_DOWN;
             } else if (overStairsRight && (face == CHAR_DIR_RIGHT)) {
@@ -617,15 +673,15 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
             } else if (overStairsLeft && (face == CHAR_DIR_LEFT)) {              
               state = CHAR_STATE_RUNNING;
               direction = CHAR_DIR_LEFT;
-            } else {
-              Animation* crouching_animation =
-                  AnimationForState(CHAR_STATE_CROUCHING);
-              const int crouching_height =
-                  crouching_animation->sprites.front()->height;
-              pos_y += height_orig - crouching_height;
-              height = crouching_height;
-              bb_height = crouching_height;
+            } else if (can_crouch) {
+              const int crouch_height = crouching_height;
+              pos_y += height_orig - crouch_height;
+              height = crouch_height;
+              bb_height = crouch_height;
               state = CHAR_STATE_CROUCHING;
+              direction = CHAR_DIR_STOP;
+            } else {
+              state = CHAR_STATE_STOP;
               direction = CHAR_DIR_STOP;
             }
         } else if (keyboard.PressedRight()) {
@@ -654,13 +710,13 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
           }
         } else if (direction & CHAR_DIR_UP) {
           if (collisionHead ||
-              (abs(pos_y_chk - pos_y) >= 5*8)) {                   // REVISIT: hard coded the maximum distance for jumping
+              (abs(pos_y_chk - pos_y) >= jump_height)) {
             direction = CHAR_DIR_DOWN;
           }
         }
   
         // Take stairs if pressing up when jumping
-        if (keyboard.PressedUp() &&
+        if (can_climb && keyboard.PressedUp() &&
             inStairs) {
           state = CHAR_STATE_CLIMBING;
           direction = CHAR_DIR_UP;
@@ -727,9 +783,10 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
           created = map->CreateNewShoot(pos_x - 10, pos_y + 8, OBJ_DIR_LEFT);
         }
         if (created) {
-          sound_handler->PlaySound(FX_SHOT, false);
+          const int slot = GetRuntimeAudioBindings().shot;
+          if (slot >= 0) sound_handler->PlaySound(slot, false);
         }
-        if (!(keyboard.PressedSpace() && keyboard.PressedUp())) {
+        if (!IsActionStatePressed(CHAR_STATE_SHOOTING, keyboard)) {
           state = CHAR_STATE_STOP;
         }
         break;
@@ -747,22 +804,21 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
         }
 
         if (created) {
-          sound_handler->PlaySound(FX_BOMB, false);
+          const int slot = GetRuntimeAudioBindings().bomb;
+          if (slot >= 0) sound_handler->PlaySound(slot, false);
         }
-        if (!(keyboard.PressedSpace() && keyboard.PressedDown())) {
+        if (!IsActionStatePressed(CHAR_STATE_BOMBING, keyboard)) {
           state = CHAR_STATE_STOP;
         }
         break;
 
       case CHAR_STATE_HITTING:
-        if (keyboard.PressedSpace() && keyboard.PressedLeft() &&
-            (stepsInState < GameTime::PLAYER_HIT_HOLD_DURATION_TICKS)) {
+        if (IsActionStatePressed(CHAR_STATE_HITTING, keyboard) &&
+            (stepsInState < hit_hold_ticks)) {
           state = CHAR_STATE_HITTING;
-          direction = CHAR_DIR_LEFT;
-        } else if (keyboard.PressedSpace() && keyboard.PressedRight() &&
-                   (stepsInState < GameTime::PLAYER_HIT_HOLD_DURATION_TICKS)) {
-          state = CHAR_STATE_HITTING;
-          direction = CHAR_DIR_RIGHT;
+          if (keyboard.PressedLeft()) direction = CHAR_DIR_LEFT;
+          else if (keyboard.PressedRight()) direction = CHAR_DIR_RIGHT;
+          else direction = face;
         } else {
           state = CHAR_STATE_STOP;
         }
@@ -770,7 +826,7 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
 
       case CHAR_STATE_DYING:
         if (direction & CHAR_DIR_UP) {
-          if (ShouldStartDeathFall(pos_y_chk, pos_y)) {
+          if (ShouldStartDeathFall(pos_y_chk, pos_y, death_rise)) {
             direction &= ~CHAR_DIR_UP;
             direction |=  CHAR_DIR_DOWN;
           }
@@ -783,7 +839,8 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
                        GetCameraConfig().height;
           if (HasCrossedDeathBoundary(pos_y, camera_y,
                                       GetCameraConfig().height)) {
-            state = CHAR_STATE_DEAD;
+            if (respawn_from_checkpoint) state = CHAR_STATE_DEAD;
+            else direction = CHAR_DIR_STOP;
           }
         }
         break;
@@ -972,25 +1029,25 @@ void Character::ComputeNextSpeed() {
 
     case CHAR_STATE_CLIMBING:
       speed_x = speed_x_max;
-      speed_y = speed_x_max;  // Same as horizontal speed
+      speed_y = climb_speed;
       break;
 
     case CHAR_STATE_DYING:
       if (!stepsInState) {
         if (direction & CHAR_DIR_UP)
-          speed_y = 2*speed_y_max;
+          speed_y = death_speed_multiplier*speed_y_max;
         else
-          speed_y = 2*speed_y_min;
+          speed_y = death_speed_multiplier*speed_y_min;
       } else if ((direction & CHAR_DIR_UP) && (stepsInDirectionY > 0)) {
-        if (speed_y > 2*speed_y_min)
-          speed_y = speed_y - 2*speed_y_step;
+        if (speed_y > death_speed_multiplier*speed_y_min)
+          speed_y = speed_y - death_speed_multiplier*speed_y_step;
         else
           speed_y = speed_y_min;
       } else if ((direction & CHAR_DIR_DOWN) && (stepsInDirectionY > 0)) {
-        if (speed_y < 2*speed_y_max)
-          speed_y = speed_y + 2*speed_y_step;
+        if (speed_y < death_speed_multiplier*speed_y_max)
+          speed_y = speed_y + death_speed_multiplier*speed_y_step;
         else
-          speed_y = 2*speed_y_max;
+          speed_y = death_speed_multiplier*speed_y_max;
       }
 
       speed_x = speed_x_max;
@@ -1016,7 +1073,8 @@ void Character::ComputeNextSound() {
     //}
 
     if (state == CHAR_STATE_DYING) {
-      sound_handler->PlaySound(FX_SCREAM, false);
+      const int slot = GetRuntimeAudioBindings().death;
+      if (slot >= 0) sound_handler->PlaySound(slot, false);
     }
   }
 }

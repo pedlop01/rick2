@@ -27,6 +27,8 @@
       "required": ["initialLives"],
       "properties": { "initialLives": { "$ref": "#/$defs/positiveInteger" } }
     },
+    "runtimeProfile": { "$ref": "#/$defs/runtimeProfile" },
+    "objective": { "$ref": "#/$defs/objective" },
     "camera": {
       "allOf": [
         { "$ref": "#/$defs/viewport" },
@@ -86,6 +88,73 @@
   "$defs": {
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "positiveInteger": { "type": "integer", "minimum": 1 },
+    "nullableAudioSlot": { "type": ["integer", "null"], "minimum": 0 },
+    "runtimeProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "controller": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "spriteWidth": { "$ref": "#/$defs/positiveInteger" },
+            "collisionWidth": { "$ref": "#/$defs/positiveInteger" },
+            "standingHeight": { "$ref": "#/$defs/positiveInteger" },
+            "crouchingHeight": { "$ref": "#/$defs/positiveInteger" },
+            "collisionOffsetX": { "type": "number", "minimum": 0 },
+            "runSpeed": { "type": "number", "minimum": 0 },
+            "minimumVerticalSpeed": { "type": "number", "exclusiveMinimum": 0 },
+            "maximumVerticalSpeed": { "type": "number", "exclusiveMinimum": 0 },
+            "verticalAcceleration": { "type": "number", "exclusiveMinimum": 0 },
+            "climbSpeed": { "type": "number", "minimum": 0 },
+            "jumpHeight": { "type": "number", "minimum": 0 },
+            "deathRise": { "type": "number", "minimum": 0 },
+            "deathSpeedMultiplier": { "type": "number", "exclusiveMinimum": 0 },
+            "deathRespawnTicks": { "$ref": "#/$defs/positiveInteger" },
+            "hitHoldTicks": { "type": "number", "minimum": 0 }
+          }
+        },
+        "capabilities": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "jump": { "type": "boolean" }, "crouch": { "type": "boolean" }, "climb": { "type": "boolean" }, "shoot": { "type": "boolean" }, "bomb": { "type": "boolean" }, "hit": { "type": "boolean" } }
+        },
+        "actionBindings": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "up": { "$ref": "#/$defs/playerAction" }, "down": { "$ref": "#/$defs/playerAction" }, "horizontal": { "$ref": "#/$defs/playerAction" } }
+        },
+        "session": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "initialLives": { "$ref": "#/$defs/positiveInteger" }, "damageEnabled": { "type": "boolean" }, "respawn": { "enum": ["checkpoint", "none"] }, "resetTriggersOnDeath": { "type": "boolean" }, "deathAudioSlot": { "$ref": "#/$defs/nullableAudioSlot" } }
+        },
+        "bindings": { "$ref": "#/$defs/runtimeBindings" }
+      }
+    },
+    "playerAction": { "enum": ["shooting", "bombing", "hitting", null] },
+    "runtimeBindings": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "playerStates": { "type": "object", "additionalProperties": false, "properties": { "stop": { "$ref": "#/$defs/nonEmptyString" }, "running": { "$ref": "#/$defs/nonEmptyString" }, "jumping": { "$ref": "#/$defs/nonEmptyString" }, "crouching": { "$ref": "#/$defs/nonEmptyString" }, "climbing": { "$ref": "#/$defs/nonEmptyString" }, "shooting": { "$ref": "#/$defs/nonEmptyString" }, "bombing": { "$ref": "#/$defs/nonEmptyString" }, "hitting": { "$ref": "#/$defs/nonEmptyString" }, "dead": { "$ref": "#/$defs/nonEmptyString" } } },
+        "enemyStates": { "type": "object", "additionalProperties": false, "properties": { "running": { "$ref": "#/$defs/nonEmptyString" }, "climbing": { "$ref": "#/$defs/nonEmptyString" }, "dying": { "$ref": "#/$defs/nonEmptyString" } } },
+        "objectStates": { "type": "object", "additionalProperties": false, "properties": { "stop": { "$ref": "#/$defs/nonEmptyString" }, "moving": { "$ref": "#/$defs/nonEmptyString" }, "dying": { "$ref": "#/$defs/nonEmptyString" } } },
+        "audio": { "type": "object", "additionalProperties": false, "properties": { "shot": { "$ref": "#/$defs/nullableAudioSlot" }, "bomb": { "$ref": "#/$defs/nullableAudioSlot" }, "explosion": { "$ref": "#/$defs/nullableAudioSlot" }, "bonusPickup": { "$ref": "#/$defs/nullableAudioSlot" }, "itemPickup": { "$ref": "#/$defs/nullableAudioSlot" } } }
+      }
+    },
+    "objective": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "none" } } },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["type", "x", "y", "width", "height", "onComplete"],
+          "properties": {
+            "type": { "const": "reachZone" },
+            "x": { "type": "integer" }, "y": { "type": "integer" },
+            "width": { "$ref": "#/$defs/positiveInteger" },
+            "height": { "$ref": "#/$defs/positiveInteger" },
+            "onComplete": { "enum": ["continue", "freeze"] }
+          }
+        }
+      ]
+    },
     "viewport": {
       "type": "object",
       "required": ["width", "height"],

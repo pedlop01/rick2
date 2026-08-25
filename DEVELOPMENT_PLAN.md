@@ -87,9 +87,14 @@ laterales en el juego mientras todavía se está cerrando la paridad del navegad
 | 28 | Asegurar accesibilidad, atajos y rendimiento del editor | Media | 20, 25, 26 | Completada | Atajos y foco no interfieren con formularios; las herramientas principales pueden usarse con teclado, incluyendo `Espacio + arrastrar` como alternativa al botón central para desplazar el lienzo; mapas grandes mantienen interacción fluida y las operaciones costosas informan progreso o se ejecutan fuera del hilo de UI. |
 | 29 | Automatizar pruebas, empaquetado y publicación estática | Alta | 17-28 | Completada | Pruebas unitarias cubren modelo, comandos, conversión y validación; pruebas de integración abren, editan y reexportan el nivel 1 sin diferencias inesperadas; CI verifica la compatibilidad juego/engine, genera un artefacto estático versionado y documenta su uso offline. |
 | 30 | Portar el runtime jugable a JavaScript | Media | 27, 29 | Completada | El navegador carga el mismo paquete que C++, ejecuta movimiento, colisiones, IA, triggers, cámara, audio y ciclo de vidas con comportamiento comparable; editor y runtime comparten modelo y reloj, sin una segunda variante del formato. |
-| 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30, 33 | Pendiente | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
+| 31 | Extraer un núcleo configurable para juegos de plataformas sencillos | Baja | 30, 33 | Completada | Las reglas específicas de Rick se registran como componentes o comportamientos configurables; un pequeño juego de ejemplo distinto puede construirse sin modificar el núcleo, con documentación de extensiones y límites soportados. |
 | 32 | Pulir la visualización e interacción de entidades y relaciones | Media | 23, 28 | Completada | Filtros, leyenda, colores, selección, solapamientos y densidad de guías hacen comprensibles las relaciones del nivel real; crear y localizar entidades resulta natural con ratón, touchpad y teclado. |
 | 33 | Revisar y reforzar el runtime C++ con lo aprendido en el port web | Alta | 30 | Completada | Se catalogan las correcciones e invariantes descubiertos durante la tarea 30 —escaleras e IA, aterrizajes, bloques, bombas adyacentes, estados y relojes de animación, muerte y herramientas de depuración—; se compara cada caso con C++, se corrigen únicamente las divergencias confirmadas y se trasladan fixtures reproducibles a pruebas nativas. Juego y runtime web conservan comportamiento compatible sobre el mismo nivel 1. |
+| 34 | Pulir la interfaz web para una primera versión human friendly | Alta | 31 | Pendiente | Los flujos de crear, abrir, editar, previsualizar, validar y guardar un nivel se entienden sin conocer el formato interno; se revisan jerarquía visual, nombres, formularios, selección, ayudas, feedback y adaptación a portátil sin reducir las capacidades avanzadas. |
+| 35 | Dar soporte a proyectos con múltiples niveles | Alta | 31, 34 | Pendiente | El formato y el editor permiten crear, duplicar, renombrar, ordenar, abrir y eliminar niveles manteniendo un `initialLevel` válido; assets compartidos y referencias sobreviven a importación/exportación y cada nivel se valida por separado. |
+| 36 | Definir campaña, progresión y restricciones entre niveles | Media | 35 | Pendiente | El proyecto declara un orden secuencial y reglas explícitas de desbloqueo; Rick puede recorrer los niveles principales en orden y el nivel final permanece bloqueado hasta completar los cuatro anteriores, sin codificar IDs concretos en el runtime. |
+| 37 | Convertir el runtime C++ en un juego completo | Alta | 35, 36 | Pendiente | C++ dispone de intro, menú, selección o continuación de partida, transición entre niveles y estado de progreso; carga el nivel correspondiente desde la campaña y separa el shell de juego de la simulación. |
+| 38 | Ejecutar en C++ los proyectos exportados por el editor | Alta | 35, 37 | Pendiente | El runtime abre o extrae de forma segura `.rick2-project`, resuelve manifiesto, nivel y assets, y ejecuta el mismo paquete validado en web; una prueba cubre exportación, reapertura y arranque nativo. |
 
 ## Orden recomendado
 
@@ -119,6 +124,8 @@ Las tareas se ejecutarán inicialmente en este orden:
 7. Tarea 30: runtime completo en navegador sobre el mismo formato.
 8. Tarea 33: revisión del runtime C++ con las lecciones y regresiones del port.
 9. Tarea 31: generalización del núcleo una vez comprobados ambos runtimes.
+10. Tarea 34: cerrar una primera versión cómoda del editor para un solo nivel.
+11. Tareas 35-38: ampliar después el producto a proyectos multinivel, campaña y juego C++ completo.
 
 El orden puede ajustarse si una prueba revela un bloqueo, pero cada cambio debe
 mantener el juego ejecutable.

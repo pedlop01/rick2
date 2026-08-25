@@ -31,7 +31,11 @@ inline int EnemyChaserVerticalDirection(int player_y, int enemy_y,
     return CHAR_DIR_DOWN;
   }
 
-  if (enemy_state == CHAR_STATE_CLIMBING && !in_floor) {
+  // CLIMBING is a previous-frame state. Do not keep steering vertically after
+  // the enemy has left the ladder shaft; Character will then fall or leave
+  // horizontally according to its current collisions.
+  if (enemy_state == CHAR_STATE_CLIMBING && !in_floor &&
+      (in_stairs || over_stairs)) {
     return player_y + vertical_tolerance > enemy_y
              ? CHAR_DIR_DOWN
              : CHAR_DIR_UP;
@@ -43,6 +47,12 @@ inline int EnemyChaserVerticalDirection(int player_y, int enemy_y,
   }
 
   return CHAR_DIR_STOP;
+}
+
+inline bool ShouldCenterClimbingEnemy(int enemy_state, bool in_stairs,
+                                      bool over_stairs, bool in_floor) {
+  return enemy_state == CHAR_STATE_CLIMBING && !in_floor &&
+         (in_stairs || over_stairs);
 }
 
 #endif // ENEMY_IA_RULES_H

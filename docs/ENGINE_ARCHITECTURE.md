@@ -17,8 +17,9 @@ The editor must:
 - make invalid data visible before it reaches the game;
 - leave gameplay simulation outside editing commands.
 
-The editor does not initially replace the TMX importer, synthesize graphics or
-audio, or emulate gameplay that the C++ runtime does not expose in data.
+The editor does not synthesize graphics or audio. Its runtime has subsequently
+grown into a playable preview; the boundary between reusable platformer rules
+and the Rick profile is specified in `PLATFORMER_CORE.md`.
 
 ## Decisions
 

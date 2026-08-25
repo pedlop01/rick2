@@ -9,6 +9,7 @@
 
 class Player : public Character {
   private:
+    void ApplyRuntimeControllerProfile();
 
   public:    
 	  Player();    // class constructor

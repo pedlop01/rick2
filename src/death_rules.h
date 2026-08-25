@@ -5,8 +5,9 @@
 
 constexpr int PLAYER_DEATH_RISE_PIXELS = 80;
 
-inline bool ShouldStartDeathFall(int origin_y, int current_y) {
-  return origin_y - current_y >= PLAYER_DEATH_RISE_PIXELS;
+inline bool ShouldStartDeathFall(int origin_y, int current_y,
+                                 int rise_pixels = PLAYER_DEATH_RISE_PIXELS) {
+  return origin_y - current_y >= rise_pixels;
 }
 
 inline bool HasCrossedDeathBoundary(int player_y, int camera_y,

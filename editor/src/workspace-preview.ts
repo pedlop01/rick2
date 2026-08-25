@@ -336,8 +336,8 @@ export class WorkspacePreview {
   #drawGameplayGuides(): void {
     const context = this.#context; const colors = { checkpoint: "#60a5fa", target: "#f97316", route: "#fbbf24" };
     context.lineWidth = 1.5 / this.#zoom; context.setLineDash([5 / this.#zoom, 3 / this.#zoom]);
-    const zoneColors = { ai: ["rgba(74, 222, 128, .08)", "#4ade80"], camera: ["rgba(96, 165, 250, .06)", "#60a5fa"], trigger: ["rgba(249, 115, 22, .1)", "#f97316"] } as const;
-    for (const zone of this.#gameplayZones) { const colors = zoneColors[zone.kind]; context.fillStyle = colors[0]; context.strokeStyle = colors[1]; context.fillRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); context.strokeRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); }
+    const zoneColors = { ai: ["rgba(74, 222, 128, .08)", "#4ade80"], camera: ["rgba(96, 165, 250, .06)", "#60a5fa"], trigger: ["rgba(249, 115, 22, .1)", "#f97316"], objective: ["rgba(192, 132, 252, .2)", "#c084fc"] } as const;
+    for (const zone of this.#gameplayZones) { const colors = zoneColors[zone.kind]; context.fillStyle = colors[0]; context.strokeStyle = colors[1]; context.fillRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); context.strokeRect(zone.box.x, zone.box.y, zone.box.width, zone.box.height); if (zone.kind === "objective" && this.#zoom >= .75) { context.font = `bold ${9 / this.#zoom}px ui-sans-serif`; context.textBaseline = "top"; context.fillStyle = colors[1]; context.fillText("META", zone.box.x + 2 / this.#zoom, zone.box.y + 2 / this.#zoom); } }
     for (const line of this.#gameplayLines) {
       context.strokeStyle = colors[line.kind]; context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.stroke();
       const angle = Math.atan2(line.y2 - line.y1, line.x2 - line.x1), size = 6 / this.#zoom;
@@ -355,7 +355,7 @@ export class WorkspacePreview {
       else context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, x, y, width, height);
     }
     if (!this.#runtimeBoundsVisible) return; context.lineWidth = 2 / this.#zoom;
-    for (const body of this.#runtimeBodies) { const player = body.key === "player", shoot = body.key.startsWith("shoot:"), bomb = body.key.startsWith("bomb:"), enemy = body.key.startsWith("enemies:"); context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
+    for (const body of this.#runtimeBodies) { const player = body.kind === "player", shoot = body.kind === "shoot", bomb = body.kind === "bomb", enemy = body.kind === "enemy"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

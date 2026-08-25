@@ -112,6 +112,8 @@ class World
 
         bool shoot_exists;
         bool bomb_exists;
+        LevelObjectiveConfig objective;
+        bool level_completed;
 
         BitmapResource world_image;
 
@@ -154,6 +156,8 @@ class World
         CameraView* GetCurrentCameraView(Character* player);
 
         void  WorldStep(Character* player);
+        bool  IsLevelCompleted() const { return level_completed; }
+        bool  FreezeOnComplete() const { return objective.freeze_on_complete; }
 
         void  InitializePlatforms(const char* file);
         void  InitializeItems(const char* file, SoundHandler* sound_handler);

@@ -256,7 +256,7 @@ void EnemyIA::IAStepChaser(Keyboard &keyboard,
   // Keep the character centred while climbing in the shaft. Once it reaches
   // floor, preserve the horizontal key selected above so Character can leave
   // CLIMBING and transition to RUNNING.
-  if (state == CHAR_STATE_CLIMBING && !in_floor) {
+  if (ShouldCenterClimbingEnemy(state, in_stairs, over_stairs, in_floor)) {
     int keys = keyboard.GetKeys();
     keys &= ~KEY_LEFT;
     keys &= ~KEY_RIGHT;
