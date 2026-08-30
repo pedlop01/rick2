@@ -19,7 +19,7 @@ test("release uses only relative local assets", async () => {
 test("bundle contains the offline shell and visible startup failure", async () => {
   const bundle = await readFile(new URL("../dist/app.js", import.meta.url), "utf8");
   assert.match(bundle, /Rick2 Engine/);
-  assert.match(bundle, /No se pudo iniciar Rick2 Engine/);
+  assert.match(bundle, /Rick2 Engine could not start/);
 });
 
 test("schemas and validator are bundled for fully offline checks", async () => {

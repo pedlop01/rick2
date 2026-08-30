@@ -68,6 +68,23 @@ export class EntityDocumentModel {
     entity.x = nx; entity.y = ny; return true;
   }
 
+  resize(ref: EntityRef, width: number, height: number): boolean {
+    const entity = this.entity(ref); if (!entity || !Number.isFinite(width) || !Number.isFinite(height)) return false;
+    const nextWidth = Math.max(1, Math.round(width)), nextHeight = Math.max(1, Math.round(height));
+    if (placedGroups.includes(ref.group)) { const attributes = record(entity.attributes); attributes.width = nextWidth; attributes.height = nextHeight; return true; }
+    if (ref.group === "triggers") { const attributes = record(entity.attributes); attributes.width = nextWidth; attributes.height = nextHeight; return true; }
+    if (ref.group === "checkpoints") { entity.chk_width = nextWidth; entity.chk_height = nextHeight; return true; }
+    if (ref.group === "cameraViews") { entity.right_down_x = finite(entity.left_up_x) + nextWidth; entity.right_down_y = finite(entity.left_up_y) + nextHeight; return true; }
+    entity.bb_width = nextWidth; entity.bb_height = nextHeight; return true;
+  }
+
+  setBox(ref: EntityRef, box: EntityBox): boolean {
+    const entity = this.entity(ref); if (!entity) return false;
+    const x = ref.group === "lasers" || ref.group === "enemies" ? box.x - finite(entity.bb_x) : box.x;
+    const y = ref.group === "lasers" || ref.group === "enemies" ? box.y - finite(entity.bb_y) : box.y;
+    return this.move(ref, x, y) && this.resize(ref, box.width, box.height);
+  }
+
   translate(ref: EntityRef, dx: number, dy: number): boolean {
     const entity = this.entity(ref); if (!entity) return false;
     if (ref.group === "lasers" || ref.group === "enemies") return this.move(ref, finite(entity.x) + dx, finite(entity.y) + dy);

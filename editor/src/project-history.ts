@@ -12,7 +12,7 @@ export class ProjectHistory {
   get undoLabel(): string | null { return this.canUndo ? this.#entries[this.#cursor]!.label : null; }
   get redoLabel(): string | null { return this.canRedo ? this.#entries[this.#cursor + 1]!.label : null; }
   get isClean(): boolean { return this.#cursor === this.#cleanCursor; }
-  reset(project: Rick2Project, clean = true): void { this.#entries = [{ label: "Estado inicial", project: cloneProject(project) }]; this.#cursor = 0; this.#cleanCursor = clean ? 0 : -1; }
+  reset(project: Rick2Project, clean = true): void { this.#entries = [{ label: "Initial state", project: cloneProject(project) }]; this.#cursor = 0; this.#cleanCursor = clean ? 0 : -1; }
   markClean(): void { this.#cleanCursor = this.#cursor; }
   record(project: Rick2Project, label: string): void {
     if (this.#cursor < 0) return this.reset(project, false); if (this.#cleanCursor > this.#cursor) this.#cleanCursor = -1; this.#entries.splice(this.#cursor + 1); this.#entries.push({ label, project: cloneProject(project) });

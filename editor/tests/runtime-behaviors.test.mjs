@@ -13,6 +13,6 @@ test("runtime behaviors dispatch by semantic kind instead of entity key", () => 
 test("runtime behavior registration rejects ambiguity and missing handlers", () => {
   const registry = new RuntimeBehaviorRegistry().register("solid", () => undefined);
   assert.equal(registry.has("solid"), true);
-  assert.throws(() => registry.register("solid", () => undefined), /duplicado/);
-  assert.throws(() => registry.run("unknown", {}), /no registrado/);
+  assert.throws(() => registry.register("solid", () => undefined), /Duplicate/);
+  assert.throws(() => registry.run("unknown", {}), /Unregistered/);
 });

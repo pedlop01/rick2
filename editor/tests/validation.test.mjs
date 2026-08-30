@@ -52,22 +52,22 @@ test("semantic validation rejects duplicate IDs and broken references", () => {
   level.entities.checkpoints.push({ ...checkpoint, nxt_chks: [99] });
   writeLevel(project, level);
   const diagnostics = validateProject(project);
-  assert.ok(diagnostics.some((item) => item.message.includes("ID duplicado")));
-  assert.ok(diagnostics.some((item) => item.message.includes("Checkpoint inexistente")));
+  assert.ok(diagnostics.some((item) => item.message.includes("Duplicate ID")));
+  assert.ok(diagnostics.some((item) => item.message.includes("Checkpoint not found")));
 });
 
 test("asset validation rejects duplicate states, missing bitmaps and frames outside PNG bounds", () => {
   const project = createEmptyProject(); const level = readLevel(project); const definition = level.definitions["objects/bomb"];
   definition.states.push(structuredClone(definition.states[0])); definition.states[0].animation.sprites[0].width = 2; definition.states[1].animation.bitmap = "../../assets/images/missing.png"; writeLevel(project, level);
   const diagnostics = validateProject(project);
-  assert.ok(diagnostics.some((item) => item.message.includes("ID de estado duplicado")));
-  assert.ok(diagnostics.some((item) => item.message.includes("Asset inexistente")));
-  assert.ok(diagnostics.some((item) => item.message.includes("sale del bitmap")));
+  assert.ok(diagnostics.some((item) => item.message.includes("Duplicate state ID")));
+  assert.ok(diagnostics.some((item) => item.message.includes("Asset not found")));
+  assert.ok(diagnostics.some((item) => item.message.includes("exceeds")));
 });
 
 test("integral validation rejects invalid GIDs, geometry and tileset metadata", () => {
   const project = createEmptyProject(); const level = readLevel(project); level.map.layers.tiles[3] = 99; level.map.tileset.imageWidth = 9; level.entities.items.push({ id: 0, attributes: { ini_x: 30, ini_y: 20, width: 8, height: 8, definition: "objects/bomb" } }); writeLevel(project, level);
-  const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.path.endsWith("/tiles/3"))); assert.ok(diagnostics.some((item) => item.message.includes("Dimensiones declaradas"))); assert.ok(diagnostics.some((item) => item.message.includes("límites del mapa")));
+  const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.path.endsWith("/tiles/3"))); assert.ok(diagnostics.some((item) => item.message.includes("Declared dimensions"))); assert.ok(diagnostics.some((item) => item.message.includes("map boundaries")));
 });
 
 test("warnings are visible but do not block export", () => {
@@ -85,7 +85,7 @@ test("runtime profiles validate states, audio, geometry, objectives and disabled
   level.objective = { type: "reachZone", x: level.map.width * level.map.tileWidth, y: 0, width: 8, height: 8, onComplete: "freeze" };
   writeLevel(project, level); const diagnostics = validateProject(project);
   assert.ok(diagnostics.some((item) => item.path.includes("/playerStates/running") && item.message.includes("MISSING_RUN")));
-  assert.ok(diagnostics.some((item) => item.path.endsWith("/audio/shot") && item.message.includes("no existe")));
+  assert.ok(diagnostics.some((item) => item.path.endsWith("/audio/shot") && item.message.includes("does not exist")));
   assert.ok(diagnostics.some((item) => item.path === "/runtimeProfile/controller"));
   assert.ok(diagnostics.some((item) => item.path === "/objective"));
   assert.ok(diagnostics.some((item) => item.severity === "warning" && item.path.endsWith("/actionBindings/down")));
@@ -98,6 +98,6 @@ test("migration registry accepts v1 clones and rejects future versions", () => {
   assert.notEqual(prepared.document, level);
   assert.throws(
     () => prepareLevelForEditing({ ...level, formatVersion: 999 }),
-    /futura no soportada/,
+    /unsupported future version/,
   );
 });

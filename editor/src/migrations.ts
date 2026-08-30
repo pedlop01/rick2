@@ -14,21 +14,21 @@ export interface MigrationResult {
 
 export function prepareLevelForEditing(input: unknown): MigrationResult {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("El nivel debe contener un objeto JSON");
+    throw new Error("The level must contain a JSON object");
   }
   let document = structuredClone(input) as JsonObject;
   if (document.kind !== "rick2.level" || !Number.isInteger(document.formatVersion)) {
-    throw new Error("El documento no es un nivel Rick2 versionado");
+    throw new Error("The document is not a versioned Rick2 level");
   }
   const sourceVersion = document.formatVersion as number;
   const writableVersion = versions["rick2.level"].write;
   if (sourceVersion > writableVersion) {
-    throw new Error(`El nivel usa una versión futura no soportada: ${sourceVersion}`);
+    throw new Error(`The level uses an unsupported future version: ${sourceVersion}`);
   }
   while ((document.formatVersion as number) < writableVersion) {
     const version = document.formatVersion as number;
     const migrate = LEVEL_MIGRATIONS[version];
-    if (!migrate) throw new Error(`No existe migración desde la versión ${version}`);
+    if (!migrate) throw new Error(`No migration exists from version ${version}`);
     document = migrate(document);
   }
   return { document, migratedFrom: sourceVersion === writableVersion ? null : sourceVersion };

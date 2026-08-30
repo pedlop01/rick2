@@ -112,12 +112,12 @@ export const RICK_RUNTIME_BINDINGS: Readonly<RuntimeProfileBindings> = Object.fr
 });
 
 const positive = (value: number, name: string): number => {
-  if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} debe ser mayor que cero`);
+  if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} must be greater than zero`);
   return value;
 };
 
 const nonNegative = (value: number, name: string): number => {
-  if (!Number.isFinite(value) || value < 0) throw new Error(`${name} no puede ser negativo`);
+  if (!Number.isFinite(value) || value < 0) throw new Error(`${name} cannot be negative`);
   return value;
 };
 
@@ -141,10 +141,10 @@ export function playerControllerConfig(
   positive(config.deathRespawnTicks, "deathRespawnTicks");
   nonNegative(config.hitHoldTicks, "hitHoldTicks");
   if (config.crouchingHeight > config.standingHeight) {
-    throw new Error("crouchingHeight no puede superar standingHeight");
+    throw new Error("crouchingHeight cannot exceed standingHeight");
   }
   if (config.minimumVerticalSpeed > config.maximumVerticalSpeed) {
-    throw new Error("minimumVerticalSpeed no puede superar maximumVerticalSpeed");
+    throw new Error("minimumVerticalSpeed cannot exceed maximumVerticalSpeed");
   }
   return Object.freeze(config);
 }
@@ -166,10 +166,10 @@ export function sessionRules(
 ): Readonly<SessionRules> {
   const config = { ...RICK_SESSION_RULES, ...overrides };
   positive(config.initialLives, "initialLives");
-  if (!Number.isInteger(config.initialLives)) throw new Error("initialLives debe ser entero");
+  if (!Number.isInteger(config.initialLives)) throw new Error("initialLives must be an integer");
   if (config.deathAudioSlot !== null) {
     nonNegative(config.deathAudioSlot, "deathAudioSlot");
-    if (!Number.isInteger(config.deathAudioSlot)) throw new Error("deathAudioSlot debe ser entero");
+    if (!Number.isInteger(config.deathAudioSlot)) throw new Error("deathAudioSlot must be an integer");
   }
   return Object.freeze(config);
 }
@@ -185,24 +185,24 @@ export function runtimeProfileBindings(
   };
   for (const [group, states] of Object.entries({ player: bindings.playerStates, enemy: bindings.enemyStates, object: bindings.objectStates })) {
     for (const [name, state] of Object.entries(states)) {
-      if (typeof state !== "string" || state.length === 0) throw new Error(`${group}.${name} debe enlazar un estado`);
+      if (typeof state !== "string" || state.length === 0) throw new Error(`${group}.${name} must reference a state`);
     }
   }
   for (const [name, slot] of Object.entries(bindings.audio)) {
-    if (slot !== null && (!Number.isInteger(slot) || slot < 0)) throw new Error(`${name} debe enlazar un slot de audio válido`);
+    if (slot !== null && (!Number.isInteger(slot) || slot < 0)) throw new Error(`${name} must reference a valid audio slot`);
   }
   return Object.freeze({ playerStates: Object.freeze(bindings.playerStates), enemyStates: Object.freeze(bindings.enemyStates), objectStates: Object.freeze(bindings.objectStates), audio: Object.freeze(bindings.audio) });
 }
 
 export function levelObjective(value: unknown): Readonly<LevelObjective> {
   if (value === undefined) return Object.freeze({ type: "none" });
-  if (!value || typeof value !== "object") throw new Error("objective debe ser un objeto");
+  if (!value || typeof value !== "object") throw new Error("objective must be an object");
   const objective = value as Record<string, unknown>;
   if (objective.type === "none") return Object.freeze({ type: "none" });
-  if (objective.type !== "reachZone") throw new Error("objective.type no está soportado");
-  for (const coordinate of ["x", "y"] as const) if (!Number.isInteger(objective[coordinate])) throw new Error(`objective.${coordinate} debe ser entero`);
-  for (const dimension of ["width", "height"] as const) if (!Number.isInteger(objective[dimension]) || Number(objective[dimension]) <= 0) throw new Error(`objective.${dimension} debe ser entero positivo`);
-  if (objective.onComplete !== "continue" && objective.onComplete !== "freeze") throw new Error("objective.onComplete no está soportado");
+  if (objective.type !== "reachZone") throw new Error("objective.type is not supported");
+  for (const coordinate of ["x", "y"] as const) if (!Number.isInteger(objective[coordinate])) throw new Error(`objective.${coordinate} must be an integer`);
+  for (const dimension of ["width", "height"] as const) if (!Number.isInteger(objective[dimension]) || Number(objective[dimension]) <= 0) throw new Error(`objective.${dimension} must be a positive integer`);
+  if (objective.onComplete !== "continue" && objective.onComplete !== "freeze") throw new Error("objective.onComplete is not supported");
   return Object.freeze({ type: "reachZone", x: Number(objective.x), y: Number(objective.y), width: Number(objective.width), height: Number(objective.height), onComplete: objective.onComplete });
 }
 

@@ -21,7 +21,7 @@ export class LevelDocumentModel {
     this.project = project;
     this.path = project.manifest.initialLevel;
     const bytes = project.files.get(this.path);
-    if (!bytes) throw new Error(`No se encuentra ${this.path}`);
+    if (!bytes) throw new Error(`${this.path} was not found`);
     this.level = JSON.parse(strFromU8(bytes)) as EditableLevel;
   }
 

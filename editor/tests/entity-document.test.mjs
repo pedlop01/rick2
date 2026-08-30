@@ -4,6 +4,7 @@ import { EntityDocumentModel } from "../test-dist/entity-document.mjs";
 import { LevelDocumentModel } from "../test-dist/level-document.mjs";
 import { createEmptyProject } from "../test-dist/project-io.mjs";
 import { validateProject } from "../test-dist/validation.mjs";
+import { PreviewRuntime } from "../test-dist/preview-runtime.mjs";
 
 function modelWithItem() {
   const level = new LevelDocumentModel(createEmptyProject());
@@ -24,6 +25,27 @@ test("camera geometry uses canonical corner fields", () => {
   const model = new EntityDocumentModel(level); const ref = { group: "cameraViews", index: 0 };
   assert.deepEqual(model.box(ref), { x: 10, y: 20, width: 40, height: 50 }); model.translate(ref, 5, 7);
   assert.deepEqual(model.entity(ref), { id: 0, left_up_x: 15, left_up_y: 27, right_down_x: 55, right_down_y: 77 });
+  model.resize(ref, 64, 32); assert.deepEqual(model.box(ref), { x: 15, y: 27, width: 64, height: 32 });
+});
+test("trigger zones and laser bounds resize through their canonical fields", () => {
+  const level = new LevelDocumentModel(createEmptyProject()); const model = new EntityDocumentModel(level);
+  level.level.entities.triggers.push({ id: 0, attributes: { x: 0, y: 0, width: 8, height: 8 }, targets: { target: [] } });
+  const trigger = { group: "triggers", index: 0 }; model.resize(trigger, 24, 30); assert.deepEqual(model.box(trigger), { x: 0, y: 0, width: 24, height: 30 });
+  level.level.entities.lasers.push({ id: 1, x: 10, y: 20, bb_x: 2, bb_y: 3, bb_width: 8, bb_height: 4 }); const laser = { group: "lasers", index: 0 };
+  model.setBox(laser, { x: 30, y: 40, width: 16, height: 12 }); assert.deepEqual(model.box(laser), { x: 30, y: 40, width: 16, height: 12 }); assert.equal(model.entity(laser).x, 28); assert.equal(model.entity(laser).y, 37);
+});
+test("moving a laser updates both its functional origin and rebuilt runtime sprite", () => {
+  const level = new LevelDocumentModel(createEmptyProject());
+  level.level.entities.lasers.push({ id: 7, x: 10, y: 20, bb_x: 2, bb_y: 3, bb_width: 8, bb_height: 4, speed: 1, type: "horizontal", direction: "right", default_trigger: 1, definition: "objects/shoot" });
+  const model = new EntityDocumentModel(level); const ref = { group: "lasers", index: 0 };
+  model.translate(ref, 5, 7); model.flush();
+  assert.deepEqual(model.box(ref), { x: 17, y: 30, width: 8, height: 4 });
+  const runtime = new PreviewRuntime(level.level); const body = runtime.bodies.find((candidate) => candidate.key === "lasers:7");
+  assert.equal(body.spriteX, 15); assert.equal(body.spriteY, 27); assert.equal(body.x, 17); assert.equal(body.y, 30);
+  assert.equal(runtime.moveEntity("lasers", 7, 40, 50), true);
+  const moved = runtime.bodies.find((candidate) => candidate.key === "lasers:7"); assert.equal(moved.x, 40); assert.equal(moved.y, 50); assert.equal(moved.spriteX, 38); assert.equal(moved.spriteY, 47);
+  assert.equal(runtime.resizeEntity("lasers", 7, 18, 9), true); const resized = runtime.bodies.find((candidate) => candidate.key === "lasers:7"); assert.equal(resized.width, 18); assert.equal(resized.height, 9);
+  runtime.reset(); const reset = runtime.bodies.find((candidate) => candidate.key === "lasers:7"); assert.equal(reset.x, 40); assert.equal(reset.width, 18); assert.equal(reset.height, 9);
 });
 test("gameplay guides expose checkpoint links, routes, targets and AI zones", () => {
   const level = new LevelDocumentModel(createEmptyProject()); const entities = level.level.entities;
@@ -37,5 +59,5 @@ test("hitTestAll returns every overlapping entity in selectable order", () => { 
 
 test("checkpoint cycles are rejected before export", () => {
   const level = new LevelDocumentModel(createEmptyProject()); level.level.entities.checkpoints[0].nxt_chks = [0]; level.flush();
-  assert.ok(validateProject(level.project).some((diagnostic) => diagnostic.message.includes("ciclo")));
+  assert.ok(validateProject(level.project).some((diagnostic) => diagnostic.message.includes("cycle")));
 });

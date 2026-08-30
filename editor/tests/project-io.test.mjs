@@ -24,7 +24,7 @@ test("empty project survives a ZIP round trip without losing files", () => {
 
 test("project paths reject traversal, absolute and duplicate normalized names", () => {
   for (const path of ["../outside.json", "/root.json", "C:/root.json", "a//b.json", "a/./b.json"]) {
-    assert.throws(() => normalizeProjectPath(path), /no permitida/);
+    assert.throws(() => normalizeProjectPath(path), /not allowed/);
   }
   assert.throws(
     () => loadProjectFiles(new Map([
@@ -32,7 +32,7 @@ test("project paths reject traversal, absolute and duplicate normalized names", 
       ["folder\\file.json", new Uint8Array()],
       ["folder/file.json", new Uint8Array()],
     ])),
-    /duplicado/,
+    /Duplicate/,
   );
 });
 
@@ -50,7 +50,7 @@ test("asset references resolve relative to their JSON without escaping the proje
   );
   assert.throws(
     () => resolveProjectReference("levels/level1/level.json", "../../../outside.png"),
-    /sale del proyecto/,
+    /outside the project/,
   );
 });
 
@@ -58,7 +58,7 @@ test("project requires its manifests and every declared level", () => {
   assert.throws(() => loadProjectFiles(new Map()), /project\.json/);
   const project = createEmptyProject();
   project.files.delete(project.manifest.initialLevel);
-  assert.throws(() => loadProjectFiles(project.files), /Falta el nivel/);
+  assert.throws(() => loadProjectFiles(project.files), /Declared level is missing/);
 });
 
 test("generic platformer demo survives the standard ZIP round trip", () => {

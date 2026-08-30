@@ -37,10 +37,10 @@ export class TilePalette {
     this.#host.innerHTML = "";
     if (!this.#model || !this.#bitmap) return;
     const title = document.createElement("h3");
-    title.textContent = this.#layer === "collisions" ? "Tipo de colisión" : "Tileset";
+    title.textContent = this.#layer === "collisions" ? "Collision type" : "Tileset";
     this.#host.append(title);
     if (this.#layer === "collisions") {
-      const names = ["Sólido", "Plataforma", "Escalera", "Tope escalera"];
+      const names = ["Solid", "Platform", "Ladder", "Ladder top"];
       const list = document.createElement("div");
       list.className = "collision-palette";
       names.forEach((name, index) => {
@@ -59,7 +59,7 @@ export class TilePalette {
     canvas.width = map.tileset.columns * map.tileWidth * scale;
     canvas.height = Math.ceil(map.tileset.tileCount / map.tileset.columns) * map.tileHeight * scale;
     canvas.className = "tileset-palette";
-    canvas.title = `Tile seleccionado: ${this.#selected}`;
+    canvas.title = `Selected tile: ${this.#selected}`;
     const context = canvas.getContext("2d")!;
     context.imageSmoothingEnabled = false;
     context.drawImage(this.#bitmap, 0, 0, canvas.width, canvas.height);

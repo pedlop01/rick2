@@ -47,7 +47,7 @@ export class WorkspacePreview {
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas 2D no está disponible");
+    if (!context) throw new Error("Canvas 2D is unavailable");
     this.#canvas = canvas;
     this.#context = context;
     this.#observer = new ResizeObserver(() => this.#resizeAndDraw());
@@ -117,7 +117,7 @@ export class WorkspacePreview {
   async load(project: Rick2Project, editableMap?: TileMapDocument, fitView = true): Promise<void> {
     const levelPath = project.manifest.initialLevel;
     const bytes = project.files.get(levelPath);
-    if (!bytes) throw new Error(`No se encuentra ${levelPath}`);
+    if (!bytes) throw new Error(`${levelPath} was not found`);
     const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }> };
     const asset = getProjectAsset(project, levelPath, level.map.tileset.image);
     const extension = level.map.tileset.image.split(".").pop()?.toLowerCase();

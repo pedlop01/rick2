@@ -2,7 +2,7 @@ import { createEditorShell } from "./editor-shell";
 
 const host = document.querySelector<HTMLElement>("#app");
 if (!host) {
-  throw new Error("No se ha encontrado el contenedor de Rick2 Engine");
+  throw new Error("The Rick2 Engine container was not found");
 }
 
 try {
@@ -13,6 +13,6 @@ try {
   const alert = document.createElement("div");
   alert.className = "fatal-error";
   alert.setAttribute("role", "alert");
-  alert.textContent = `No se pudo iniciar Rick2 Engine: ${message}`;
+  alert.textContent = `Rick2 Engine could not start: ${message}`;
   host.append(alert);
 }

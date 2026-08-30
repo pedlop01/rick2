@@ -19,11 +19,11 @@ const JSON_INDENT = 2;
 export function normalizeProjectPath(input: string): string {
   const path = input.replaceAll("\\", "/");
   if (!path || path.startsWith("/") || /^[a-zA-Z]:/.test(path)) {
-    throw new Error(`Ruta de proyecto no permitida: ${input}`);
+    throw new Error(`Project path is not allowed: ${input}`);
   }
   const parts = path.split("/");
   if (parts.some((part) => !part || part === "." || part === "..")) {
-    throw new Error(`Ruta de proyecto no permitida: ${input}`);
+    throw new Error(`Project path is not allowed: ${input}`);
   }
   return parts.join("/");
 }
@@ -33,31 +33,31 @@ function parseJson<T>(bytes: Uint8Array, path: string): T {
     return JSON.parse(strFromU8(bytes)) as T;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`JSON no válido en ${path}: ${message}`);
+    throw new Error(`Invalid JSON in ${path}: ${message}`);
   }
 }
 
 function validateManifest(value: unknown): ProjectManifest {
   if (!value || typeof value !== "object") {
-    throw new Error("project.json debe contener un objeto");
+    throw new Error("project.json must contain an object");
   }
   const manifest = value as Partial<ProjectManifest>;
   if (manifest.formatVersion !== 1 || manifest.kind !== "rick2.project") {
-    throw new Error("Versión o tipo de proyecto no soportado");
+    throw new Error("Unsupported project version or type");
   }
   if (typeof manifest.id !== "string" || !/^[a-z0-9][a-z0-9._-]*$/.test(manifest.id)) {
-    throw new Error("El identificador del proyecto no es válido");
+    throw new Error("The project identifier is invalid");
   }
   if (typeof manifest.name !== "string" || !manifest.name.trim()) {
-    throw new Error("El proyecto necesita un nombre");
+    throw new Error("The project needs a name");
   }
   if (typeof manifest.initialLevel !== "string" || !Array.isArray(manifest.levels)) {
-    throw new Error("El manifiesto no declara sus niveles");
+    throw new Error("The manifest does not declare any levels");
   }
   const initialLevel = normalizeProjectPath(manifest.initialLevel);
   const levels = manifest.levels.map((path) => normalizeProjectPath(path));
   if (!levels.includes(initialLevel) || new Set(levels).size !== levels.length) {
-    throw new Error("El nivel inicial debe existir una sola vez en levels");
+    throw new Error("The initial level must appear exactly once in levels");
   }
   return { ...manifest, initialLevel, levels } as ProjectManifest;
 }
@@ -66,16 +66,16 @@ export function loadProjectFiles(input: ReadonlyMap<string, Uint8Array>): Rick2P
   const files = new Map<string, Uint8Array>();
   for (const [rawPath, bytes] of input) {
     const path = normalizeProjectPath(rawPath);
-    if (files.has(path)) throw new Error(`Archivo duplicado: ${path}`);
+    if (files.has(path)) throw new Error(`Duplicate file: ${path}`);
     files.set(path, bytes.slice());
   }
   const manifestBytes = files.get("project.json");
-  if (!manifestBytes) throw new Error("El proyecto no contiene project.json");
-  if (!files.has("game.json")) throw new Error("El proyecto no contiene game.json");
+  if (!manifestBytes) throw new Error("The project does not contain project.json");
+  if (!files.has("game.json")) throw new Error("The project does not contain game.json");
   const manifest = validateManifest(parseJson<unknown>(manifestBytes, "project.json"));
   for (const level of manifest.levels) {
     const bytes = files.get(level);
-    if (!bytes) throw new Error(`Falta el nivel declarado: ${level}`);
+    if (!bytes) throw new Error(`Declared level is missing: ${level}`);
     parseJson<unknown>(bytes, level);
   }
   return { manifest, files };
@@ -87,7 +87,7 @@ export function decodeProjectArchive(bytes: Uint8Array): Rick2Project {
     archive = unzipSync(bytes);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`No se pudo abrir el ZIP: ${message}`);
+    throw new Error(`The ZIP could not be opened: ${message}`);
   }
   return loadProjectFiles(new Map(
     Object.entries(archive).filter(([path]) => !path.endsWith("/")),
@@ -97,14 +97,14 @@ export function decodeProjectArchive(bytes: Uint8Array): Rick2Project {
 export function resolveProjectReference(fromFile: string, reference: string): string {
   if (!reference || reference.startsWith("/") || /^[a-zA-Z][a-zA-Z+.-]*:/.test(reference) ||
       reference.includes("\\")) {
-    throw new Error(`Referencia de asset no permitida: ${reference}`);
+    throw new Error(`Asset reference is not allowed: ${reference}`);
   }
   const parts = normalizeProjectPath(fromFile).split("/");
   parts.pop();
   for (const part of reference.split("/")) {
     if (!part || part === ".") continue;
     if (part === "..") {
-      if (!parts.length) throw new Error(`El asset sale del proyecto: ${reference}`);
+      if (!parts.length) throw new Error(`The asset points outside the project: ${reference}`);
       parts.pop();
     } else {
       parts.push(part);
@@ -120,7 +120,7 @@ export function getProjectAsset(
 ): Uint8Array {
   const path = resolveProjectReference(fromFile, reference);
   const bytes = project.files.get(path);
-  if (!bytes) throw new Error(`Asset no encontrado: ${path}`);
+  if (!bytes) throw new Error(`Asset not found: ${path}`);
   return bytes;
 }
 
@@ -141,7 +141,7 @@ function base64Bytes(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 
-export function createEmptyProject(id = "new-game", name = "Nuevo juego"): Rick2Project {
+export function createEmptyProject(id = "new-game", name = "New game"): Rick2Project {
   const levelPath = "levels/level1/level.json";
   const manifest: ProjectManifest = {
     formatVersion: 1,
@@ -308,6 +308,6 @@ export async function pickProjectDirectory(): Promise<FileSystemDirectoryHandle>
   const picker = (window as Window & {
     showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
   }).showDirectoryPicker;
-  if (!picker) throw new Error("Este navegador no permite abrir carpetas");
+  if (!picker) throw new Error("This browser does not support opening folders");
   return picker();
 }
