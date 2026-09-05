@@ -109,6 +109,15 @@ test("character events without a registered emitter produce a non-blocking warni
   assert.equal(hasValidationErrors(diagnostics), false);
 });
 
+test("declared gameplay events are valid character emitters", () => {
+  const project = createEmptyProject(); const level = readLevel(project);
+  level.gameplay = { events: [{ id: "openedDoor", description: "Door sequence completed" }] };
+  level.runtimeProfile = { characterForms: rickCharacterForms() };
+  level.runtimeProfile.characterForms.forms[0].stateMachine.states[0].transitions[0].conditions = [{ type: "event", event: "openedDoor" }];
+  writeLevel(project, level); const diagnostics = validateProject(project);
+  assert.equal(diagnostics.some((item) => item.message.includes("openedDoor") && item.message.includes("no registered runtime emitter")), false);
+});
+
 test("migration registry accepts v1 clones and rejects future versions", () => {
   const level = readLevel(createEmptyProject());
   const prepared = prepareLevelForEditing(level);

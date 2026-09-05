@@ -25,13 +25,14 @@ import { RICK_ACTION_BINDINGS, RICK_PLAYER_CAPABILITIES, RICK_PLAYER_CONTROLLER,
 import { readableDataLabel, readableDataPath } from "./ui-labels";
 import { createControlSection } from "./ui-controls";
 import { CharacterStateEditor } from "./character-state-editor";
+import { GameplayEditor } from "./gameplay-editor";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Collisions"],
 ] as const;
-type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile" | "states";
+type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile" | "states" | "gameplay";
 type ResizeCorner = "nw" | "ne" | "sw" | "se";
 
 function button(label: string, title?: string): HTMLButtonElement {
@@ -63,11 +64,12 @@ export function createEditorShell(host: HTMLElement): void {
     <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Layers</h2></div>
-      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="asset-controls" id="asset-controls" hidden></div><div class="state-controls" id="state-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
+      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="asset-controls" id="asset-controls" hidden></div><div class="state-controls" id="state-controls" hidden></div><div class="gameplay-controls" id="gameplay-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
     </aside>
     <main class="workspace" aria-label="Level canvas">
       <canvas tabindex="0" aria-label="Empty map preview"></canvas>
       <div class="state-graph" hidden></div>
+      <div class="gameplay-workspace" hidden></div>
       <div class="canvas-hint">Create or open a project to begin</div>
     </main>
     <aside class="panel inspector-panel" aria-labelledby="inspector-title">
@@ -120,6 +122,8 @@ export function createEditorShell(host: HTMLElement): void {
   const assetControls = requiredElement<HTMLElement>(host, "#asset-controls");
   const stateControls = requiredElement<HTMLElement>(host, "#state-controls");
   const stateGraph = requiredElement<HTMLElement>(host, ".state-graph");
+  const gameplayControls = requiredElement<HTMLElement>(host, "#gameplay-controls");
+  const gameplayWorkspace = requiredElement<HTMLElement>(host, ".gameplay-workspace");
   const projectDialog = requiredElement<HTMLDialogElement>(host, ".project-dialog");
   const projectForm = requiredElement<HTMLFormElement>(projectDialog, "form");
   const projectNameInput = requiredElement<HTMLInputElement>(projectForm, "[name=projectName]");
@@ -224,6 +228,7 @@ export function createEditorShell(host: HTMLElement): void {
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
     stateEditor.bind(levelModel.level, commitStateChange, () => ({ form: runtime?.playerForm, state: runtime?.playerDeclaredState }));
+    gameplayEditor.bind(levelModel.level, commitStateChange);
     stopRuntime(); runtimePreviewActive = false; placingPlayer = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); configureRuntimeAudio(project, levelModel.level); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
@@ -511,6 +516,7 @@ export function createEditorShell(host: HTMLElement): void {
     asset: { status: "Manage assets", left: "Asset library", inspector: "Selected asset", canvas: "Map view" },
     profile: { status: "Configure game", left: "Configuration", inspector: "Game rules", canvas: "Map view" },
     states: { status: "Edit character states", left: "Character forms", inspector: "State properties", canvas: "Character state graph" },
+    gameplay: { status: "Edit gameplay logic", left: "Gameplay", inspector: "Gameplay properties", canvas: "Gameplay program overview" },
   };
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -520,10 +526,10 @@ export function createEditorShell(host: HTMLElement): void {
     if (editMenuSummary) editMenuSummary.textContent = `Edit · ${presentation.status}`;
     status.textContent = presentation.status;
   };
-  for (const [id, label, shortcut] of [["pencil", "Pencil", "P"], ["eraser", "Eraser", "E"], ["fill", "Fill", "F"], ["select", "Selection", "S"], ["entity", "Entities", "O"], ["asset", "Assets", "A"], ["profile", "Profile", "R"], ["states", "Character states", "M"]] as const) {
+  for (const [id, label, shortcut] of [["pencil", "Pencil", "P"], ["eraser", "Eraser", "E"], ["fill", "Fill", "F"], ["select", "Selection", "S"], ["entity", "Entities", "O"], ["asset", "Assets", "A"], ["profile", "Profile", "R"], ["states", "Character states", "M"], ["gameplay", "Gameplay logic", "L"]] as const) {
     const control = button(label, `Shortcut: ${shortcut}`); control.setAttribute("aria-keyshortcuts", shortcut);
     showShortcut(control, shortcut);
-    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset" || id === "profile" || id === "states"; paletteHost.hidden = id === "entity" || id === "asset" || id === "profile" || id === "states"; canvas.hidden = id === "states"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); if (id === "states") stateEditor.show(); else stateEditor.hide(); if (id === "profile") renderProfileInspector(); else if (id !== "asset" && id !== "states") renderDiagnostics(session.project ? validateProject(session.project) : []); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
+    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; const special = id === "asset" || id === "profile" || id === "states" || id === "gameplay"; layerList.hidden = special; paletteHost.hidden = id === "entity" || special; canvas.hidden = id === "states" || id === "gameplay"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); if (id === "states") stateEditor.show(); else stateEditor.hide(); if (id === "gameplay") gameplayEditor.show(); else gameplayEditor.hide(); if (id === "profile") renderProfileInspector(); else if (id !== "asset" && id !== "states" && id !== "gameplay") renderDiagnostics(session.project ? validateProject(session.project) : []); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
@@ -598,7 +604,8 @@ export function createEditorShell(host: HTMLElement): void {
   const palette = new TilePalette(paletteHost);
   const assetEditor = new AssetEditor(assetControls, inspector);
   const stateEditor = new CharacterStateEditor(stateControls, inspector, stateGraph);
-  const commitStateChange = (message: string): void => { if (!levelModel) return; levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); refreshProjectState(message); stateEditor.render(); };
+  const gameplayEditor = new GameplayEditor(gameplayControls, inspector, gameplayWorkspace);
+  const commitStateChange = (message: string): void => { if (!levelModel) return; levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); refreshProjectState(message); if (activeTool === "states") stateEditor.render(); if (activeTool === "gameplay") gameplayEditor.render(); };
   assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map, false).then(() => palette.load(session.project!, levelModel!)); });
   palette.setSelectListener((gid) => { status.textContent = `Selected GID: ${gid}`; });
   preview.start();
@@ -763,7 +770,7 @@ export function createEditorShell(host: HTMLElement): void {
     if (runtimePreviewActive) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement || event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset", r: "profile", m: "states" }; const tool = shortcuts[event.key.toLowerCase()];
+    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset", r: "profile", m: "states", l: "gameplay" }; const tool = shortcuts[event.key.toLowerCase()];
     if (tool) { toolButtons.get(tool)?.click(); event.preventDefault(); return; }
     if (event.key.toLowerCase() === "g") { grid.click(); event.preventDefault(); }
     if (event.key === "0") { fit.click(); event.preventDefault(); }

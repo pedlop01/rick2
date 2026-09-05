@@ -39,6 +39,7 @@ Trigger::Trigger(
   player_prev_state = CHAR_STATE_STOP;
 
   steps = 0;
+  gameplay_program = NULL;
 }
 
 Trigger::~Trigger() {
@@ -68,6 +69,8 @@ void Trigger::AddTarget(Object* _object, int _delay, bool _trigger, bool _trigge
                                                    _trigger_cond);
   targets.push_back(trigger_target);
 }
+
+void Trigger::ConfigureGameplay(GameplayProgram* program, const nlohmann::json& definition) { gameplay_program = program; gameplay_definition = definition; if (gameplay_program) gameplay_program->ValidateTrigger(gameplay_definition); }
 
 bool Trigger::InTrigger(int _x, int _y, int _width, int _height) {
   return RectanglesOverlap(_x, _y, _width, _height,
@@ -110,7 +113,11 @@ void Trigger::TriggerStep(int _x, int _y, int _width, int _height,
     player_was_in_trigger = player_in_trigger;
     player_prev_state = _state;
 
-    if (expected_event && expected_face) {
+    bool gameplay_matches = true;
+    if (gameplay_program && gameplay_definition.contains("conditions")) for (nlohmann::json::const_iterator condition = gameplay_definition.at("conditions").begin(); condition != gameplay_definition.at("conditions").end(); ++condition) if (!gameplay_program->Matches(*condition)) gameplay_matches = false;
+    if (expected_event && expected_face && gameplay_matches) {
+      if (gameplay_program && gameplay_definition.contains("actions")) for (nlohmann::json::const_iterator action = gameplay_definition.at("actions").begin(); action != gameplay_definition.at("actions").end(); ++action) gameplay_program->Execute(*action);
+      if (gameplay_program && gameplay_definition.contains("sequence")) gameplay_program->StartSequence(gameplay_definition.at("sequence").get<std::string>());
       steps = 0;
       trigger_targets = true;
       //printf("[Trigger %d] Initiate targets for this trigger!\n", id);

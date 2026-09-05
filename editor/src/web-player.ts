@@ -83,7 +83,8 @@ export class WebPlayer {
     this.#activateCheckpoint();
     if (this.#y > this.#map.height * this.#map.tileHeight + config.standingHeight) this.kill();
   }
-  #dispatchStateEvent(event: string, input: PlayerInput, platforms: readonly PlayerPlatform[] = [], obstacles: readonly PlayerObstacle[] = []): void {
+  dispatchGameplayEvent(event: string): void { this.#dispatchStateEvent(event, { left: false, right: false, up: false, down: false, action: false }); }
+  #dispatchStateEvent(event: string, input: PlayerInput = { left: false, right: false, up: false, down: false, action: false }, platforms: readonly PlayerPlatform[] = [], obstacles: readonly PlayerObstacle[] = []): void {
     const grounded = this.#grounded(platforms, obstacles), onStairs = this.#capabilities.climb && this.#touchingStairs(), canDescend = this.#capabilities.climb && this.#canDescendStairs(), canStand = this.#canStand(obstacles);
     this.#forms.evaluate({ input, signals: { grounded, onStairs, canDescendStairs: canDescend, canStand, ceilingBlocked: !canStand }, events: new Set([event]), x: this.#x, y: this.#y });
   }

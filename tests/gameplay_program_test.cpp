@@ -1,0 +1,9 @@
+#include "../src/gameplay_program.h"
+#include <cassert>
+#include <iostream>
+int main() {
+  const nlohmann::json definition = nlohmann::json::parse(R"({"flags":[{"id":"doorOpen","type":"boolean","initial":false},{"id":"keys","type":"number","initial":0}],"events":[{"id":"doorOpened"}],"sequences":[{"id":"unlock","steps":[{"type":"action","action":{"type":"incrementFlag","flag":"keys","amount":1}},{"type":"parallel","steps":[{"type":"action","action":{"type":"setFlag","flag":"doorOpen","value":true}},{"type":"serial","steps":[{"type":"wait","ticks":2},{"type":"action","action":{"type":"emitEvent","event":"doorOpened"}}]}]}]}]})");
+  GameplayProgram state(definition); std::string emitted; state.SetEventSink([&emitted](const std::string& event) { emitted = event; }); state.StartSequence("unlock"); state.StepSequences(); assert(state.Flag("keys") == 1); assert(state.Flag("doorOpen") == true); assert(!state.HasEvent("doorOpened")); state.BeginTick(); state.StepSequences(); assert(!state.HasEvent("doorOpened")); state.BeginTick(); state.StepSequences(); assert(state.HasEvent("doorOpened")); assert(emitted == "doorOpened"); state.BeginTick(); assert(!state.HasEvent("doorOpened")); state.Reset(); assert(state.Flag("keys") == 0); assert(state.Flag("doorOpen") == false);
+  state.ValidateTrigger(nlohmann::json::parse(R"({"conditions":[{"type":"flag","flag":"keys","comparison":"equal","value":0}],"actions":[{"type":"setFlag","flag":"doorOpen","value":true}],"sequence":"unlock"})"));
+  bool rejected = false; try { GameplayProgram invalid(nlohmann::json::parse(R"({"flags":[{"id":"ready","type":"boolean","initial":false}],"sequences":[{"id":"bad","steps":[{"type":"action","action":{"type":"incrementFlag","flag":"ready","amount":1}}]}]})")); } catch (...) { rejected = true; } assert(rejected); std::cout << "gameplay program ok\n";
+}

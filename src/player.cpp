@@ -178,6 +178,17 @@ void Player::Reset() {
   if (forms) { forms->Reset(pos_x, pos_y, face == CHAR_DIR_LEFT ? "left" : "right"); ApplyFormProfile(forms->ActiveDefinition()); pos_y = initial_y; state = BehaviorState(ActiveState(*forms)); SelectFormAnimation(); }
 }
 
+void Player::DispatchGameplayEvent(const std::string& event) {
+  if (!forms) return;
+  CharacterStateContext context; context.x = pos_x; context.y = pos_y;
+  context.signals["grounded"] = !inAir; context.signals["onStairs"] = inStairs;
+  context.signals["canDescendStairs"] = overStairs; context.signals["canStand"] = !collisionHeadOrig;
+  context.signals["ceilingBlocked"] = collisionHeadOrig; context.events.insert(event);
+  const std::string previous_form = forms->ActiveForm(); forms->Evaluate(context);
+  if (forms->ActiveForm() != previous_form) ApplyFormProfile(forms->ActiveDefinition());
+  state = BehaviorState(ActiveState(*forms)); SelectFormAnimation();
+}
+
 void Player::ComputeNextState(World* map, Keyboard& keyboard) {
   if (!forms) { Character::ComputeNextState(map, keyboard); return; }
   const int old_state = state, old_direction = direction; prevState = state;

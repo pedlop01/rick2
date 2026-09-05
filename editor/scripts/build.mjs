@@ -42,7 +42,7 @@ await build({
   target: ["node18"],
 });
 await build({
-  entryPoints: [path.join(root, "src/validation.ts"), path.join(root, "src/migrations.ts"), path.join(root, "src/map-view.ts"), path.join(root, "src/level-document.ts"), path.join(root, "src/entity-document.ts"), path.join(root, "src/asset-document.ts"), path.join(root, "src/project-history.ts"), path.join(root, "src/preview-runtime.ts"), path.join(root, "src/platformer-core.ts"), path.join(root, "src/runtime-behaviors.ts"), path.join(root, "src/web-player.ts"), path.join(root, "src/character-state-machine.ts"), path.join(root, "src/character-forms.ts")],
+  entryPoints: [path.join(root, "src/validation.ts"), path.join(root, "src/migrations.ts"), path.join(root, "src/map-view.ts"), path.join(root, "src/level-document.ts"), path.join(root, "src/entity-document.ts"), path.join(root, "src/asset-document.ts"), path.join(root, "src/project-history.ts"), path.join(root, "src/preview-runtime.ts"), path.join(root, "src/platformer-core.ts"), path.join(root, "src/runtime-behaviors.ts"), path.join(root, "src/web-player.ts"), path.join(root, "src/character-state-machine.ts"), path.join(root, "src/character-forms.ts"), path.join(root, "src/gameplay-program.ts")],
   outdir: testOutput,
   outExtension: { ".js": ".mjs" },
   bundle: true,

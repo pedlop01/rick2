@@ -28,6 +28,7 @@
       "properties": { "initialLives": { "$ref": "#/$defs/positiveInteger" } }
     },
     "runtimeProfile": { "$ref": "#/$defs/runtimeProfile" },
+    "gameplay": { "$ref": "#/$defs/gameplayProgram" },
     "objective": { "$ref": "#/$defs/objective" },
     "camera": {
       "allOf": [
@@ -89,6 +90,38 @@
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "positiveInteger": { "type": "integer", "minimum": 1 },
     "nullableAudioSlot": { "type": ["integer", "null"], "minimum": 0 },
+    "gameplayProgram": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "flags": { "type": "array", "items": { "$ref": "#/$defs/gameplayFlag" } },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/gameplayEvent" } },
+        "sequences": { "type": "array", "items": { "$ref": "#/$defs/gameplaySequence" } }
+      }
+    },
+    "gameplayFlag": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["id", "type", "initial"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "type": { "const": "boolean" }, "initial": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "type", "initial"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "type": { "const": "number" }, "initial": { "type": "number" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "type", "initial"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "type": { "const": "string" }, "initial": { "type": "string" } } }
+      ]
+    },
+    "gameplayEvent": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "description": { "type": "string" } } },
+    "gameplayCondition": { "oneOf": [
+      { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "event" }, "event": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "flag", "comparison", "value"], "properties": { "type": { "const": "flag" }, "flag": { "$ref": "#/$defs/nonEmptyString" }, "comparison": { "enum": ["equal", "notEqual", "greater", "greaterOrEqual", "lower", "lowerOrEqual"] }, "value": { "type": ["boolean", "number", "string"] } } }
+    ] },
+    "gameplayAction": { "oneOf": [
+      { "type": "object", "additionalProperties": false, "required": ["type", "flag", "value"], "properties": { "type": { "const": "setFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" }, "value": { "type": ["boolean", "number", "string"] } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "flag"], "properties": { "type": { "const": "toggleFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "flag", "amount"], "properties": { "type": { "const": "incrementFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" }, "amount": { "type": "number" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "emitEvent" }, "event": { "$ref": "#/$defs/nonEmptyString" } } }
+    ] },
+    "gameplayStep": { "oneOf": [
+      { "type": "object", "additionalProperties": false, "required": ["type", "action"], "properties": { "type": { "const": "action" }, "action": { "$ref": "#/$defs/gameplayAction" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "ticks"], "properties": { "type": { "const": "wait" }, "ticks": { "$ref": "#/$defs/positiveInteger" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "steps"], "properties": { "type": { "enum": ["serial", "parallel"] }, "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gameplayStep" } } } }
+    ] },
+    "gameplaySequence": { "type": "object", "additionalProperties": false, "required": ["id", "steps"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gameplayStep" } } } },
     "runtimeProfile": {
       "type": "object",
       "additionalProperties": false,
@@ -502,7 +535,7 @@
       ] } }
     },
     "trigger": {
-      "type": "object", "additionalProperties": false, "required": ["id", "attributes", "targets"],
+      "type": "object", "additionalProperties": false, "required": ["id", "attributes"],
       "properties": {
         "id": { "$ref": "#/$defs/nonNegativeInteger" },
         "attributes": {
@@ -515,7 +548,15 @@
             "action": { "enum": ["enters", "stays", "exits", "hits"] }, "face": { "enum": ["any", "left", "right"] }
           }
         },
-        "targets": { "$ref": "#/$defs/triggerTargets" }
+        "targets": { "$ref": "#/$defs/triggerTargets" },
+        "gameplay": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "conditions": { "type": "array", "items": { "$ref": "#/$defs/gameplayCondition" } },
+            "actions": { "type": "array", "items": { "$ref": "#/$defs/gameplayAction" } },
+            "sequence": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
       }
     },
     "enemyArray": { "type": "array", "items": { "$ref": "#/$defs/enemy" } },

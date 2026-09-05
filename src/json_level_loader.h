@@ -68,6 +68,7 @@ const nlohmann::json& GetLevelEntities(const char* group);
 const std::string& GetPlayerDefinition();
 const nlohmann::json& GetProjectileDefinition(const char* projectile);
 const nlohmann::json& GetRuntimeProfile();
+const nlohmann::json& GetGameplayProgramDefinition();
 PlayerControllerConfig GetRuntimePlayerControllerConfig();
 PlayerGameplayConfig GetRuntimePlayerGameplayConfig();
 int ResolveCharacterAnimationStateId(const char* definition,

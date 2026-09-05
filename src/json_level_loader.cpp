@@ -276,6 +276,7 @@ const nlohmann::json& GetProjectileDefinition(const char* projectile) {
   }
 }
 const nlohmann::json& GetRuntimeProfile() { return runtime_profile; }
+const nlohmann::json& GetGameplayProgramDefinition() { static const json empty = json::object(); return package_data.contains("gameplay") ? package_data.at("gameplay") : empty; }
 PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, 1.0f, 3.0f,
                                    0.1f, 2.0f, 40, 80, 2.0f, 70, 20};

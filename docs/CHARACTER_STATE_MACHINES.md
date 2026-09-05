@@ -168,5 +168,7 @@ Las condiciones de tipo `event` se eligen desde un catálogo compartido por la
 interfaz y el validador. La primera versión registra `killed` (daño mortal) y
 `landed` (fin de salto o caída), e indica en el propio selector cuándo los emite
 el runtime. Un nombre antiguo o desconocido se conserva al cargar, pero aparece
-como advertencia porque no podrá ocurrir sin un emisor. La declaración y emisión
-de eventos personalizados forma parte de la tarea 41.
+como advertencia porque no podrá ocurrir sin un emisor. Los eventos
+personalizados se declaran ahora en el programa de gameplay y aparecen en el
+mismo selector; una acción o secuencia `emitEvent` los entrega al grafo en web
+y C++. El contrato completo está en `GAMEPLAY_PROGRAMS.md`.

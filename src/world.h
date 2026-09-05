@@ -30,6 +30,7 @@
 #include "data_loading.h"
 #include "json_level_loader.h"
 #include "resource_cache.h"
+#include "gameplay_program.h"
 
 using namespace std;
 
@@ -114,6 +115,7 @@ class World
         bool bomb_exists;
         LevelObjectiveConfig objective;
         bool level_completed;
+        GameplayProgram* gameplay;
 
         BitmapResource world_image;
 

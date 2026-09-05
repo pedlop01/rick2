@@ -62,6 +62,27 @@ class LevelSchemaTest(unittest.TestCase):
         configured["objective"]["width"] = 0
         self.assertTrue(list(self.validator.iter_errors(configured)))
 
+    def test_gameplay_program_and_gameplay_only_trigger_are_typed(self):
+        configured = copy.deepcopy(self.level)
+        configured["gameplay"] = {
+            "flags": [{"id": "doorOpen", "type": "boolean", "initial": False}],
+            "events": [{"id": "doorOpened"}],
+            "sequences": [{"id": "openDoor", "steps": [
+                {"type": "parallel", "steps": [
+                    {"type": "action", "action": {"type": "setFlag", "flag": "doorOpen", "value": True}},
+                    {"type": "action", "action": {"type": "emitEvent", "event": "doorOpened"}},
+                ]}
+            ]}],
+        }
+        configured["entities"]["triggers"].append({
+            "id": 999,
+            "attributes": {"x": 8, "y": 8, "width": 16, "height": 16, "recursive": 0, "onehot": 1, "action": "enters", "face": "any"},
+            "gameplay": {"conditions": [{"type": "flag", "flag": "doorOpen", "comparison": "equal", "value": False}], "sequence": "openDoor"},
+        })
+        self.assertEqual(list(self.validator.iter_errors(configured)), [])
+        configured["gameplay"]["flags"][0]["initial"] = "wrong"
+        self.assertTrue(list(self.validator.iter_errors(configured)))
+
 
 if __name__ == "__main__":
     unittest.main()

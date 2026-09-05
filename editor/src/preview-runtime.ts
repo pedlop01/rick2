@@ -3,6 +3,7 @@ import { levelObjective, runtimeProfileBindings, sessionRules, type LevelObjecti
 import { RuntimeBehaviorRegistry } from "./runtime-behaviors";
 import { WebPlayer, type PlayerInput, type PlayerObstacle, type PlayerPlatform, type PlayerSnapshot } from "./web-player";
 import type { CharacterFormsDefinition } from "./character-forms";
+import { GameplayState, validateGameplayTrigger, type GameplayAction, type GameplayCondition, type GameplayFlagValue, type GameplayProgramDefinition, type GameplaySequence } from "./gameplay-program";
 
 export type RuntimeBodyKind = "player" | "platform" | "hazard" | "item" | "block" | "background" | "laser" | "enemy" | "shoot" | "bomb";
 export interface RuntimeBody { key: string; kind: RuntimeBodyKind; x: number; y: number; width: number; height: number; frame: number; definition?: string; state?: string; face?: "left" | "right"; spriteX?: number; spriteY?: number; animationOnce?: boolean; spriteScale?: number; spriteVisible?: boolean; }
@@ -13,7 +14,7 @@ interface BodyTraits { solid: boolean; damaging: boolean; collectible: boolean; 
 interface PickupBehavior { mode: "instant" | "rise"; audioSlot: number | null; durationTicks: number; riseSpeed: number; }
 interface MovingBody extends RuntimeBody { kind: MovingBodyKind; traits: BodyTraits; actions: Array<Record<string, unknown>>; action: number; progress: number; wait: number; recursive: boolean; visible: boolean; active: boolean; condActions: boolean; oneUse?: boolean; used?: boolean; stopInactive?: boolean; destructionMode?: "instant" | "animated" | "escape"; pickup?: PickupBehavior; escapeRemaining?: number; fallSpeed?: number; laser?: LaserMotion; }
 interface RuntimeTarget { key: string; delay: number; trigger: boolean; triggerCond: boolean; completed: boolean; }
-interface RuntimeTrigger { key: string; x: number; y: number; width: number; height: number; action: string; face: string; recursive: boolean; wasIn: boolean; alreadyTriggered: boolean; firing: boolean; steps: number; previousAction: boolean; targets: RuntimeTarget[]; }
+interface RuntimeTrigger { key: string; x: number; y: number; width: number; height: number; action: string; face: string; recursive: boolean; wasIn: boolean; alreadyTriggered: boolean; firing: boolean; steps: number; previousAction: boolean; targets: RuntimeTarget[]; conditions: GameplayCondition[]; gameplayActions: GameplayAction[]; sequence?: string; }
 interface RuntimeCameraView { id: number; left: number; top: number; right: number; bottom: number; }
 interface TransientBody extends RuntimeBody { kind: "shoot" | "bomb"; vx: number; vy: number; age: number; fuse: number; explosion: number; exploding: boolean; bbX: number; bbY: number; bbWidth: number; bbHeight: number; contactBlockKey?: string; }
 type EnemyAIKind = "walker" | "chaser";
@@ -25,6 +26,7 @@ function list(value: unknown): unknown[] { return Array.isArray(value) ? value :
 const NO_TRAITS: BodyTraits = Object.freeze({ solid: false, damaging: false, collectible: false, destructible: false });
 
 const NO_INPUT: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
+const gameplayStates = new WeakMap<PreviewRuntime, { state: GameplayState; sequences: GameplaySequence[] }>();
 export class PreviewRuntime {
   readonly #source: EditableLevel; readonly #player: WebPlayer; readonly #sessionRules: Readonly<SessionRules>; readonly #bindings: Readonly<RuntimeProfileBindings>; readonly #objective: Readonly<LevelObjective>; readonly #bodyBehaviors: RuntimeBehaviorRegistry<MovingBodyKind, MovingBody>; readonly #enemyBehaviors: RuntimeBehaviorRegistry<EnemyAIKind, EnemyStepContext>; #tick = 0; #playerAnimationState = "stop"; #playerAnimationTicks = 0; #playerAnimationMoving = false; #bodies: MovingBody[] = []; #enemies: EnemyBody[] = []; #transients: TransientBody[] = []; #triggers: RuntimeTrigger[] = []; #cameraViews: RuntimeCameraView[] = []; #cameraViewsEnabled = true; #cameraFrame = { x: 0, y: 0, width: 256, height: 200, viewId: -1 }; #audioEvents: number[] = []; #invulnerable = false; #dangerContact = false; #lives = 3; #gameOver = false; #completed = false;
   constructor(level: EditableLevel, options: PreviewRuntimeOptions = {}) {
@@ -36,6 +38,7 @@ export class PreviewRuntime {
     const profileActions = record(profile.actionBindings) as Partial<PlayerActionBindings>;
     const characterForms = profile.characterForms as CharacterFormsDefinition | undefined;
     this.#player = new WebPlayer(this.#source, { ...profileController, ...options.playerController }, { ...profileCapabilities, ...options.playerCapabilities }, { ...profileActions, ...options.playerActionBindings }, characterForms);
+    gameplayStates.set(this, { state: new GameplayState(record(this.#source).gameplay as GameplayProgramDefinition | undefined, (event) => this.#player.dispatchGameplayEvent(event)), sequences: [] });
     const levelSession = record(this.#source.session);
     this.#sessionRules = sessionRules({ initialLives: number(levelSession.initialLives, 3), ...record(profile.session) as Partial<SessionRules>, ...options.sessionRules });
     const profileBindings = record(profile.bindings);
@@ -68,6 +71,9 @@ export class PreviewRuntime {
   get completed(): boolean { return this.#completed; }
   get cameraViewsEnabled(): boolean { return this.#cameraViewsEnabled; }
   get cameraFrame(): Readonly<{ x: number; y: number; width: number; height: number; viewId: number }> { return this.#cameraFrame; }
+  gameplayFlag(id: string): GameplayFlagValue { return gameplayStates.get(this)!.state.flag(id); }
+  gameplayEvent(id: string): boolean { return gameplayStates.get(this)!.state.event(id); }
+  startGameplaySequence(id: string): void { const gameplay = gameplayStates.get(this)!; gameplay.sequences.push(gameplay.state.sequence(id)); }
   setInvulnerable(enabled: boolean): void { this.#invulnerable = enabled; }
   setCameraViewsEnabled(enabled: boolean): void { this.#cameraViewsEnabled = enabled; this.#updateCamera(true); }
   drainAudioEvents(): number[] { return this.#audioEvents.splice(0); }
@@ -97,6 +103,7 @@ export class PreviewRuntime {
   }
   get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot, playerDefinition = this.#player.activeDefinition ?? String(record(this.#source.player).definition ?? "characters/rick"), playerState = this.#player.activeAnimation ?? this.#bindings.playerStates[player.state]; return [...this.#bodies.filter((body) => body.visible), ...this.#enemies.filter((enemy) => enemy.alive).map((enemy) => ({ ...enemy, state: enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : this.#bindings.enemyStates.running, face: enemy.direction > 0 ? "right" as const : "left" as const, animationOnce: enemy.dyingTicks > 0, spriteVisible: enemy.frozenTicks === 0 || Math.floor((100 - enemy.frozenTicks) / 4) % 2 === 0 })), ...this.#transients, { key: "player", kind: "player", x: player.collisionX, y: player.collisionY, width: player.collisionWidth, height: player.collisionHeight, frame: this.#playerAnimationTicks, definition: playerDefinition, state: playerState, face: player.face, spriteX: player.x, spriteY: player.y, animationOnce: player.state === "crouching" && !this.#playerAnimationMoving, spriteScale: this.#player.deathScale }]; }
   reset(): void {
+    const gameplay = gameplayStates.get(this)!; const gameplayState = gameplay.state; gameplay.state.reset(); gameplay.sequences.length = 0;
     this.#tick = 0; this.#lives = this.#sessionRules.initialLives; this.#gameOver = false; this.#completed = false; this.#player.reset(); this.#playerAnimationState = this.#player.snapshot.state; this.#playerAnimationTicks = 0; this.#playerAnimationMoving = false; this.#dangerContact = false; this.#bodies = []; this.#enemies = []; this.#transients = []; this.#triggers = []; this.#cameraViews = []; this.#audioEvents = []; const entities = record(this.#source.entities);
     for (const group of ["platforms", "hazards"]) for (const raw of list(entities[group])) { const entity = record(raw); const attributes = record(entity.attributes); const actions = list(record(entity.actions).action).map(record); const active = group === "hazards" ? Boolean(attributes.trigger) : attributes.ini_state === undefined || attributes.ini_state === "moving"; this.#bodies.push({ key: `${group}:${String(entity.id)}`, kind: group === "hazards" ? "hazard" : "platform", traits: group === "hazards" ? { ...NO_TRAITS, damaging: true } : NO_TRAITS, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, definition: String(attributes.definition ?? ""), state: active ? "OBJ_STATE_MOVING" : "OBJ_STATE_STOP", actions, action: 0, progress: 0, wait: 0, recursive: group === "hazards" ? Boolean(attributes.trigger) : Boolean(attributes.recursive), visible: group === "platforms" ? attributes.visible !== 0 : active || !Boolean(attributes.stop_inactive), active, condActions: false, oneUse: group === "platforms" && Boolean(attributes.one_use), used: false, stopInactive: group === "hazards" && Boolean(attributes.stop_inactive) }); }
     for (const group of ["items", "blocks"]) for (const raw of list(entities[group])) { const entity = record(raw), attributes = record(entity.attributes), definition = String(attributes.definition ?? ""), definitionData = record(record(this.#source.definitions)[definition]), definitionName = String(definitionData.name ?? definition.split("/").pop() ?? ""), bonus = group === "items" && definitionName === "bonus", explosive = attributes.exploits === undefined || Boolean(attributes.exploits); this.#bodies.push({ key: `${group}:${String(entity.id)}`, kind: group === "items" ? "item" : "block", traits: group === "items" ? { ...NO_TRAITS, collectible: true, destructible: true } : { ...NO_TRAITS, solid: true, destructible: true }, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, definition, state: "OBJ_STATE_STOP", actions: [], action: 0, progress: 0, wait: 0, recursive: false, visible: true, active: false, condActions: false, destructionMode: group === "blocks" ? explosive ? "animated" : "escape" : bonus ? "instant" : "animated", pickup: group === "items" ? bonus ? { mode: "rise", audioSlot: 4, durationTicks: 30, riseSpeed: 3 } : { mode: "instant", audioSlot: 5, durationTicks: 0, riseSpeed: 0 } : undefined }); }
@@ -114,7 +121,7 @@ export class PreviewRuntime {
       const defaultActive = Boolean(laser.default_trigger);
       this.#bodies.push({ key: `lasers:${String(laser.id)}`, kind: "laser", traits: { ...NO_TRAITS, damaging: true }, x: startX, y: startY, width: number(laser.bb_width, 8), height: number(laser.bb_height, 8), frame: 0, definition: String(laser.definition ?? ""), state: "OBJ_STATE_MOVING", face: laser.direction === "left" ? "left" : "right", spriteX: number(laser.x), spriteY: number(laser.y), actions: [], action: 0, progress: 0, wait: 0, recursive: Boolean(laser.recursive), visible: defaultActive, active: defaultActive, condActions: false, laser: { startX, startY, dx: horizontal, dy: vertical, defaultActive, bbX, bbY } });
     }
-    for (const raw of list(entities.triggers)) { const trigger = record(raw), attributes = record(trigger.attributes); const targets = list(record(trigger.targets).target).map((rawTarget) => { const target = record(rawTarget); const group = target.type === "platform" ? "platforms" : target.type === "hazard" ? "hazards" : "lasers"; return { key: `${group}:${String(target.id)}`, delay: Math.max(0, number(target.delay)), trigger: Boolean(target.trigger), triggerCond: Boolean(target.trigger_cond), completed: false }; }); this.#triggers.push({ key: `triggers:${String(trigger.id)}`, x: number(attributes.x), y: number(attributes.y), width: number(attributes.width, 8), height: number(attributes.height, 8), action: String(attributes.action ?? "enters"), face: String(attributes.face ?? "any"), recursive: Boolean(attributes.recursive), wasIn: false, alreadyTriggered: false, firing: false, steps: 0, previousAction: false, targets }); }
+    for (const raw of list(entities.triggers)) { const trigger = record(raw), attributes = record(trigger.attributes), gameplay = record(trigger.gameplay), conditions = list(gameplay.conditions) as GameplayCondition[], gameplayActions = list(gameplay.actions) as GameplayAction[], sequence = typeof gameplay.sequence === "string" ? gameplay.sequence : undefined; validateGameplayTrigger(gameplayState.definition, conditions, gameplayActions, sequence); const targets = list(record(trigger.targets).target).map((rawTarget) => { const target = record(rawTarget); const group = target.type === "platform" ? "platforms" : target.type === "hazard" ? "hazards" : "lasers"; return { key: `${group}:${String(target.id)}`, delay: Math.max(0, number(target.delay)), trigger: Boolean(target.trigger), triggerCond: Boolean(target.trigger_cond), completed: false }; }); this.#triggers.push({ key: `triggers:${String(trigger.id)}`, x: number(attributes.x), y: number(attributes.y), width: number(attributes.width, 8), height: number(attributes.height, 8), action: String(attributes.action ?? "enters"), face: String(attributes.face ?? "any"), recursive: Boolean(attributes.recursive), wasIn: false, alreadyTriggered: false, firing: false, steps: 0, previousAction: false, targets, conditions, gameplayActions, sequence }); }
     for (const raw of list(entities.cameraViews)) { const view = record(raw); this.#cameraViews.push({ id: number(view.id), left: number(view.left_up_x), top: number(view.left_up_y), right: number(view.right_down_x), bottom: number(view.right_down_y) }); }
     // v1 adapter: translate Rick's legacy state/audio identifiers once. The
     // simulation below only consumes the selected runtime profile bindings.
@@ -126,6 +133,7 @@ export class PreviewRuntime {
     this.#updateCamera(true);
   }
   step(input: PlayerInput = NO_INPUT): void {
+    const gameplay = gameplayStates.get(this)!; gameplay.state.beginTick(); gameplay.sequences = gameplay.sequences.filter((sequence) => !sequence.step(gameplay.state));
     if (this.#completed && this.#objective.type === "reachZone" && this.#objective.onComplete === "freeze") return;
     this.#tick += 1;
     const previous = new Map(this.#bodies.map((body) => [body.key, { x: body.x, y: body.y }]));
@@ -282,7 +290,8 @@ export class PreviewRuntime {
       const event = trigger.action === "enters" ? enters : trigger.action === "stays" ? stays : trigger.action === "exits" ? exits : trigger.action === "hits" ? stays && hitting && !trigger.previousAction : false;
       const face = trigger.face === "any" || trigger.face === player.face;
       trigger.wasIn = inside; trigger.previousAction = hitting;
-      if (event && face) { trigger.firing = true; trigger.steps = 0; }
+      const gameplay = gameplayStates.get(this)!;
+      if (event && face && trigger.conditions.every((condition) => gameplay.state.matches(condition))) { for (const action of trigger.gameplayActions) gameplay.state.execute(action); if (trigger.sequence) gameplay.sequences.push(gameplay.state.sequence(trigger.sequence)); trigger.firing = true; trigger.steps = 0; }
     }
   }
   #setTarget(target: RuntimeTarget): void {

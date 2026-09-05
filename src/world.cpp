@@ -3,6 +3,7 @@
 #include "world.h" // class's header file
 #include "trigger.h"
 #include "enemy.h"
+#include "player.h"
 #include "container_utils.h"
 
 // class constructor
@@ -10,7 +11,7 @@ World::World()
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
     target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
-    level_completed(false)
+    level_completed(false), gameplay(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 }
@@ -19,11 +20,12 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
     target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
-    level_completed(false)
+    level_completed(false), gameplay(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 
   LoadLevelPackage(file);
+  gameplay = new GameplayProgram(GetGameplayProgramDefinition());
   objective = GetLevelObjectiveConfig();
   const nlohmann::json& map = GetLevelMap();
   map_width = map.at("width").get<int>();
@@ -124,6 +126,7 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 // class destructor
 World::~World()
 {
+  delete gameplay;
   for (int x = 0; x < map_width; ++x) {
     for (int y = 0; y < map_height; ++y) {
       delete world_tiles[x][y];
@@ -702,11 +705,12 @@ void World::InitializeTriggers(const char* file) {
                                          trig_action,
                                          trig_face,
                                          trig_recursive);
+    if (trig->contains("gameplay")) world_trigger->ConfigureGameplay(gameplay, trig->at("gameplay"));
 
     printf(" - targets:\n");
     num_targets = 0;
     // Second, get targets
-    const nlohmann::json& target_value = trig->at("targets").at("target");
+    nlohmann::json target_value = trig->contains("targets") ? trig->at("targets").at("target") : nlohmann::json::array();
     nlohmann::json targets = target_value.is_array()
                                  ? target_value
                                  : nlohmann::json::array({target_value});
@@ -1078,6 +1082,13 @@ Tile* World::GetTileByCoord(int x, int y)
 }
 
 void World::WorldStep(Character* player) {
+
+  if (gameplay) {
+    gameplay->BeginTick();
+    Player* world_player = dynamic_cast<Player*>(player);
+    gameplay->SetEventSink(world_player ? std::function<void(const std::string&)>([world_player](const std::string& event) { world_player->DispatchGameplayEvent(event); }) : std::function<void(const std::string&)>());
+    gameplay->StepSequences();
+  }
 
   // Perform an step of all elements belonging to the world level
   //printf("[WorldStep] Moving platforms...\n");

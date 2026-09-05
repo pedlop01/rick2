@@ -8,6 +8,7 @@
 #include "character.h"
 #include "object.h"
 #include "trigger_rules.h"
+#include "gameplay_program.h"
 
 using namespace std;
 
@@ -63,6 +64,8 @@ class Trigger {
     int  player_prev_state;
 
     int steps;
+    GameplayProgram* gameplay_program;
+    nlohmann::json gameplay_definition;
 
   public:
     Trigger(int _id,
@@ -73,6 +76,7 @@ class Trigger {
     void Reset();
 
     void AddTarget(Object* _object, int _delay, bool _trigger, bool _trigger_cond);
+    void ConfigureGameplay(GameplayProgram* program, const nlohmann::json& definition);
 
     // Read methods
     int GetId()     { return id;     }

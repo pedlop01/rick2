@@ -74,7 +74,7 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .collision-palette { display: grid; gap: 5px; }
 .collision-palette button { padding: 7px; color: #b9c7d8; text-align: left; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .collision-palette button.selected { color: #07111d; background: #57d3ff; }
-.entity-controls, .asset-controls, .state-controls { display: grid; flex: 1 1 auto; grid-auto-rows: max-content; align-content: start; min-height: 0; gap: 7px; padding: 10px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid #26344a; scrollbar-color: #475569 #111827; scrollbar-width: thin; }
+.entity-controls, .asset-controls, .state-controls, .gameplay-controls { display: grid; flex: 1 1 auto; grid-auto-rows: max-content; align-content: start; min-height: 0; gap: 7px; padding: 10px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid #26344a; scrollbar-color: #475569 #111827; scrollbar-width: thin; }
 .entity-controls select, .entity-controls input, .entity-controls button, .asset-controls select, .asset-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .entity-controls button { text-align: left; }
 .entity-filter { display: flex; align-items: center; gap: 7px; min-height: 26px; color: #aab8ca; font-size: 12px; }
@@ -85,7 +85,7 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .asset-controls { gap: 5px; padding: 8px; }
 .asset-controls select { width: 100%; padding: 6px 5px; font-size: 12px; }
 .asset-controls button { padding: 6px; font-size: 12px; text-align: left; }
-.state-controls input, .state-controls select, .state-controls button, .transition-card input, .transition-card select, .transition-card button { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
+.state-controls input, .state-controls select, .state-controls button, .gameplay-controls input, .gameplay-controls select, .gameplay-controls button, .gameplay-step input, .gameplay-step select, .gameplay-step button, .transition-card input, .transition-card select, .transition-card button { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .state-controls select { width: 100%; }
 .state-list { display: grid; max-height: 42vh; gap: 4px; overflow: auto; }
 .state-list button { text-align: left; }
@@ -122,6 +122,15 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .event-help { grid-column: 1 / -1; color: #71839b; font-size: 9px; line-height: 1.35; }
 .event-help.event-unknown { color: #fbbf24; }
 .state-graph { position: absolute; inset: 0; overflow: auto; padding: 18px; color: #71839b; background: #080d16; }
+.gameplay-workspace { position: absolute; inset: 0; overflow: auto; padding: 18px; color: #71839b; background: #080d16; }
+.gameplay-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.gameplay-tabs button.selected { color: #07111d; background: #57d3ff; }
+.gameplay-step { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 5px; margin: 6px 0; padding: 7px; background: #111d30; border: 1px solid #31425e; border-radius: 5px; }
+.gameplay-step .gameplay-step { grid-column: 1 / -1; margin-left: 12px; }
+.gameplay-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 12px; margin-top: 16px; }
+.gameplay-overview article { display: grid; gap: 4px; padding: 18px; background: #111d30; border: 1px solid #31425e; border-radius: 7px; }
+.gameplay-overview strong { color: #57d3ff; font-size: 28px; }
+.gameplay-overview span { color: #aab8ca; font-size: 12px; }
 .state-graph-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; background: rgb(13 23 39 / 94%); border: 1px solid #26344a; border-radius: 6px; backdrop-filter: blur(4px); }
 .state-graph-header > div:first-child { display: grid; gap: 2px; }
 .state-graph-header strong { color: #f8fafc; font-size: 13px; }
