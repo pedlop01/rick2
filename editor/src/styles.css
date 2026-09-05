@@ -74,7 +74,7 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .collision-palette { display: grid; gap: 5px; }
 .collision-palette button { padding: 7px; color: #b9c7d8; text-align: left; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .collision-palette button.selected { color: #07111d; background: #57d3ff; }
-.entity-controls, .asset-controls { display: grid; flex: 1 1 auto; grid-auto-rows: max-content; align-content: start; min-height: 0; gap: 7px; padding: 10px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid #26344a; scrollbar-color: #475569 #111827; scrollbar-width: thin; }
+.entity-controls, .asset-controls, .state-controls { display: grid; flex: 1 1 auto; grid-auto-rows: max-content; align-content: start; min-height: 0; gap: 7px; padding: 10px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid #26344a; scrollbar-color: #475569 #111827; scrollbar-width: thin; }
 .entity-controls select, .entity-controls input, .entity-controls button, .asset-controls select, .asset-controls button, .property-field input, .property-field select { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
 .entity-controls button { text-align: left; }
 .entity-filter { display: flex; align-items: center; gap: 7px; min-height: 26px; color: #aab8ca; font-size: 12px; }
@@ -85,6 +85,63 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .asset-controls { gap: 5px; padding: 8px; }
 .asset-controls select { width: 100%; padding: 6px 5px; font-size: 12px; }
 .asset-controls button { padding: 6px; font-size: 12px; text-align: left; }
+.state-controls input, .state-controls select, .state-controls button, .transition-card input, .transition-card select, .transition-card button { min-width: 0; padding: 7px; color: #cbd5e1; background: #17243a; border: 1px solid #31425e; border-radius: 4px; }
+.state-controls select { width: 100%; }
+.state-list { display: grid; max-height: 42vh; gap: 4px; overflow: auto; }
+.state-list button { text-align: left; }
+.state-list button.selected { color: #07111d; background: #57d3ff; }
+.checkbox-field { display: flex; align-items: center; color: #aab8ca; }
+.checkbox-field input { width: auto; }
+.state-inspector-intro { display: grid; gap: 3px; margin: 0 0 12px; }
+.state-inspector-intro strong { color: #f8fafc; font-size: 16px; }
+.state-inspector-intro span { color: #8495ab; font-size: 11px; }
+.state-property-section { margin: 0 0 12px; padding: 10px; background: #0d1727; border: 1px solid #26344a; border-radius: 6px; }
+.state-property-section > h3 { margin: 0 0 3px; }
+.state-property-section > p { margin: 0 0 10px; color: #8495ab; font-size: 11px; line-height: 1.4; }
+.state-property-section .add-transition { width: 100%; margin-bottom: 5px; }
+.state-runtime-info { display: grid; gap: 7px; margin-top: 11px; padding: 9px; background: #111d30; border-left: 3px solid #57d3ff; border-radius: 4px; }
+.runtime-info-heading { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.runtime-info-heading span { color: #7dd3fc; font-size: 10px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.runtime-info-heading code { padding: 2px 5px; color: #c4b5fd; background: #1e1b4b; border-radius: 3px; font-size: 10px; }
+.state-runtime-info > p { margin: 0; color: #b9c7d8; font-size: 11px; line-height: 1.45; }
+.state-runtime-info dl { display: grid; gap: 6px; margin: 2px 0 0; padding-top: 7px; border-top: 1px solid #26344a; }
+.state-runtime-info dl > div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 6px; }
+.state-runtime-info dt { color: #71839b; font-size: 10px; }
+.state-runtime-info dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #dce6f2; font-size: 10px; }
+.state-runtime-info dd small { display: block; margin-top: 2px; color: #63758d; font-size: 9px; line-height: 1.3; }
+.transition-card { display: grid; gap: 7px; margin: 9px 0; padding: 9px; background: #111d30; border: 1px solid #31425e; border-radius: 5px; }
+.transition-card summary { display: flex; align-items: baseline; gap: 7px; color: #b9c7d8; cursor: pointer; font-size: 11px; line-height: 1.4; }
+.transition-card summary b { color: #93c5fd; }
+.transition-priority { display: inline-grid; flex: 0 0 20px; width: 20px; height: 20px; place-items: center; color: #07111d; background: #57d3ff; border-radius: 50%; font-size: 10px; }
+.transition-card[open] summary { margin-bottom: 6px; }
+.transition-card h4 { margin: 5px 0 0; color: #8495ab; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.transition-destination { display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: center; gap: 6px; color: #8495ab; font-size: 11px; }
+.transition-none { margin: 0; color: #63758d; font-size: 10px; font-style: italic; }
+.danger-action { color: #fca5a5 !important; }
+.rule-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
+.event-help { grid-column: 1 / -1; color: #71839b; font-size: 9px; line-height: 1.35; }
+.event-help.event-unknown { color: #fbbf24; }
+.state-graph { position: absolute; inset: 0; overflow: auto; padding: 18px; color: #71839b; background: #080d16; }
+.state-graph-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; background: rgb(13 23 39 / 94%); border: 1px solid #26344a; border-radius: 6px; backdrop-filter: blur(4px); }
+.state-graph-header > div:first-child { display: grid; gap: 2px; }
+.state-graph-header strong { color: #f8fafc; font-size: 13px; }
+.state-graph-header span { color: #8495ab; font-size: 10px; }
+.state-graph-legend { display: flex; flex-wrap: wrap; gap: 12px; }
+.state-graph-legend span::before { display: inline-block; width: 18px; height: 2px; margin-right: 5px; vertical-align: middle; content: ""; background: #64748b; }
+.state-graph-legend .outgoing::before { background: #57d3ff; }
+.state-graph-legend .incoming::before { background: repeating-linear-gradient(90deg, #64748b 0 4px, transparent 4px 7px); }
+.state-graph-legend .runtime::before { height: 7px; background: #4ade80; border-radius: 3px; }
+.state-graph svg { display: block; width: max(100%, 900px); min-height: 100%; }
+.state-edge { fill: none; stroke-width: 2; }
+.state-edge.outgoing { stroke: #57d3ff; stroke-width: 2.5; }
+.state-edge.incoming { stroke: #64748b; stroke-dasharray: 7 6; opacity: .65; }
+.state-edge-label { fill: #a5e7ff; font-size: 9px; paint-order: stroke; stroke: #080d16; stroke-width: 4px; stroke-linejoin: round; text-anchor: middle; }
+.state-node { cursor: pointer; }
+.state-node rect { fill: #17243a; stroke: #52657e; stroke-width: 2; rx: 7; }
+.state-node text { fill: #dce6f2; font-size: 14px; pointer-events: none; }
+.state-node text + text { fill: #8495ab; font-size: 11px; }
+.state-node.selected rect { stroke: #57d3ff; stroke-width: 3; }
+.state-node.active rect { fill: #12351f; stroke: #4ade80; stroke-width: 4; }
 .paired-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .paired-actions button { width: 100%; min-width: 0; }
 .control-section { border: 1px solid #26344a; border-radius: 5px; }

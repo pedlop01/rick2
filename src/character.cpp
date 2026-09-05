@@ -1080,6 +1080,7 @@ void Character::ComputeNextSound() {
 }
 
 void Character::CharacterStep(World* map, Keyboard& keyboard) {
+  const int previous_animation_state = AnimationState();
   // Collisions with world and platforms
   //printf("[CharacterStep] ComputeCollisions\n");
   this->ComputeCollisions(map);
@@ -1098,9 +1099,10 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
   this->ComputeNextSpeed();
   // Compute next animation frame
   //printf("[CharacterStep] ComputeNextAnimation\n");
+  const int animation_state = AnimationState();
   if (state != CHAR_STATE_DEAD) {
-    Animation* animation = AnimationForState(state);
-    if (prevState != state) {
+    Animation* animation = AnimationForState(animation_state);
+    if (previous_animation_state != animation_state) {
       animation->ResetAnim();
     } else if (ShouldAnimateCharacterOnce(state, direction)) {
       animation->AnimStepOnce();
@@ -1121,7 +1123,7 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
 }
 
 ALLEGRO_BITMAP* Character::GetCurrentAnimationBitmap() {
-  Animation* animation = AnimationForState(state);
+  Animation* animation = AnimationForState(AnimationState());
   sprite_ptr sprite = animation->sprites[animation->GetCurrentAnim()];
   return sprite->GetBitmap();
 }
@@ -1134,12 +1136,12 @@ int Character::GetCurrentAnimationBitmapAttributes() {
 }
 
 int Character::GetCurrentAnimationWidth() {
-  Animation* animation = AnimationForState(state);
+  Animation* animation = AnimationForState(AnimationState());
   return animation->sprites[animation->GetCurrentAnim()]->width;
 }
 
 int Character::GetCurrentAnimationHeight() {
-  Animation* animation = AnimationForState(state);
+  Animation* animation = AnimationForState(AnimationState());
   return animation->sprites[animation->GetCurrentAnim()]->height;
 }
 

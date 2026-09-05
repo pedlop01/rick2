@@ -24,13 +24,14 @@ import type { PlayerInput } from "./web-player";
 import { RICK_ACTION_BINDINGS, RICK_PLAYER_CAPABILITIES, RICK_PLAYER_CONTROLLER, RICK_RUNTIME_BINDINGS, RICK_SESSION_RULES } from "./platformer-core";
 import { readableDataLabel, readableDataPath } from "./ui-labels";
 import { createControlSection } from "./ui-controls";
+import { CharacterStateEditor } from "./character-state-editor";
 
 const LAYERS = [
   ["tiles", "Tiles"],
   ["frontTiles", "Front tiles"],
   ["collisions", "Collisions"],
 ] as const;
-type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile";
+type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile" | "states";
 type ResizeCorner = "nw" | "ne" | "sw" | "se";
 
 function button(label: string, title?: string): HTMLButtonElement {
@@ -62,10 +63,11 @@ export function createEditorShell(host: HTMLElement): void {
     <div class="notification" role="alert" hidden></div>
     <aside class="panel layers-panel" aria-labelledby="layers-title">
       <div class="panel-heading"><h2 id="layers-title">Layers</h2></div>
-      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="asset-controls" id="asset-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
+      <div class="panel-content" id="layer-list"></div><div class="entity-controls" id="entity-controls" hidden></div><div class="asset-controls" id="asset-controls" hidden></div><div class="state-controls" id="state-controls" hidden></div><div class="tile-palette" id="tile-palette"></div>
     </aside>
     <main class="workspace" aria-label="Level canvas">
       <canvas tabindex="0" aria-label="Empty map preview"></canvas>
+      <div class="state-graph" hidden></div>
       <div class="canvas-hint">Create or open a project to begin</div>
     </main>
     <aside class="panel inspector-panel" aria-labelledby="inspector-title">
@@ -116,6 +118,8 @@ export function createEditorShell(host: HTMLElement): void {
   const paletteHost = requiredElement<HTMLElement>(host, "#tile-palette");
   const entityControls = requiredElement<HTMLElement>(host, "#entity-controls");
   const assetControls = requiredElement<HTMLElement>(host, "#asset-controls");
+  const stateControls = requiredElement<HTMLElement>(host, "#state-controls");
+  const stateGraph = requiredElement<HTMLElement>(host, ".state-graph");
   const projectDialog = requiredElement<HTMLDialogElement>(host, ".project-dialog");
   const projectForm = requiredElement<HTMLFormElement>(projectDialog, "form");
   const projectNameInput = requiredElement<HTMLInputElement>(projectForm, "[name=projectName]");
@@ -219,6 +223,7 @@ export function createEditorShell(host: HTMLElement): void {
     levelModel = new LevelDocumentModel(project);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
+    stateEditor.bind(levelModel.level, commitStateChange, () => ({ form: runtime?.playerForm, state: runtime?.playerDeclaredState }));
     stopRuntime(); runtimePreviewActive = false; placingPlayer = false; runtimeEditorView = null; runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); configureRuntimeAudio(project, levelModel.level); preview.setRuntimeBodies([]);
     play.disabled = false; pause.disabled = true; step.disabled = false; resetPreview.disabled = true;
     selectedEntity = null;
@@ -488,7 +493,7 @@ export function createEditorShell(host: HTMLElement): void {
   audio.setAttribute("aria-pressed", "true"); audio.addEventListener("click", () => { runtimeAudioEnabled = !runtimeAudioEnabled; audio.textContent = `Audio: ${runtimeAudioEnabled ? "on" : "off"}`; audio.setAttribute("aria-pressed", String(runtimeAudioEnabled)); if (!runtimeAudioEnabled) runtimeMusic?.pause(); else if (runtimePlaying) void runtimeMusic?.play().catch(() => undefined); });
   placePlayer.addEventListener("click", () => { if (!runtime) return; placingPlayer = !placingPlayer; placePlayer.setAttribute("aria-pressed", String(placingPlayer)); status.textContent = placingPlayer ? "Click where the player should stand" : "Player placement cancelled"; canvas.focus(); });
   play.disabled = true; pause.disabled = true; step.disabled = true; resetPreview.disabled = true;
-  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); for (const slot of runtime?.drainAudioEvents() ?? []) if (runtimeAudioEnabled && runtimeEffectUrls[slot]) void new Audio(runtimeEffectUrls[slot]).play().catch(() => undefined); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], [...(guides?.zones ?? []), ...objectiveZones()]); if (runtimePreviewActive && runtime && runtimeFollowPlayer) { const camera = runtime.cameraFrame; preview.centerOnWorld(camera.x + camera.width / 2, camera.y + camera.height / 2); } status.textContent = `Preview · tick ${runtime?.tick ?? 0} · lives ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · playing" : " · paused"}${runtime?.completed ? " · OBJECTIVE COMPLETE" : ""}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · danger contact" : ""}${runtimeFollowPlayer ? "" : " · free camera"}`; };
+  const renderRuntime = (): void => { preview.setRuntimeBodies(runtime?.bodies ?? []); stateEditor.refreshRuntime(); for (const slot of runtime?.drainAudioEvents() ?? []) if (runtimeAudioEnabled && runtimeEffectUrls[slot]) void new Audio(runtimeEffectUrls[slot]).play().catch(() => undefined); const guides = entityModel?.gameplayGuides(); preview.setGameplayGuides(guides?.lines ?? [], [...(guides?.zones ?? []), ...objectiveZones()]); if (runtimePreviewActive && runtime && runtimeFollowPlayer) { const camera = runtime.cameraFrame; preview.centerOnWorld(camera.x + camera.width / 2, camera.y + camera.height / 2); } status.textContent = `Preview · tick ${runtime?.tick ?? 0} · lives ${runtime?.lives ?? 0}${runtime?.gameOver ? " · GAME OVER" : runtimePlaying ? " · playing" : " · paused"}${runtime?.completed ? " · OBJECTIVE COMPLETE" : ""}${runtime?.invulnerable ? " · invulnerable" : ""}${runtime?.dangerContact ? " · danger contact" : ""}${runtimeFollowPlayer ? "" : " · free camera"}`; };
   const runtimeLoop = (time: number): void => { if (!runtimePlaying || !runtime) return; if (!runtimeLastTime) runtimeLastTime = time; runtimeAccumulator += Math.min(100, time - runtimeLastTime); runtimeLastTime = time; while (runtimeAccumulator >= 20) { runtime.step(runtimeInput); runtimeAccumulator -= 20; } renderRuntime(); runtimeFrame = requestAnimationFrame(runtimeLoop); };
   function stopRuntime(): void { runtimePlaying = false; runtimeMusic?.pause(); if (runtimeFrame) cancelAnimationFrame(runtimeFrame); runtimeFrame = 0; runtimeLastTime = 0; runtimeAccumulator = 0; }
   play.addEventListener("click", () => { if (!runtime) return; canvas.focus(); if (!runtimePreviewActive) runtimeEditorView = preview.getViewState(); runtimePreviewActive = true; runtimePlaying = true; if (runtimeAudioEnabled) void runtimeMusic?.play().catch(() => undefined); play.disabled = true; pause.disabled = false; step.disabled = true; resetPreview.disabled = false; runtimeFrame = requestAnimationFrame(runtimeLoop); });
@@ -505,6 +510,7 @@ export function createEditorShell(host: HTMLElement): void {
     entity: { status: "Edit entities", left: "Entities", inspector: "Properties", canvas: "Map: select and move entities" },
     asset: { status: "Manage assets", left: "Asset library", inspector: "Selected asset", canvas: "Map view" },
     profile: { status: "Configure game", left: "Configuration", inspector: "Game rules", canvas: "Map view" },
+    states: { status: "Edit character states", left: "Character forms", inspector: "State properties", canvas: "Character state graph" },
   };
   const setTool = (tool: EditTool): void => {
     activeTool = tool;
@@ -514,10 +520,10 @@ export function createEditorShell(host: HTMLElement): void {
     if (editMenuSummary) editMenuSummary.textContent = `Edit · ${presentation.status}`;
     status.textContent = presentation.status;
   };
-  for (const [id, label, shortcut] of [["pencil", "Pencil", "P"], ["eraser", "Eraser", "E"], ["fill", "Fill", "F"], ["select", "Selection", "S"], ["entity", "Entities", "O"], ["asset", "Assets", "A"], ["profile", "Profile", "R"]] as const) {
+  for (const [id, label, shortcut] of [["pencil", "Pencil", "P"], ["eraser", "Eraser", "E"], ["fill", "Fill", "F"], ["select", "Selection", "S"], ["entity", "Entities", "O"], ["asset", "Assets", "A"], ["profile", "Profile", "R"], ["states", "Character states", "M"]] as const) {
     const control = button(label, `Shortcut: ${shortcut}`); control.setAttribute("aria-keyshortcuts", shortcut);
     showShortcut(control, shortcut);
-    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset" || id === "profile"; paletteHost.hidden = id === "entity" || id === "asset" || id === "profile"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); if (id === "profile") renderProfileInspector(); else if (id !== "asset") renderDiagnostics(session.project ? validateProject(session.project) : []); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
+    control.addEventListener("click", () => { setTool(id); entityControls.hidden = id !== "entity"; layerList.hidden = id === "asset" || id === "profile" || id === "states"; paletteHost.hidden = id === "entity" || id === "asset" || id === "profile" || id === "states"; canvas.hidden = id === "states"; if (id === "asset") assetEditor.show(); else assetEditor.hide(); if (id === "states") stateEditor.show(); else stateEditor.hide(); if (id === "profile") renderProfileInspector(); else if (id !== "asset" && id !== "states") renderDiagnostics(session.project ? validateProject(session.project) : []); preview.setSelection(id === "select" ? selection : null); refreshEntityOverlay(); });
     toolButtons.set(id, control);
   }
   zoomOut.addEventListener("click", () => preview.zoomBy(1 / 1.25));
@@ -591,6 +597,8 @@ export function createEditorShell(host: HTMLElement): void {
   const preview = new WorkspacePreview(canvas);
   const palette = new TilePalette(paletteHost);
   const assetEditor = new AssetEditor(assetControls, inspector);
+  const stateEditor = new CharacterStateEditor(stateControls, inspector, stateGraph);
+  const commitStateChange = (message: string): void => { if (!levelModel) return; levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); refreshProjectState(message); stateEditor.render(); };
   assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map, false).then(() => palette.load(session.project!, levelModel!)); });
   palette.setSelectListener((gid) => { status.textContent = `Selected GID: ${gid}`; });
   preview.start();
@@ -755,7 +763,7 @@ export function createEditorShell(host: HTMLElement): void {
     if (runtimePreviewActive) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement || event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset", r: "profile" }; const tool = shortcuts[event.key.toLowerCase()];
+    const shortcuts: Record<string, EditTool> = { p: "pencil", e: "eraser", f: "fill", s: "select", o: "entity", a: "asset", r: "profile", m: "states" }; const tool = shortcuts[event.key.toLowerCase()];
     if (tool) { toolButtons.get(tool)?.click(); event.preventDefault(); return; }
     if (event.key.toLowerCase() === "g") { grid.click(); event.preventDefault(); }
     if (event.key === "0") { fit.click(); event.preventDefault(); }

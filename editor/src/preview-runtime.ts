@@ -2,6 +2,7 @@ import type { EditableLevel } from "./level-document";
 import { levelObjective, runtimeProfileBindings, sessionRules, type LevelObjective, type PlayerActionBindings, type PlayerCapabilities, type PlayerControllerConfig, type RuntimeProfileBindingOverrides, type RuntimeProfileBindings, type SessionRules } from "./platformer-core";
 import { RuntimeBehaviorRegistry } from "./runtime-behaviors";
 import { WebPlayer, type PlayerInput, type PlayerObstacle, type PlayerPlatform, type PlayerSnapshot } from "./web-player";
+import type { CharacterFormsDefinition } from "./character-forms";
 
 export type RuntimeBodyKind = "player" | "platform" | "hazard" | "item" | "block" | "background" | "laser" | "enemy" | "shoot" | "bomb";
 export interface RuntimeBody { key: string; kind: RuntimeBodyKind; x: number; y: number; width: number; height: number; frame: number; definition?: string; state?: string; face?: "left" | "right"; spriteX?: number; spriteY?: number; animationOnce?: boolean; spriteScale?: number; spriteVisible?: boolean; }
@@ -33,7 +34,8 @@ export class PreviewRuntime {
     const profileController = record(profile.controller) as Partial<PlayerControllerConfig>;
     const profileCapabilities = record(profile.capabilities) as Partial<PlayerCapabilities>;
     const profileActions = record(profile.actionBindings) as Partial<PlayerActionBindings>;
-    this.#player = new WebPlayer(this.#source, { ...profileController, ...options.playerController }, { ...profileCapabilities, ...options.playerCapabilities }, { ...profileActions, ...options.playerActionBindings });
+    const characterForms = profile.characterForms as CharacterFormsDefinition | undefined;
+    this.#player = new WebPlayer(this.#source, { ...profileController, ...options.playerController }, { ...profileCapabilities, ...options.playerCapabilities }, { ...profileActions, ...options.playerActionBindings }, characterForms);
     const levelSession = record(this.#source.session);
     this.#sessionRules = sessionRules({ initialLives: number(levelSession.initialLives, 3), ...record(profile.session) as Partial<SessionRules>, ...options.sessionRules });
     const profileBindings = record(profile.bindings);
@@ -57,6 +59,8 @@ export class PreviewRuntime {
   }
   get tick(): number { return this.#tick; }
   get player(): PlayerSnapshot { return this.#player.snapshot; }
+  get playerForm(): string { return this.#player.activeForm; }
+  get playerDeclaredState(): string { return this.#player.declaredState; }
   get invulnerable(): boolean { return this.#invulnerable; }
   get dangerContact(): boolean { return this.#dangerContact; }
   get lives(): number { return this.#lives; }
@@ -91,7 +95,7 @@ export class PreviewRuntime {
     if (group === "cameraViews") { source.right_down_x = number(source.left_up_x) + nextWidth; source.right_down_y = number(source.left_up_y) + nextHeight; const view = this.#cameraViews.find((candidate) => candidate.id === number(id)); if (!view) return false; view.right = view.left + nextWidth; view.bottom = view.top + nextHeight; this.#updateCamera(true); return true; }
     return false;
   }
-  get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot, playerDefinition = String(record(this.#source.player).definition ?? "characters/rick"), playerState = this.#bindings.playerStates[player.state]; return [...this.#bodies.filter((body) => body.visible), ...this.#enemies.filter((enemy) => enemy.alive).map((enemy) => ({ ...enemy, state: enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : this.#bindings.enemyStates.running, face: enemy.direction > 0 ? "right" as const : "left" as const, animationOnce: enemy.dyingTicks > 0, spriteVisible: enemy.frozenTicks === 0 || Math.floor((100 - enemy.frozenTicks) / 4) % 2 === 0 })), ...this.#transients, { key: "player", kind: "player", x: player.collisionX, y: player.collisionY, width: player.collisionWidth, height: player.collisionHeight, frame: this.#playerAnimationTicks, definition: playerDefinition, state: playerState, face: player.face, spriteX: player.x, spriteY: player.y, animationOnce: player.state === "crouching" && !this.#playerAnimationMoving, spriteScale: this.#player.deathScale }]; }
+  get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot, playerDefinition = this.#player.activeDefinition ?? String(record(this.#source.player).definition ?? "characters/rick"), playerState = this.#player.activeAnimation ?? this.#bindings.playerStates[player.state]; return [...this.#bodies.filter((body) => body.visible), ...this.#enemies.filter((enemy) => enemy.alive).map((enemy) => ({ ...enemy, state: enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : this.#bindings.enemyStates.running, face: enemy.direction > 0 ? "right" as const : "left" as const, animationOnce: enemy.dyingTicks > 0, spriteVisible: enemy.frozenTicks === 0 || Math.floor((100 - enemy.frozenTicks) / 4) % 2 === 0 })), ...this.#transients, { key: "player", kind: "player", x: player.collisionX, y: player.collisionY, width: player.collisionWidth, height: player.collisionHeight, frame: this.#playerAnimationTicks, definition: playerDefinition, state: playerState, face: player.face, spriteX: player.x, spriteY: player.y, animationOnce: player.state === "crouching" && !this.#playerAnimationMoving, spriteScale: this.#player.deathScale }]; }
   reset(): void {
     this.#tick = 0; this.#lives = this.#sessionRules.initialLives; this.#gameOver = false; this.#completed = false; this.#player.reset(); this.#playerAnimationState = this.#player.snapshot.state; this.#playerAnimationTicks = 0; this.#playerAnimationMoving = false; this.#dangerContact = false; this.#bodies = []; this.#enemies = []; this.#transients = []; this.#triggers = []; this.#cameraViews = []; this.#audioEvents = []; const entities = record(this.#source.entities);
     for (const group of ["platforms", "hazards"]) for (const raw of list(entities[group])) { const entity = record(raw); const attributes = record(entity.attributes); const actions = list(record(entity.actions).action).map(record); const active = group === "hazards" ? Boolean(attributes.trigger) : attributes.ini_state === undefined || attributes.ini_state === "moving"; this.#bodies.push({ key: `${group}:${String(entity.id)}`, kind: group === "hazards" ? "hazard" : "platform", traits: group === "hazards" ? { ...NO_TRAITS, damaging: true } : NO_TRAITS, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, definition: String(attributes.definition ?? ""), state: active ? "OBJ_STATE_MOVING" : "OBJ_STATE_STOP", actions, action: 0, progress: 0, wait: 0, recursive: group === "hazards" ? Boolean(attributes.trigger) : Boolean(attributes.recursive), visible: group === "platforms" ? attributes.visible !== 0 : active || !Boolean(attributes.stop_inactive), active, condActions: false, oneUse: group === "platforms" && Boolean(attributes.one_use), used: false, stopInactive: group === "hazards" && Boolean(attributes.stop_inactive) }); }

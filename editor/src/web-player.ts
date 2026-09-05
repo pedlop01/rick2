@@ -1,5 +1,6 @@
 import type { EditableLevel, TileMapDocument } from "./level-document";
-import { groundActionForInput, playerActionBindings, playerCapabilities, playerControllerConfig, type PlayerActionBindings, type PlayerCapabilities, type PlayerControllerConfig } from "./platformer-core";
+import { CharacterForms, rickCharacterForms, type CharacterFormsDefinition } from "./character-forms";
+import { groundActionForInput, type PlayerActionBindings, type PlayerCapabilities, type PlayerControllerConfig, type PlayerGroundAction } from "./platformer-core";
 
 export interface PlayerInput { left: boolean; right: boolean; up: boolean; down: boolean; action: boolean; }
 export interface PlayerPlatform { key: string; x: number; y: number; width: number; height: number; dx: number; dy: number; }
@@ -11,69 +12,80 @@ type TileKind = "empty" | "solid" | "platform" | "stairs" | "stairsTop";
 const finite = (value: unknown, fallback = 0): number => typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
 export class WebPlayer {
-  readonly #map: TileMapDocument; readonly #checkpoints: Checkpoint[]; readonly #config: Readonly<PlayerControllerConfig>; readonly #capabilities: Readonly<PlayerCapabilities>; readonly #bindings: Readonly<PlayerActionBindings>;
+  readonly #map: TileMapDocument; readonly #checkpoints: Checkpoint[]; readonly #forms: CharacterForms; #config: Readonly<PlayerControllerConfig>; #capabilities: Readonly<PlayerCapabilities>; #bindings: Readonly<PlayerActionBindings>;
   #spawn: { x: number; y: number; face: "left" | "right" }; #activeCheckpoint = -1;
-  #x = 0; #y = 0; #state: PlayerState = "stop"; #face: "left" | "right" = "right";
-  #height = 0; #vy = 0; #ascending = false; #jumpOrigin = 0; #deadTicks = 0; #deathOriginY = 0; #hitTicks = 0;
-  constructor(level: EditableLevel, config: Partial<PlayerControllerConfig> = {}, capabilities: Partial<PlayerCapabilities> = {}, bindings: Partial<PlayerActionBindings> = {}) {
+  #x = 0; #y = 0; #face: "left" | "right" = "right";
+  #height = 0; #vy = 0; #ascending = false; #jumpOrigin = 0; #deadTicks = 0; #deathOriginY = 0;
+  constructor(level: EditableLevel, config: Partial<PlayerControllerConfig> = {}, capabilities: Partial<PlayerCapabilities> = {}, bindings: Partial<PlayerActionBindings> = {}, forms?: CharacterFormsDefinition) {
     this.#map = level.map;
-    this.#config = playerControllerConfig(config);
-    this.#capabilities = playerCapabilities(capabilities);
-    this.#bindings = playerActionBindings(bindings);
+    this.#forms = new CharacterForms(forms ?? rickCharacterForms(config, capabilities, bindings)); const form = this.#forms.active;
+    this.#config = form.controller;
+    this.#capabilities = form.capabilities;
+    this.#bindings = form.actionBindings;
     const raw = (level.entities as { checkpoints?: Array<Record<string, unknown>> }).checkpoints ?? [];
     this.#checkpoints = raw.map((checkpoint, index) => ({ id: finite(checkpoint.id, index), x: finite(checkpoint.chk_x), y: finite(checkpoint.chk_y), width: finite(checkpoint.chk_width, 8), height: finite(checkpoint.chk_height, 8), spawnX: finite(checkpoint.pl_x), spawnY: finite(checkpoint.pl_y), face: checkpoint.pl_face === "left" ? "left" : "right", nextIds: Array.isArray(checkpoint.nxt_chks) ? checkpoint.nxt_chks.map((id) => finite(id, Number.NaN)).filter(Number.isFinite) : [] }));
     const first = this.#checkpoints[0] ?? { spawnX: 0, spawnY: 0, face: "right" as const };
     this.#spawn = { x: first.spawnX, y: first.spawnY, face: first.face }; this.#activeCheckpoint = this.#checkpoints.length ? this.#checkpoints[0]!.id : -1; this.reset();
   }
   get snapshot(): PlayerSnapshot { const config = this.#config; return { x: this.#x, y: this.#y, state: this.#state, face: this.#face, verticalSpeed: this.#vy, collisionX: this.#x + config.collisionOffsetX, collisionY: this.#y, collisionWidth: config.collisionWidth, collisionHeight: this.#height }; }
+  get activeForm(): string { return this.#forms.active.id; }
+  get activeDefinition(): string | undefined { return this.#forms.active.definition; }
+  get activeAnimation(): string | undefined { return this.#forms.activeState.animation; }
+  get declaredState(): string { return this.#forms.state.state; }
+  get declaredStateTicks(): number { return this.#forms.state.ticksInState; }
+  get #state(): PlayerState { return (this.#forms.activeState.behavior ?? this.#forms.state.state) as PlayerState; }
   get deathScale(): number { return this.#state === "dead" ? 1 + this.#deadTicks * .1 : 1; }
   get activeCheckpoint(): number { return this.#activeCheckpoint; }
-  kill(): void { const config = this.#config; if (this.#state !== "dead") { this.#height = config.standingHeight; this.#state = "dead"; this.#deadTicks = 0; this.#deathOriginY = this.#y; this.#ascending = true; this.#vy = config.maximumVerticalSpeed * config.deathSpeedMultiplier; } }
+  kill(): void { const config = this.#config; if (this.#state !== "dead") { this.#height = config.standingHeight; this.#dispatchStateEvent("killed", { left: false, right: false, up: false, down: false, action: false }); this.#deadTicks = 0; this.#deathOriginY = this.#y; this.#ascending = true; this.#vy = config.maximumVerticalSpeed * config.deathSpeedMultiplier; } }
   placeAtFeet(worldX: number, worldY: number): void {
     const config = this.#config, maxX = Math.max(0, this.#map.width * this.#map.tileWidth - config.collisionOffsetX - config.collisionWidth), maxY = Math.max(0, this.#map.height * this.#map.tileHeight - config.standingHeight);
     this.#x = Math.min(maxX, Math.max(0, Math.round(worldX - config.collisionOffsetX - config.collisionWidth / 2))); this.#y = Math.min(maxY, Math.max(0, Math.round(worldY - config.standingHeight)));
-    this.#height = config.standingHeight; this.#state = "stop"; this.#vy = config.maximumVerticalSpeed; this.#ascending = false; this.#jumpOrigin = this.#y; this.#deadTicks = 0; this.#hitTicks = 0;
+    this.#height = config.standingHeight; this.#forms.resetState({ x: this.#x, y: this.#y }, this.#face); this.#vy = config.maximumVerticalSpeed; this.#ascending = false; this.#jumpOrigin = this.#y; this.#deadTicks = 0;
   }
-  reset(): void { const config = this.#config; this.#x = this.#spawn.x; this.#y = this.#spawn.y; this.#height = config.standingHeight; this.#face = this.#spawn.face; this.#state = "stop"; this.#vy = config.maximumVerticalSpeed; this.#ascending = false; this.#jumpOrigin = this.#y; this.#deadTicks = 0; this.#hitTicks = 0; }
+  reset(): void { const config = this.#config; this.#x = this.#spawn.x; this.#y = this.#spawn.y; this.#height = config.standingHeight; this.#face = this.#spawn.face; this.#forms.resetState({ x: this.#x, y: this.#y }, this.#face); this.#vy = config.maximumVerticalSpeed; this.#ascending = false; this.#jumpOrigin = this.#y; this.#deadTicks = 0; }
   step(input: PlayerInput, platforms: readonly PlayerPlatform[] = [], obstacles: readonly PlayerObstacle[] = [], deathBoundary?: number): void {
     const config = this.#config;
     if (this.#state === "dead") {
+      this.#forms.advanceStateTick();
       this.#x += config.runSpeed;
       if (this.#ascending) { this.#y -= this.#vy; this.#vy = Math.max(config.minimumVerticalSpeed * config.deathSpeedMultiplier, this.#vy - config.verticalAcceleration * config.deathSpeedMultiplier); if (this.#deathOriginY - this.#y >= config.deathRise) this.#ascending = false; }
       else { this.#y += this.#vy; this.#vy = Math.min(config.maximumVerticalSpeed * config.deathSpeedMultiplier, this.#vy + config.verticalAcceleration * config.deathSpeedMultiplier); }
       this.#deadTicks += 1; if ((!this.#ascending && deathBoundary !== undefined && this.#y >= deathBoundary) || (deathBoundary === undefined && this.#deadTicks >= config.deathRespawnTicks)) this.reset(); return;
     }
     this.#carryWithPlatform(platforms, obstacles);
-    if (this.#state === "crouching") {
-      if (!this.#grounded(platforms, obstacles)) { this.#y -= config.standingHeight - this.#height; this.#height = config.standingHeight; this.#state = "jumping"; this.#ascending = false; this.#vy = config.minimumVerticalSpeed; }
-      else if (!input.down && this.#canStand(obstacles)) { this.#y -= config.standingHeight - this.#height; this.#height = config.standingHeight; this.#state = "stop"; }
-      else { const dx = input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { this.#face = dx > 0 ? "right" : "left"; this.#moveX(dx, obstacles); } this.#activateCheckpoint(); return; }
-    }
-    if (this.#state === "hitting" && this.#hitTicks >= config.hitHoldTicks) { this.#state = "stop"; this.#hitTicks = 0; this.#activateCheckpoint(); return; }
     const previousState = this.#state;
-    const onStairs = this.#capabilities.climb && this.#touchingStairs(), enteringDown = this.#capabilities.climb && input.down && this.#canDescendStairs();
-    const groundedNow = this.#grounded(platforms, obstacles), actionState = groundedNow && this.#state !== "jumping" && this.#state !== "climbing" ? groundActionForInput(input, this.#capabilities, this.#bindings) : null;
-    if (actionState) { this.#state = actionState; if (input.left || input.right) this.#face = input.left ? "left" : "right"; }
-    else if ((this.#state === "climbing" && onStairs) || (input.up && onStairs) || enteringDown) {
-      this.#state = "climbing"; this.#ascending = false; this.#vy = 0;
+    const groundedForState = this.#grounded(platforms, obstacles), onStairsForState = this.#capabilities.climb && this.#touchingStairs(), canDescendForState = this.#capabilities.climb && this.#canDescendStairs(), canStandForState = this.#canStand(obstacles), requestedAction = groundedForState && this.#state !== "jumping" && this.#state !== "climbing" ? groundActionForInput(input, this.#capabilities, this.#bindings) : null;
+    const formBefore = this.#forms.active.id, heightBefore = this.#height;
+    this.#forms.step({ input, signals: { grounded: groundedForState, onStairs: onStairsForState, canDescendStairs: canDescendForState, canStand: canStandForState, ceilingBlocked: !canStandForState }, actions: new Set(requestedAction ? [requestedAction] : []), x: this.#x, y: this.#y });
+    if (this.#forms.active.id !== formBefore) { const next = this.#forms.active; this.#config = next.controller; this.#capabilities = next.capabilities; this.#bindings = next.actionBindings; this.#height = next.controller.standingHeight; this.#y += heightBefore - this.#height; }
+    if (previousState !== "crouching" && this.#state === "crouching") { this.#height = config.crouchingHeight; this.#y += config.standingHeight - this.#height; }
+    else if (previousState === "crouching" && this.#state !== "crouching") { this.#y -= config.standingHeight - this.#height; this.#height = config.standingHeight; if (this.#state === "jumping") { this.#ascending = false; this.#vy = config.minimumVerticalSpeed; } }
+    if (previousState !== "climbing" && this.#state === "climbing") { this.#ascending = false; this.#vy = 0; }
+    if (previousState !== "jumping" && this.#state === "jumping" && previousState !== "crouching") { this.#ascending = groundedForState && input.up; this.#jumpOrigin = this.#y; this.#vy = this.#ascending ? config.maximumVerticalSpeed : config.minimumVerticalSpeed; }
+    if (this.#state === "crouching") {
+      const dx = input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { this.#face = dx > 0 ? "right" : "left"; this.#moveX(dx, obstacles); } this.#activateCheckpoint(); return;
+    }
+    if (previousState === "hitting" && this.#state === "stop" && requestedAction === "hitting") { this.#activateCheckpoint(); return; }
+    const actionState = (["shooting", "bombing", "hitting"] as string[]).includes(this.#state) ? this.#state as PlayerGroundAction : null;
+    if (actionState) { if (input.left || input.right) this.#face = input.left ? "left" : "right"; }
+    else if (this.#state === "climbing") {
       if (input.up) this.#moveY(-config.climbSpeed, platforms, obstacles, true);
       else if (input.down) this.#moveY(config.climbSpeed, platforms, obstacles, true);
       const dx = actionState ? 0 : input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { this.#face = dx > 0 ? "right" : "left"; this.#moveX(dx, obstacles); }
     } else {
-      const grounded = groundedNow;
-      if (this.#state === "climbing") this.#state = this.#grounded(platforms, obstacles) ? "stop" : "jumping";
-      if (this.#capabilities.jump && this.#state !== "jumping" && input.up && grounded) { this.#state = "jumping"; this.#ascending = true; this.#jumpOrigin = this.#y; this.#vy = config.maximumVerticalSpeed; }
-      else if (this.#state !== "jumping") { if (this.#capabilities.crouch && input.down && grounded) { this.#height = config.crouchingHeight; this.#y += config.standingHeight - this.#height; this.#state = "crouching"; } else this.#state = input.left || input.right ? "running" : "stop"; }
       const dx = input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { this.#face = dx > 0 ? "right" : "left"; this.#moveX(dx, obstacles); }
       if (this.#state === "jumping") {
         if (this.#ascending && (this.#jumpOrigin - this.#y >= config.jumpHeight || !this.#moveY(-this.#vy, platforms, obstacles))) this.#ascending = false;
-        if (!this.#ascending && !this.#moveY(this.#vy, platforms, obstacles)) this.#state = dx ? "running" : "stop";
+        if (!this.#ascending && !this.#moveY(this.#vy, platforms, obstacles)) this.#dispatchStateEvent("landed", input, platforms, obstacles);
         this.#vy = this.#ascending ? Math.max(config.minimumVerticalSpeed, this.#vy - config.verticalAcceleration) : Math.min(config.maximumVerticalSpeed, this.#vy + config.verticalAcceleration);
-      } else if (!grounded) { this.#state = "jumping"; this.#ascending = false; this.#vy = config.minimumVerticalSpeed; }
+      }
     }
-    this.#hitTicks = this.#state === "hitting" ? previousState === "hitting" ? this.#hitTicks + 1 : 0 : 0;
     this.#activateCheckpoint();
     if (this.#y > this.#map.height * this.#map.tileHeight + config.standingHeight) this.kill();
+  }
+  #dispatchStateEvent(event: string, input: PlayerInput, platforms: readonly PlayerPlatform[] = [], obstacles: readonly PlayerObstacle[] = []): void {
+    const grounded = this.#grounded(platforms, obstacles), onStairs = this.#capabilities.climb && this.#touchingStairs(), canDescend = this.#capabilities.climb && this.#canDescendStairs(), canStand = this.#canStand(obstacles);
+    this.#forms.evaluate({ input, signals: { grounded, onStairs, canDescendStairs: canDescend, canStand, ceilingBlocked: !canStand }, events: new Set([event]), x: this.#x, y: this.#y });
   }
   #tileKindAt(x: number, y: number): TileKind {
     const tx = Math.floor(x / this.#map.tileWidth), ty = Math.floor(y / this.#map.tileHeight);

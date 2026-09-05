@@ -58,6 +58,16 @@ int main() {
           {"enemyStates", {{"climbing", "ENEMY_LADDER"}}},
           {"objectStates", {{"dying", "BROKEN"}}},
           {"audio", {{"shot", 5}, {"bomb", nullptr}}}}}};
+  {
+    std::ifstream forms_input("tests/fixtures/character_forms.json");
+    forms_input >> reordered["runtimeProfile"]["characterForms"];
+  }
+  reordered["definitions"]["characters/warrior"] = reordered["definitions"]["characters/rick"];
+  reordered["definitions"]["characters/frog"] = reordered["definitions"]["characters/rick"];
+  reordered["definitions"]["characters/warrior"]["states"][0]["name"] = "WARRIOR_IDLE";
+  reordered["definitions"]["characters/warrior"]["states"][1]["name"] = "WARRIOR_WALK";
+  reordered["definitions"]["characters/warrior"]["states"][2]["name"] = "WARRIOR_TRANSFORM";
+  reordered["definitions"]["characters/frog"]["states"][0]["name"] = "FROG_IDLE";
   reordered["objective"] = {{"type", "reachZone"}, {"x", 10}, {"y", 20},
                             {"width", 16}, {"height", 24},
                             {"onComplete", "freeze"}};
@@ -69,6 +79,7 @@ int main() {
   }
   LoadLevelPackage(reordered_file);
   assert(GetRuntimeProfile().at("controller").at("runSpeed").get<int>() == 4);
+  assert(GetRuntimeProfile().at("characterForms").at("initialForm") == "warrior");
   const PlayerControllerConfig custom_controller =
       GetRuntimePlayerControllerConfig();
   assert(custom_controller.run_speed == 4.0f);

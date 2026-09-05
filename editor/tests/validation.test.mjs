@@ -5,6 +5,7 @@ import { strFromU8, strToU8 } from "fflate";
 import { createEmptyProject, createPlatformerDemoProject, resolveProjectReference } from "../test-dist/project-io.mjs";
 import { prepareLevelForEditing } from "../test-dist/migrations.mjs";
 import { hasValidationErrors, validateProject } from "../test-dist/validation.mjs";
+import { rickCharacterForms } from "../test-dist/character-forms.mjs";
 
 function readLevel(project) {
   return JSON.parse(strFromU8(project.files.get(project.manifest.initialLevel)));
@@ -89,6 +90,23 @@ test("runtime profiles validate states, audio, geometry, objectives and disabled
   assert.ok(diagnostics.some((item) => item.path === "/runtimeProfile/controller"));
   assert.ok(diagnostics.some((item) => item.path === "/objective"));
   assert.ok(diagnostics.some((item) => item.severity === "warning" && item.path.endsWith("/actionBindings/down")));
+});
+
+test("character forms are structurally and semantically validated", () => {
+  const project = createEmptyProject(); const level = readLevel(project);
+  level.runtimeProfile = { characterForms: rickCharacterForms() };
+  level.runtimeProfile.characterForms.forms[0].stateMachine.states[0].transitions[0].actions = [{ type: "setForm", form: "missing" }];
+  writeLevel(project, level); const diagnostics = validateProject(project);
+  assert.ok(diagnostics.some((item) => item.path === "/runtimeProfile/characterForms" && item.message.includes("form transition target does not exist")));
+});
+
+test("character events without a registered emitter produce a non-blocking warning", () => {
+  const project = createEmptyProject(); const level = readLevel(project);
+  level.runtimeProfile = { characterForms: rickCharacterForms() };
+  level.runtimeProfile.characterForms.forms[0].stateMachine.states[0].transitions[0].conditions = [{ type: "event", event: "openedDoor" }];
+  writeLevel(project, level); const diagnostics = validateProject(project);
+  assert.ok(diagnostics.some((item) => item.severity === "warning" && item.message.includes("openedDoor") && item.message.includes("no registered runtime emitter")));
+  assert.equal(hasValidationErrors(diagnostics), false);
 });
 
 test("migration registry accepts v1 clones and rejects future versions", () => {

@@ -1,0 +1,50 @@
+{
+  "initialForm": "warrior",
+  "forms": [
+    {
+      "id": "warrior",
+      "definition": "characters/warrior",
+      "controller": { "standingHeight": 40, "runSpeed": 2 },
+      "stateMachine": {
+        "initialState": "idle",
+        "states": [
+          {
+            "id": "idle",
+            "behavior": "stop",
+            "animation": "WARRIOR_IDLE",
+            "transitions": [
+              {
+                "to": "walking",
+                "conditions": [{ "type": "control", "control": "right", "pressed": true }],
+                "actions": [{ "type": "capturePosition", "axis": "both" }]
+              }
+            ]
+          },
+          {
+            "id": "walking",
+            "behavior": "running",
+            "animation": "WARRIOR_WALK",
+            "transitions": [
+              {
+                "to": "transforming",
+                "conditions": [{ "type": "distance", "axis": "x", "comparison": "greaterOrEqual", "value": 8 }],
+                "actions": [{ "type": "setForm", "form": "frog" }]
+              }
+            ]
+          },
+          { "id": "transforming", "behavior": "stop", "animation": "WARRIOR_TRANSFORM", "transitions": [] }
+        ]
+      }
+    },
+    {
+      "id": "frog",
+      "definition": "characters/frog",
+      "controller": { "standingHeight": 31, "runSpeed": 3 },
+      "capabilities": { "crouch": false, "climb": false },
+      "stateMachine": {
+        "initialState": "idle",
+        "states": [{ "id": "idle", "behavior": "stop", "animation": "FROG_IDLE", "transitions": [] }]
+      }
+    }
+  ]
+}

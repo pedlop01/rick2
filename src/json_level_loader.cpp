@@ -6,6 +6,7 @@
 #include "game_time.h"
 #include "format_versions.h"
 #include "rick_params.h"
+#include "character_state_machine.h"
 
 namespace {
 using json = nlohmann::json;
@@ -124,6 +125,16 @@ void ValidatePackage(const json& package, const char* file) {
     throw DataLoadError(std::string("Invalid '") + file + "': missing player definition");
   if (package.contains("runtimeProfile")) {
     const json& profile = package.at("runtimeProfile");
+    if (profile.contains("characterForms")) {
+      const json& forms = profile.at("characterForms"); ValidateCharacterForms(forms);
+      for (json::const_iterator form = forms.at("forms").begin(); form != forms.at("forms").end(); ++form) {
+        if (!form->contains("definition")) continue;
+        const std::string form_definition = form->at("definition").get<std::string>();
+        if (!definitions.contains(form_definition)) throw DataLoadError(std::string("Invalid '") + file + "': missing character form definition");
+        std::set<std::string> animations; for (json::const_iterator animation = definitions.at(form_definition).at("states").begin(); animation != definitions.at(form_definition).at("states").end(); ++animation) animations.insert(animation->at("name").get<std::string>());
+        for (json::const_iterator state = form->at("stateMachine").at("states").begin(); state != form->at("stateMachine").at("states").end(); ++state) if (state->contains("animation") && !animations.count(state->at("animation").get<std::string>())) throw DataLoadError(std::string("Invalid '") + file + "': character form animation does not exist");
+      }
+    }
     if (profile.contains("bindings") &&
         profile.at("bindings").contains("playerStates")) {
       std::set<std::string> available_states;

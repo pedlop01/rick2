@@ -3,6 +3,8 @@ import levelSchema from "../../schema/level.schema.json";
 import projectSchema from "../../schema/project.schema.json";
 import type { Rick2Project } from "./project-io";
 import { resolveProjectReference } from "./project-io";
+import { validateCharacterForms, type CharacterFormsDefinition } from "./character-forms";
+import { isKnownEngineEvent } from "./engine-events";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -122,6 +124,12 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
       : [],
   );
   const profile = object(level.runtimeProfile); const bindings = object(profile.bindings);
+  if (profile.characterForms !== undefined) {
+    try { validateCharacterForms(profile.characterForms as CharacterFormsDefinition); }
+    catch (error: unknown) { add("/runtimeProfile/characterForms", error instanceof Error ? error.message : String(error)); }
+    const forms = object(profile.characterForms).forms;
+    if (Array.isArray(forms)) forms.forEach((rawForm, index) => { const form = object(rawForm), definition = form.definition; if (typeof definition === "string") { if (!(definition in definitions)) add(`/runtimeProfile/characterForms/forms/${index}/definition`, `Definition not found: ${definition}`); else referencedDefinitions.add(definition); } const states = object(form.stateMachine).states; if (Array.isArray(states)) states.forEach((rawState, stateIndex) => { const transitions = object(rawState).transitions; if (Array.isArray(transitions)) transitions.forEach((rawTransition, transitionIndex) => { const conditions = object(rawTransition).conditions; if (Array.isArray(conditions)) conditions.forEach((rawCondition, conditionIndex) => { const condition = object(rawCondition); if (condition.type === "event" && typeof condition.event === "string" && !isKnownEngineEvent(condition.event)) warn(`/runtimeProfile/characterForms/forms/${index}/stateMachine/states/${stateIndex}/transitions/${transitionIndex}/conditions/${conditionIndex}/event`, `Event ${condition.event} has no registered runtime emitter`); }); }); }); });
+  }
   const controller = object(profile.controller);
   if ([controller.spriteWidth, controller.collisionWidth, controller.collisionOffsetX].every((part) => typeof part === "number") && Number(controller.collisionOffsetX) + Number(controller.collisionWidth) > Number(controller.spriteWidth)) add("/runtimeProfile/controller", "The player's horizontal bounding box exceeds its visual width");
   const playerStates = object(bindings.playerStates);

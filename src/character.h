@@ -118,6 +118,7 @@ class Character {
     map<int, Animation*> animations;
 
     Animation* AnimationForState(int state_id) const;
+    virtual int AnimationState() const { return state; }
 
     // Camera pointer
     // - Needed to localize rick in the screen. Used for some animations.
@@ -131,7 +132,7 @@ class Character {
 
     virtual ~Character();   // class destructor
 
-    void Reset();
+    virtual void Reset();
 
     void SetPosX(World* map, int x);
     void SetPosY(World* map, int y, bool all);    
@@ -166,7 +167,7 @@ class Character {
     bool ComputeCollisionBlocks(World* map);
 
     void ComputeCollisions(World* map);
-    void ComputeNextState(World* map, Keyboard& keyboard);
+    virtual void ComputeNextState(World* map, Keyboard& keyboard);
     void ComputeNextPosition(World* map);
     void ComputeNextPositionBasedOnBlocks(World* map, Keyboard& keyboard);   // REVISIT: using keyboard to test block destruction
     void ComputeNextSpeed();

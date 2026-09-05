@@ -38,9 +38,11 @@ g++ -std=c++11 tests/death_rules_test.cpp -o "$build_dir/death-rules"
 "$build_dir/death-rules"
 g++ -std=c++11 tests/trigger_rules_test.cpp -o "$build_dir/trigger-rules"
 "$build_dir/trigger-rules"
+g++ -std=c++11 tests/character_state_machine_test.cpp src/character_state_machine.cpp -o "$build_dir/character-state-machine"
+"$build_dir/character-state-machine"
 g++ -std=c++11 tests/checkpoint_test.cpp src/checkpoint.cpp -o "$build_dir/checkpoint"
 "$build_dir/checkpoint"
-g++ -std=c++11 tests/json_level_loader_test.cpp src/json_level_loader.cpp -o "$build_dir/json-loader"
+g++ -std=c++11 tests/json_level_loader_test.cpp src/json_level_loader.cpp src/character_state_machine.cpp -o "$build_dir/json-loader"
 "$build_dir/json-loader"
 cd editor
 npm ci

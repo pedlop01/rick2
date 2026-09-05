@@ -122,6 +122,7 @@
           "type": "object", "additionalProperties": false,
           "properties": { "up": { "$ref": "#/$defs/playerAction" }, "down": { "$ref": "#/$defs/playerAction" }, "horizontal": { "$ref": "#/$defs/playerAction" } }
         },
+        "characterForms": { "$ref": "#/$defs/characterForms" },
         "session": {
           "type": "object", "additionalProperties": false,
           "properties": { "initialLives": { "$ref": "#/$defs/positiveInteger" }, "damageEnabled": { "type": "boolean" }, "respawn": { "enum": ["checkpoint", "none"] }, "resetTriggersOnDeath": { "type": "boolean" }, "deathAudioSlot": { "$ref": "#/$defs/nullableAudioSlot" } }
@@ -129,6 +130,72 @@
         "bindings": { "$ref": "#/$defs/runtimeBindings" }
       }
     },
+    "characterForms": {
+      "type": "object", "additionalProperties": false,
+      "required": ["initialForm", "forms"],
+      "properties": {
+        "initialForm": { "$ref": "#/$defs/nonEmptyString" },
+        "forms": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/characterForm" } }
+      }
+    },
+    "characterForm": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "stateMachine"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "definition": { "$ref": "#/$defs/nonEmptyString" },
+        "controller": { "$ref": "#/$defs/runtimeProfile/properties/controller" },
+        "capabilities": { "$ref": "#/$defs/runtimeProfile/properties/capabilities" },
+        "actionBindings": { "$ref": "#/$defs/runtimeProfile/properties/actionBindings" },
+        "stateMachine": { "$ref": "#/$defs/characterStateMachine" }
+      }
+    },
+    "characterStateMachine": {
+      "type": "object", "additionalProperties": false,
+      "required": ["initialState", "states"],
+      "properties": {
+        "initialState": { "$ref": "#/$defs/nonEmptyString" },
+        "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/characterState" } }
+      }
+    },
+    "characterState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "transitions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "behavior": { "enum": ["stop", "running", "jumping", "crouching", "climbing", "shooting", "bombing", "hitting", "dead"] },
+        "animation": { "$ref": "#/$defs/nonEmptyString" },
+        "transitions": { "type": "array", "items": { "$ref": "#/$defs/characterTransition" } }
+      }
+    },
+    "characterTransition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["to", "conditions"],
+      "properties": {
+        "to": { "$ref": "#/$defs/nonEmptyString" },
+        "conditions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/characterCondition" } },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/characterAction" } }
+      }
+    },
+    "characterCondition": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["type", "control", "pressed"], "properties": { "type": { "const": "control" }, "control": { "enum": ["left", "right", "up", "down", "action"] }, "pressed": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "action", "active"], "properties": { "type": { "const": "action" }, "action": { "$ref": "#/$defs/nonEmptyString" }, "active": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "event" }, "event": { "$ref": "#/$defs/nonEmptyString" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "signal", "value"], "properties": { "type": { "const": "signal" }, "signal": { "enum": ["grounded", "onStairs", "canDescendStairs", "canStand", "ceilingBlocked"] }, "value": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "comparison", "value"], "properties": { "type": { "const": "elapsedTicks" }, "comparison": { "$ref": "#/$defs/comparison" }, "value": { "type": "number", "minimum": 0 } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "axis", "comparison", "value"], "properties": { "type": { "const": "distance" }, "axis": { "enum": ["x", "y"] }, "comparison": { "$ref": "#/$defs/comparison" }, "value": { "type": "number", "minimum": 0 } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "comparison", "state"], "properties": { "type": { "const": "previousState" }, "comparison": { "enum": ["equal", "notEqual"] }, "state": { "$ref": "#/$defs/nonEmptyString" } } }
+      ]
+    },
+    "characterAction": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": { "type": { "const": "setFacing" }, "value": { "enum": ["left", "right", "input"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "axis"], "properties": { "type": { "const": "capturePosition" }, "axis": { "enum": ["x", "y", "both"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "form"], "properties": { "type": { "const": "setForm" }, "form": { "$ref": "#/$defs/nonEmptyString" } } }
+      ]
+    },
+    "comparison": { "enum": ["equal", "notEqual", "greater", "greaterOrEqual", "lower", "lowerOrEqual"] },
     "playerAction": { "enum": ["shooting", "bombing", "hitting", null] },
     "runtimeBindings": {
       "type": "object", "additionalProperties": false,
