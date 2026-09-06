@@ -30,12 +30,15 @@ export class WebPlayer {
   get snapshot(): PlayerSnapshot { const config = this.#config; return { x: this.#x, y: this.#y, state: this.#state, face: this.#face, verticalSpeed: this.#vy, collisionX: this.#x + config.collisionOffsetX, collisionY: this.#y, collisionWidth: config.collisionWidth, collisionHeight: this.#height }; }
   get activeForm(): string { return this.#forms.active.id; }
   get activeDefinition(): string | undefined { return this.#forms.active.definition; }
+  get activeCombatProfile(): string | undefined { return this.#forms.active.combatProfile; }
+  get activeSpriteWidth(): number { return this.#config.spriteWidth; }
   get activeAnimation(): string | undefined { return this.#forms.activeState.animation; }
   get declaredState(): string { return this.#forms.state.state; }
   get declaredStateTicks(): number { return this.#forms.state.ticksInState; }
   get #state(): PlayerState { return (this.#forms.activeState.behavior ?? this.#forms.state.state) as PlayerState; }
   get deathScale(): number { return this.#state === "dead" ? 1 + this.#deadTicks * .1 : 1; }
   get activeCheckpoint(): number { return this.#activeCheckpoint; }
+  applyKnockback(dx: number, dy: number): void { this.#x = Math.min(this.#map.width * this.#map.tileWidth - this.#config.spriteWidth, Math.max(0, this.#x + dx)); this.#y = Math.max(0, this.#y + dy); }
   kill(): void { const config = this.#config; if (this.#state !== "dead") { this.#height = config.standingHeight; this.#dispatchStateEvent("killed", { left: false, right: false, up: false, down: false, action: false }); this.#deadTicks = 0; this.#deathOriginY = this.#y; this.#ascending = true; this.#vy = config.maximumVerticalSpeed * config.deathSpeedMultiplier; } }
   placeAtFeet(worldX: number, worldY: number): void {
     const config = this.#config, maxX = Math.max(0, this.#map.width * this.#map.tileWidth - config.collisionOffsetX - config.collisionWidth), maxY = Math.max(0, this.#map.height * this.#map.tileHeight - config.standingHeight);

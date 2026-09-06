@@ -372,7 +372,7 @@ export class WorkspacePreview {
       else context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, x, y, width, height);
     }
     if (!this.#runtimeBoundsVisible) return; context.lineWidth = 2 / this.#zoom;
-    for (const body of this.#runtimeBodies) { const player = body.kind === "player", shoot = body.kind === "shoot", bomb = body.kind === "bomb", enemy = body.kind === "enemy"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); }
+    for (const body of this.#runtimeBodies) { const player = body.kind === "player", shoot = body.kind === "shoot", bomb = body.kind === "bomb", enemy = body.kind === "enemy"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); for (const [boxes, color] of [[body.hurtboxes, "#22d3ee"], [body.attackboxes, "#ef4444"], [body.guardboxes, "#3b82f6"]] as const) { context.strokeStyle = color; for (const box of boxes ?? []) context.strokeRect(box.x, box.y, box.width, box.height); } }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

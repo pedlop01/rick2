@@ -30,6 +30,7 @@
     "runtimeProfile": { "$ref": "#/$defs/runtimeProfile" },
     "gameplay": { "$ref": "#/$defs/gameplayProgram" },
     "presentation": { "$ref": "#/$defs/presentation" },
+    "combat": { "$ref": "#/$defs/combat" },
     "objective": { "$ref": "#/$defs/objective" },
     "camera": {
       "allOf": [
@@ -50,7 +51,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["definition"],
-      "properties": { "definition": { "$ref": "#/$defs/nonEmptyString" } }
+      "properties": { "definition": { "$ref": "#/$defs/nonEmptyString" }, "combatProfile": { "$ref": "#/$defs/nonEmptyString" } }
     },
     "projectiles": {
       "type": "object",
@@ -131,6 +132,21 @@
     "parallaxLayer": { "type": "object", "additionalProperties": false, "required": ["id", "image", "plane", "factorX", "factorY"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "image": { "$ref": "#/$defs/nonEmptyString" }, "plane": { "enum": ["back", "front"] }, "factorX": { "type": "number" }, "factorY": { "type": "number" }, "offsetX": { "type": "number" }, "offsetY": { "type": "number" }, "repeatX": { "type": "boolean" }, "repeatY": { "type": "boolean" }, "opacity": { "type": "number", "minimum": 0, "maximum": 1 } } },
     "presentationMessage": { "type": "object", "additionalProperties": false, "required": ["id", "text"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "speaker": { "type": "string" }, "text": { "$ref": "#/$defs/nonEmptyString" }, "durationTicks": { "$ref": "#/$defs/nonNegativeInteger" } } },
     "presentationEffect": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "color", "durationTicks"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "kind": { "enum": ["fadeIn", "fadeOut", "flash"] }, "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }, "durationTicks": { "$ref": "#/$defs/positiveInteger" } } },
+    "combatRect": { "type": "object", "required": ["x", "y", "width", "height"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 } } },
+    "combatWindow": { "type": "object", "required": ["states"], "properties": { "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } }, "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonNegativeInteger" } } } },
+    "hurtbox": { "type": "object", "additionalProperties": false, "required": ["id", "x", "y", "width", "height"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } }, "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonNegativeInteger" } }, "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 } } },
+    "attackBox": { "type": "object", "additionalProperties": false, "required": ["id", "states", "x", "y", "width", "height", "damageType", "damage"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } }, "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonNegativeInteger" } }, "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 }, "damageType": { "$ref": "#/$defs/nonEmptyString" }, "damage": { "$ref": "#/$defs/positiveInteger" }, "hitOnce": { "type": "boolean" }, "knockbackX": { "type": "number" }, "knockbackY": { "type": "number" } } },
+    "guardBox": { "type": "object", "additionalProperties": false, "required": ["id", "states", "x", "y", "width", "height"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } }, "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonNegativeInteger" } }, "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 }, "damageTypes": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }, "facingOnly": { "type": "boolean" } } },
+    "combatProfile": { "type": "object", "additionalProperties": false, "required": ["id", "faction", "maxHealth", "hurtboxes"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "faction": { "$ref": "#/$defs/nonEmptyString" }, "maxHealth": { "$ref": "#/$defs/positiveInteger" }, "invulnerabilityTicks": { "$ref": "#/$defs/nonNegativeInteger" }, "hurtboxes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hurtbox" } }, "attacks": { "type": "array", "items": { "$ref": "#/$defs/attackBox" } }, "guards": { "type": "array", "items": { "$ref": "#/$defs/guardBox" } } } },
+    "combat": { "type": "object", "additionalProperties": false, "required": ["damageTypes", "profiles"], "properties": { "damageTypes": { "type": "array", "minItems": 1, "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" } } } }, "profiles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/combatProfile" } } } },
+    "enemyBehavior": { "oneOf": [
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "patrol" }, "turnAtEdges": { "type": "boolean" }, "turnAtWalls": { "type": "boolean" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "chase" }, "useStairs": { "type": "boolean" }, "detectionWidth": { "type": "number", "exclusiveMinimum": 0 }, "detectionHeight": { "type": "number", "exclusiveMinimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "axis", "distance"], "properties": { "type": { "const": "flyPatrol" }, "axis": { "enum": ["horizontal", "vertical", "both"] }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "phaseTicks": { "$ref": "#/$defs/positiveInteger" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "distance"], "properties": { "type": { "const": "verticalPatrol" }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "initialDirection": { "enum": ["up", "down"] }, "loop": { "type": "boolean" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "intervalTicks", "jumpHeight"], "properties": { "type": { "const": "jumper" }, "intervalTicks": { "$ref": "#/$defs/positiveInteger" }, "jumpHeight": { "type": "number", "exclusiveMinimum": 0 }, "horizontalSpeed": { "type": "number", "minimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "sequence"], "properties": { "type": { "const": "bossSequence" }, "sequence": { "$ref": "#/$defs/nonEmptyString" }, "repeat": { "type": "boolean" } } }
+    ] },
     "runtimeProfile": {
       "type": "object",
       "additionalProperties": false,
@@ -189,6 +205,7 @@
         "controller": { "$ref": "#/$defs/runtimeProfile/properties/controller" },
         "capabilities": { "$ref": "#/$defs/runtimeProfile/properties/capabilities" },
         "actionBindings": { "$ref": "#/$defs/runtimeProfile/properties/actionBindings" },
+        "combatProfile": { "$ref": "#/$defs/nonEmptyString" },
         "stateMachine": { "$ref": "#/$defs/characterStateMachine" }
       }
     },
@@ -582,7 +599,9 @@
         "ia_randomness": { "$ref": "#/$defs/nonNegativeInteger" }, "ia_block_steps": { "$ref": "#/$defs/nonNegativeInteger" },
         "ia_orig_x": { "type": "integer" }, "ia_orig_y": { "type": "integer" },
         "ia_limit_x": { "$ref": "#/$defs/nonNegativeInteger" }, "ia_limit_y": { "$ref": "#/$defs/nonNegativeInteger" },
-        "definition": { "$ref": "#/$defs/definitionReference" }
+        "definition": { "$ref": "#/$defs/definitionReference" },
+        "combatProfile": { "$ref": "#/$defs/nonEmptyString" },
+        "behavior": { "$ref": "#/$defs/enemyBehavior" }
       }
     },
     "cameraViewArray": { "type": "array", "items": { "$ref": "#/$defs/cameraView" } },

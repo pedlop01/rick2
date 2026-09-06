@@ -4,6 +4,7 @@ import { playerActionBindings, playerCapabilities, playerControllerConfig, type 
 export interface CharacterFormDefinition {
   id: string;
   definition?: string;
+  combatProfile?: string;
   controller?: Partial<PlayerControllerConfig>;
   capabilities?: Partial<PlayerCapabilities>;
   actionBindings?: Partial<PlayerActionBindings>;
@@ -13,6 +14,7 @@ export interface CharacterFormsDefinition { initialForm: string; forms: Characte
 export interface ActiveCharacterForm {
   id: string;
   definition?: string;
+  combatProfile?: string;
   controller: Readonly<PlayerControllerConfig>;
   capabilities: Readonly<PlayerCapabilities>;
   actionBindings: Readonly<PlayerActionBindings>;
@@ -64,7 +66,7 @@ export function validateCharacterForms(definition: CharacterFormsDefinition): vo
 export class CharacterForms {
   readonly #forms: ReadonlyMap<string, CharacterFormDefinition>; #active: CharacterFormDefinition; #machine: CharacterStateMachine;
   constructor(definition: CharacterFormsDefinition, facing: "left" | "right" = "right") { validateCharacterForms(definition); const clone = structuredClone(definition); this.#forms = new Map(clone.forms.map((form) => [form.id, form])); this.#active = this.#forms.get(clone.initialForm)!; this.#machine = new CharacterStateMachine(this.#active.stateMachine, facing); }
-  get active(): ActiveCharacterForm { return { id: this.#active.id, definition: this.#active.definition, controller: playerControllerConfig(this.#active.controller), capabilities: playerCapabilities(this.#active.capabilities), actionBindings: playerActionBindings(this.#active.actionBindings) }; }
+  get active(): ActiveCharacterForm { return { id: this.#active.id, definition: this.#active.definition, combatProfile: this.#active.combatProfile, controller: playerControllerConfig(this.#active.controller), capabilities: playerCapabilities(this.#active.capabilities), actionBindings: playerActionBindings(this.#active.actionBindings) }; }
   get state(): CharacterStateMachine["snapshot"] { return this.#machine.snapshot; }
   get activeState(): Readonly<import("./character-state-machine").CharacterStateDefinition> { return this.#machine.activeDefinition; }
   activate(id: string, context: Pick<CharacterStateContext, "x" | "y">): ActiveCharacterForm { const next = this.#forms.get(id); if (!next) throw new Error(`form does not exist: ${id}`); const facing = this.#machine.snapshot.facing; this.#active = next; this.#machine = new CharacterStateMachine(next.stateMachine, facing); this.#machine.reset(context); return this.active; }

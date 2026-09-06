@@ -7,6 +7,7 @@ import { validateCharacterForms, type CharacterFormsDefinition } from "./charact
 import { isKnownEngineEvent } from "./engine-events";
 import { validateGameplayProgram, validateGameplayTrigger, type GameplayAction, type GameplayCondition, type GameplayProgramDefinition } from "./gameplay-program";
 import { validatePresentation, type PresentationDefinition } from "./presentation";
+import { validateCombat, type CombatDefinition } from "./combat";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -64,6 +65,10 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
     try { const resolved = resolveProjectReference(file, reference); const bytes = project.files.get(resolved); if (!bytes) add(path, `Asset not found: ${resolved}`); return bytes ?? null; }
     catch (error: unknown) { add(path, error instanceof Error ? error.message : String(error)); return null; }
   };
+  const combat = object(level.combat); if (level.combat !== undefined) { try { validateCombat(level.combat as CombatDefinition); } catch (error: unknown) { add("/combat", error instanceof Error ? error.message : String(error)); } }
+  const combatProfiles = new Set(Array.isArray(combat.profiles) ? combat.profiles.map((entry) => object(entry).id).filter((id): id is string => typeof id === "string") : []);
+  const combatReference = (value: unknown, path: string): void => { if (typeof value === "string" && !combatProfiles.has(value)) add(path, `Combat profile not found: ${value}`); };
+  combatReference(object(level.player).combatProfile, "/player/combatProfile");
 
   const map = object(level.map);
   const width = Number(map.width);
@@ -97,6 +102,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
         add(`/entities/${group}/${index}`, `Definition not found: ${definition}`);
       }
       if (typeof definition === "string") referencedDefinitions.add(definition);
+      if (group === "enemies") combatReference(object(rawEntity).combatProfile, `/entities/${group}/${index}/combatProfile`);
       if (typeof definition === "string" && group === "enemies") enemyDefinitions.add(definition);
       if (typeof definition === "string" && ["platforms", "items", "backgroundObjects", "blocks", "hazards", "lasers"].includes(group)) objectDefinitions.add(definition);
     });
@@ -138,7 +144,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
     const forms = object(profile.characterForms).forms;
     const gameplayEvents = object(level.gameplay).events;
     const declaredEvents = new Set(Array.isArray(gameplayEvents) ? gameplayEvents.map((entry) => object(entry).id).filter((id): id is string => typeof id === "string") : []);
-    if (Array.isArray(forms)) forms.forEach((rawForm, index) => { const form = object(rawForm), definition = form.definition; if (typeof definition === "string") { if (!(definition in definitions)) add(`/runtimeProfile/characterForms/forms/${index}/definition`, `Definition not found: ${definition}`); else referencedDefinitions.add(definition); } const states = object(form.stateMachine).states; if (Array.isArray(states)) states.forEach((rawState, stateIndex) => { const transitions = object(rawState).transitions; if (Array.isArray(transitions)) transitions.forEach((rawTransition, transitionIndex) => { const conditions = object(rawTransition).conditions; if (Array.isArray(conditions)) conditions.forEach((rawCondition, conditionIndex) => { const condition = object(rawCondition); if (condition.type === "event" && typeof condition.event === "string" && !isKnownEngineEvent(condition.event) && !declaredEvents.has(condition.event)) warn(`/runtimeProfile/characterForms/forms/${index}/stateMachine/states/${stateIndex}/transitions/${transitionIndex}/conditions/${conditionIndex}/event`, `Event ${condition.event} has no registered runtime emitter`); }); }); }); });
+    if (Array.isArray(forms)) forms.forEach((rawForm, index) => { const form = object(rawForm), definition = form.definition; combatReference(form.combatProfile, `/runtimeProfile/characterForms/forms/${index}/combatProfile`); if (typeof definition === "string") { if (!(definition in definitions)) add(`/runtimeProfile/characterForms/forms/${index}/definition`, `Definition not found: ${definition}`); else referencedDefinitions.add(definition); } const states = object(form.stateMachine).states; if (Array.isArray(states)) states.forEach((rawState, stateIndex) => { const transitions = object(rawState).transitions; if (Array.isArray(transitions)) transitions.forEach((rawTransition, transitionIndex) => { const conditions = object(rawTransition).conditions; if (Array.isArray(conditions)) conditions.forEach((rawCondition, conditionIndex) => { const condition = object(rawCondition); if (condition.type === "event" && typeof condition.event === "string" && !isKnownEngineEvent(condition.event) && !declaredEvents.has(condition.event)) warn(`/runtimeProfile/characterForms/forms/${index}/stateMachine/states/${stateIndex}/transitions/${transitionIndex}/conditions/${conditionIndex}/event`, `Event ${condition.event} has no registered runtime emitter`); }); }); }); });
   }
   const controller = object(profile.controller);
   if ([controller.spriteWidth, controller.collisionWidth, controller.collisionOffsetX].every((part) => typeof part === "number") && Number(controller.collisionOffsetX) + Number(controller.collisionWidth) > Number(controller.spriteWidth)) add("/runtimeProfile/controller", "The player's horizontal bounding box exceeds its visual width");
