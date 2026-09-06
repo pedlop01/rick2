@@ -121,8 +121,8 @@ export class WorkspacePreview {
     if (this.#frame) cancelAnimationFrame(this.#frame);
   }
 
-  async load(project: Rick2Project, editableMap?: TileMapDocument, fitView = true): Promise<void> {
-    const levelPath = project.manifest.initialLevel;
+  async load(project: Rick2Project, editableMap?: TileMapDocument, fitView = true, selectedLevel = project.manifest.initialLevel): Promise<void> {
+    const levelPath = selectedLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`${levelPath} was not found`);
     const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }>; presentation?: { parallaxLayers?: ParallaxLayerDefinition[] } };

@@ -26,6 +26,7 @@ import { readableDataLabel, readableDataPath } from "./ui-labels";
 import { createControlSection } from "./ui-controls";
 import { CharacterStateEditor } from "./character-state-editor";
 import { GameplayEditor } from "./gameplay-editor";
+import { createLevel, duplicateLevel, levelId, moveLevel, removeLevel, renameLevel, resizeLevelMap, setInitialLevel } from "./project-levels";
 
 const LAYERS = [
   ["tiles", "Tiles"],
@@ -142,6 +143,7 @@ export function createEditorShell(host: HTMLElement): void {
   let activeLayer: MapLayerName = "tiles";
   let activeTool: EditTool = "pencil";
   let levelModel: LevelDocumentModel | null = null;
+  let activeLevelPath: string | null = null;
   let entityModel: EntityDocumentModel | null = null;
   let assetModel: AssetDocumentModel | null = null;
   let runtime: PreviewRuntime | null = null;
@@ -191,7 +193,7 @@ export function createEditorShell(host: HTMLElement): void {
   function configureRuntimeAudio(project: ReturnType<typeof createEmptyProject>, level: Record<string, unknown>): void {
     runtimeMusic?.pause(); runtimeMusic = null; for (const url of runtimeAudioUrls) URL.revokeObjectURL(url); runtimeAudioUrls = []; runtimeEffectUrls = [];
     const audio = level.audio && typeof level.audio === "object" ? level.audio as { initialMusic?: number; music?: string[]; effects?: string[]; playback?: { initialLoop?: boolean; followUpMusic?: number | null; followUpLoop?: boolean } } : {};
-    const urlFor = (reference: string): string => { const bytes = getProjectAsset(project, project.manifest.initialLevel, reference); const url = URL.createObjectURL(new Blob([bytes.slice().buffer])); runtimeAudioUrls.push(url); return url; };
+    const urlFor = (reference: string): string => { const bytes = getProjectAsset(project, levelModel?.path ?? project.manifest.initialLevel, reference); const url = URL.createObjectURL(new Blob([bytes.slice().buffer])); runtimeAudioUrls.push(url); return url; };
     try { const musicUrls = (audio.music ?? []).map((item) => urlFor(item)), initial = audio.initialMusic ?? 0, playback = audio.playback ?? {}; const reference = musicUrls[initial]; if (reference) { runtimeMusic = new Audio(reference); runtimeMusic.loop = playback.initialLoop ?? false; const followUp = playback.followUpMusic; if (!runtimeMusic.loop && typeof followUp === "number" && musicUrls[followUp]) runtimeMusic.addEventListener("ended", () => { if (!runtimeMusic) return; runtimeMusic.src = musicUrls[followUp]!; runtimeMusic.loop = playback.followUpLoop ?? true; if (runtimeAudioEnabled && runtimePlaying) void runtimeMusic.play().catch(() => undefined); }, { once: true }); } runtimeEffectUrls = (audio.effects ?? []).map((item) => urlFor(item)); } catch { runtimeMusic = null; runtimeEffectUrls = []; }
   }
 
@@ -222,9 +224,11 @@ export function createEditorShell(host: HTMLElement): void {
     dirty: boolean,
     message: string,
     resetHistory = true,
+    selectedLevel = activeLevelPath,
   ): Promise<void> {
     session.replace(project, dirty);
-    levelModel = new LevelDocumentModel(project);
+    activeLevelPath = selectedLevel && project.manifest.levels.includes(selectedLevel) ? selectedLevel : project.manifest.initialLevel;
+    levelModel = new LevelDocumentModel(project, activeLevelPath);
     entityModel = new EntityDocumentModel(levelModel);
     assetModel = new AssetDocumentModel(levelModel);
     stateEditor.bind(levelModel.level, commitStateChange, () => ({ form: runtime?.playerForm, state: runtime?.playerDeclaredState }));
@@ -234,7 +238,7 @@ export function createEditorShell(host: HTMLElement): void {
     selectedEntity = null;
     for (const checkbox of layerCheckboxes.values()) checkbox.disabled = false;
     refreshProjectState(message);
-    await preview.load(project, levelModel.map, resetHistory);
+    await preview.load(project, levelModel.map, resetHistory, levelModel.path);
     await palette.load(project, levelModel);
     assetEditor.load(assetModel);
     if (activeTool === "profile") renderProfileInspector();
@@ -243,6 +247,7 @@ export function createEditorShell(host: HTMLElement): void {
     refreshHistoryControls();
     if (resetHistory) { if (dirty) persistRecovery(); else discardRecovery(); }
     hint.hidden = true;
+    refreshLevelControls();
   }
 
   function renderDiagnostics(diagnostics: readonly Diagnostic[]): void {
@@ -403,10 +408,35 @@ export function createEditorShell(host: HTMLElement): void {
   const openDirectory = button("Open folder");
   const saveProject = button("Save ZIP");
   const saveDirectory = button("Save folder");
+  const levelSelect = document.createElement("select"); levelSelect.title = "Active level"; levelSelect.setAttribute("aria-label", "Active level");
+  const newLevel = button("New level"); const duplicateActiveLevel = button("Duplicate level"); const renameActiveLevel = button("Rename level"); const resizeActiveMap = button("Resize map"); const deleteActiveLevel = button("Delete level"); const moveLevelUp = button("Move level up"); const moveLevelDown = button("Move level down"); const makeInitialLevel = button("Set as initial");
   openDirectory.hidden = !supportsDirectoryAccess();
   saveDirectory.hidden = !supportsDirectoryAccess();
   saveProject.disabled = true;
   saveDirectory.disabled = true;
+
+  function refreshLevelControls(): void {
+    const project = session.project; levelSelect.replaceChildren();
+    for (const path of project?.manifest.levels ?? []) { const option = document.createElement("option"); option.value = path; option.textContent = `${levelId(project!, path)}${path === project!.manifest.initialLevel ? " · initial" : ""}`; levelSelect.append(option); }
+    if (activeLevelPath) levelSelect.value = activeLevelPath;
+    const enabled = Boolean(project && activeLevelPath), index = project && activeLevelPath ? project.manifest.levels.indexOf(activeLevelPath) : -1;
+    levelSelect.disabled = !enabled; newLevel.disabled = !enabled; duplicateActiveLevel.disabled = !enabled; renameActiveLevel.disabled = !enabled; resizeActiveMap.disabled = !enabled; deleteActiveLevel.disabled = !project || project.manifest.levels.length < 2; makeInitialLevel.disabled = !enabled || activeLevelPath === project?.manifest.initialLevel; moveLevelUp.disabled = index <= 0; moveLevelDown.disabled = !project || index < 0 || index >= project.manifest.levels.length - 1;
+  }
+
+  async function applyLevelChange(label: string, nextPath: string): Promise<void> {
+    const project = session.project; if (!project) return;
+    session.markDirty(); history.record(project, label); persistRecovery();
+    await activateProject(project, true, label, false, nextPath);
+  }
+
+  levelSelect.addEventListener("change", () => { const project = session.project; if (project) void activateProject(project, session.dirty, `Opened level ${levelId(project, levelSelect.value)}`, false, levelSelect.value); });
+  newLevel.addEventListener("click", () => { const project = session.project; if (!project) return; const id = window.prompt("ID for the new level", "new-level"); if (!id) return; void run(async () => applyLevelChange("Level created", createLevel(project, id))); });
+  duplicateActiveLevel.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath) return; const id = window.prompt("ID for the duplicate", `${levelId(project, activeLevelPath)}-copy`); if (!id) return; void run(async () => applyLevelChange("Level duplicated", duplicateLevel(project, activeLevelPath!, id))); });
+  renameActiveLevel.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath) return; const id = window.prompt("New level ID", levelId(project, activeLevelPath)); if (!id) return; void run(async () => applyLevelChange("Level renamed", renameLevel(project, activeLevelPath!, id))); });
+  resizeActiveMap.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath || !levelModel) return; const width = window.prompt("Map width in tiles", String(levelModel.map.width)); if (width === null) return; const height = window.prompt("Map height in tiles", String(levelModel.map.height)); if (height === null) return; void run(async () => { resizeLevelMap(project, activeLevelPath!, Number(width), Number(height)); await applyLevelChange(`Map resized to ${width}×${height} tiles`, activeLevelPath!); }); });
+  deleteActiveLevel.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath || !window.confirm(`Delete ${levelId(project, activeLevelPath)}?`)) return; void run(async () => applyLevelChange("Level deleted", removeLevel(project, activeLevelPath!))); });
+  for (const [control, offset] of [[moveLevelUp, -1], [moveLevelDown, 1]] as const) control.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath || !moveLevel(project, activeLevelPath, offset)) return; void applyLevelChange("Level order changed", activeLevelPath); });
+  makeInitialLevel.addEventListener("click", () => { const project = session.project; if (!project || !activeLevelPath) return; setInitialLevel(project, activeLevelPath); void applyLevelChange("Initial level changed", activeLevelPath); });
 
   let projectIdEdited = false;
   const projectSlug = (value: string): string => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "new-game";
@@ -485,7 +515,7 @@ export function createEditorShell(host: HTMLElement): void {
   showShortcut(undo, "Ctrl+Z"); showShortcut(redo, "Ctrl+Y");
   undo.disabled = true; redo.disabled = true;
   function refreshHistoryControls(): void { undo.disabled = !history.canUndo; redo.disabled = !history.canRedo; undo.title = history.undoLabel ? `Undo: ${history.undoLabel}` : "Nothing to undo"; redo.title = history.redoLabel ? `Redo: ${history.redoLabel}` : "Nothing to redo"; }
-  async function restoreHistory(project: ReturnType<ProjectHistory["undo"]>, message: string): Promise<void> { if (!project) return; await activateProject(project, !history.isClean, message, false); if (history.isClean) discardRecovery(); else persistRecovery(); }
+  async function restoreHistory(project: ReturnType<ProjectHistory["undo"]>, message: string): Promise<void> { if (!project) return; await activateProject(project, !history.isClean, message, false, activeLevelPath); if (history.isClean) discardRecovery(); else persistRecovery(); }
   undo.addEventListener("click", () => void restoreHistory(history.undo(), "Change undone"));
   redo.addEventListener("click", () => void restoreHistory(history.redo(), "Change redone"));
   const zoomOut = button("Zoom −", "Zoom out");
@@ -569,18 +599,19 @@ export function createEditorShell(host: HTMLElement): void {
     const group = document.createElement("details"); group.className = "toolbar-menu";
     const summary = document.createElement("summary"); summary.textContent = label;
     const popover = document.createElement("div"); popover.className = "toolbar-menu-popover"; popover.setAttribute("role", "group"); popover.setAttribute("aria-label", label); popover.append(...controls);
-    for (const control of controls) control.addEventListener("click", () => { group.open = false; });
+    for (const control of controls) if (control instanceof HTMLButtonElement) control.addEventListener("click", () => { group.open = false; });
     group.addEventListener("toggle", () => { if (!group.open) return; for (const other of toolbar.querySelectorAll<HTMLDetailsElement>("details[open]")) if (other !== group) other.open = false; });
     group.append(summary, popover); return group;
   };
   const projectMenu = toolbarGroup("Project", newProject, demoProject, openProject, openDirectory, saveProject, saveDirectory);
+  const levelMenu = toolbarGroup("Level", levelSelect, newLevel, duplicateActiveLevel, renameActiveLevel, resizeActiveMap, moveLevelUp, moveLevelDown, makeInitialLevel, deleteActiveLevel);
   const historyMenu = toolbarGroup("History", undo, redo);
   const editMenu = toolbarGroup("Edit", ...toolButtons.values()); editMenuSummary = editMenu.querySelector("summary");
   const testMenu = toolbarGroup("Test", play, pause, step, resetPreview, invulnerable, cameraViews, followPlayer, liveEdit, sprites, bounds, hurtboxes, attackboxes, guardboxes, audio, placePlayer);
   const viewMenu = toolbarGroup("View", zoomOut, zoomIn, fit, gameScreen, grid);
   const helpMenu = toolbarGroup("Help", quickGuide);
   toolbar.append(
-    projectMenu, historyMenu, editMenu, testMenu, viewMenu, helpMenu,
+    projectMenu, levelMenu, historyMenu, editMenu, testMenu, viewMenu, helpMenu,
   );
   window.addEventListener("pointerdown", (event) => { if (!toolbar.contains(event.target as Node)) for (const menu of toolbar.querySelectorAll<HTMLDetailsElement>("details[open]")) menu.open = false; });
   toolbar.addEventListener("keydown", (event) => { if (event.key === "Escape") { for (const menu of toolbar.querySelectorAll<HTMLDetailsElement>("details[open]")) menu.open = false; (event.target as HTMLElement).blur(); } });
@@ -619,7 +650,7 @@ export function createEditorShell(host: HTMLElement): void {
   const stateEditor = new CharacterStateEditor(stateControls, inspector, stateGraph);
   const gameplayEditor = new GameplayEditor(gameplayControls, inspector, gameplayWorkspace);
   const commitStateChange = (message: string): void => { if (!levelModel) return; levelModel.flush(); session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); runtime = new PreviewRuntime(levelModel.level); runtime.setInvulnerable(runtimeInvulnerable); runtime.setCameraViewsEnabled(runtimeCameraViewsEnabled); refreshProjectState(message); if (activeTool === "states") stateEditor.render(); if (activeTool === "gameplay") gameplayEditor.render(); };
-  assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map, false).then(() => palette.load(session.project!, levelModel!)); });
+  assetEditor.setChangeListener((message, reloadMap) => { session.markDirty(); if (session.project) history.record(session.project, message); persistRecovery(); refreshHistoryControls(); refreshProjectState(message); if (reloadMap && session.project && levelModel) void preview.load(session.project, levelModel.map, false, levelModel.path).then(() => palette.load(session.project!, levelModel!)); });
   palette.setSelectListener((gid) => { status.textContent = `Selected GID: ${gid}`; });
   preview.start();
   layerRows.get(activeLayer)?.classList.add("active");

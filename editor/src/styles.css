@@ -46,7 +46,8 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .toolbar-menu[open] > summary { color: #07111d; background: #57d3ff; border-color: #8ae3ff; }
 .toolbar-menu[open] > summary::after { color: #17314a; transform: rotate(180deg); }
 .toolbar-menu-popover { position: absolute; top: calc(100% + 7px); left: 0; display: grid; min-width: 210px; max-height: min(70vh, 520px); gap: 5px; padding: 7px; overflow-y: auto; background: #101a2a; border: 1px solid #3a4b66; border-radius: 6px; box-shadow: 0 12px 28px rgba(0, 0, 0, .45); }
-.toolbar-menu-popover button { width: 100%; text-align: left; }
+.toolbar-menu-popover button, .toolbar-menu-popover select { width: 100%; text-align: left; }
+.toolbar-menu-popover select { min-height: 32px; padding: 0 8px; color: #d6e0ec; background: #17243a; border: 1px solid #31425e; border-radius: 5px; }
 .toolbar-menu-popover button[data-shortcut] { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .toolbar-menu-popover button[data-shortcut]::after { content: attr(data-shortcut); color: #71839b; font-size: 10px; font-weight: 500; white-space: nowrap; }
 .toolbar-menu-popover button[data-shortcut]:disabled::after { color: #55657a; }

@@ -15,7 +15,13 @@ function safeFilename(name: string): string {
 export class AssetDocumentModel {
   readonly #levelModel: LevelDocumentModel;
   constructor(levelModel: LevelDocumentModel) { this.#levelModel = levelModel; }
-  get project(): Rick2Project { return this.#levelModel.project; }
+  get project(): Rick2Project {
+    return {
+      manifest: { ...this.#levelModel.project.manifest, initialLevel: this.#levelModel.path },
+      files: this.#levelModel.project.files,
+    };
+  }
+  get levelPath(): string { return this.#levelModel.path; }
   get level(): EditableLevel { return this.#levelModel.level; }
   get definitions(): Record<string, AnimationDefinition> { return this.level.definitions as Record<string, AnimationDefinition>; }
   get audio(): AudioConfiguration { const audio = this.level.audio as Omit<AudioConfiguration, "playback"> & { playback?: AudioConfiguration["playback"] }; audio.playback ??= { initialLoop: false, followUpMusic: null, followUpLoop: true }; return audio as AudioConfiguration; }

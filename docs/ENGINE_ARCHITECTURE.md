@@ -72,6 +72,17 @@ Its machine-readable contract is `schema/project.schema.json`. The
 `initialLevel` value must also occur in `levels`; this cross-field semantic rule
 is checked by the editor because JSON Schema cannot express it portably here.
 
+The `levels` array is ordered and is the editor's source of truth for the level
+selector. Level documents live at `levels/<id>/level.json`, while reusable
+assets remain under `assets/`; keeping every level at the same directory depth
+makes shared relative references stable when levels are duplicated or renamed.
+The editor can create, duplicate, rename, reorder, resize and remove levels, and updates
+both `project.json` and the compatibility `game.json` entry point whenever the
+initial level changes. Each declared level is schema- and semantically validated
+under its own file path before the project can be exported. Resizing is anchored
+at the top-left: it preserves overlapping cells, fills expansions with empty
+tiles and crops the right and bottom edges when reducing a map.
+
 `game.json` remains the runtime manifest. Level and asset paths are relative to
 the JSON file that contains them and must remain inside the extracted project
 root. Absolute paths, `..` traversal outside the root and URL assets are
