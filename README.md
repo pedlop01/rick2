@@ -134,7 +134,17 @@ scaled world coordinates:
 cd bin
 ./rick2 --debug
 ./rick2 --debug ../levels/level1/level.json
+./rick2 --project ../project.json
 ```
+
+Passing a level path keeps the direct, single-level runtime. Passing
+`--project project.json` enables the game shell: intro, main menu, new game,
+continue, unlocked-level selection, automatic campaign transitions and the
+campaign-complete screen. Controls outside gameplay are `Space` to confirm or
+start a new game, `A` to continue, `Z` to open level selection, arrow keys to
+move the selection and `Esc` to return to the menu or quit. Progress is kept by
+the shell for the running game session; campaign paths and unlock requirements
+come entirely from `project.json`.
 
 The command-line mode has a standalone parsing check:
 

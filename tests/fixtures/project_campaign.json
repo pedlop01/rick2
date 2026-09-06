@@ -1,0 +1,31 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.project",
+  "id": "campaign-test",
+  "name": "Campaign test",
+  "initialLevel": "levels/one/level.json",
+  "levels": [
+    "levels/one/level.json",
+    "levels/two/level.json",
+    "levels/three/level.json",
+    "levels/four/level.json",
+    "levels/final/level.json",
+    "levels/bonus/level.json"
+  ],
+  "campaign": {
+    "order": [
+      "levels/one/level.json",
+      "levels/two/level.json",
+      "levels/three/level.json",
+      "levels/four/level.json",
+      "levels/final/level.json"
+    ],
+    "unlockRules": [
+      { "level": "levels/one/level.json", "requiresCompleted": [] },
+      { "level": "levels/two/level.json", "requiresCompleted": ["levels/one/level.json"] },
+      { "level": "levels/three/level.json", "requiresCompleted": ["levels/two/level.json"] },
+      { "level": "levels/four/level.json", "requiresCompleted": ["levels/three/level.json"] },
+      { "level": "levels/final/level.json", "requiresCompleted": ["levels/one/level.json", "levels/two/level.json", "levels/three/level.json", "levels/four/level.json"] }
+    ]
+  }
+}

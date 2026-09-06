@@ -17,6 +17,13 @@ int main() {
   assert(!normal_options.debug);
   assert(normal_options.level_file == level);
 
+  char project_flag[] = "--project";
+  char project[] = "project.json";
+  char* project_arguments[] = {program, project_flag, project};
+  const RuntimeOptions project_options = ParseRuntimeOptions(3, project_arguments);
+  assert(project_options.project_file == project);
+  assert(project_options.level_file.empty());
+
   char unknown[] = "--unknown";
   char* invalid_arguments[] = {program, unknown};
   bool rejected = false;

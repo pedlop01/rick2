@@ -14,6 +14,14 @@ SoundHandler::~SoundHandler() {
 }
 
 void SoundHandler::InitializeSounds() {
+  for (std::size_t index = 0; index < music_instance.size(); ++index) {
+    if (music_instance[index]) {
+      al_stop_sample_instance(music_instance[index]);
+      al_destroy_sample_instance(music_instance[index]);
+    }
+  }
+  music_instance.clear();
+  playing_music_id = -1;
   const std::vector<std::string>& configured_music = GetLevelMusicFiles();
   const std::vector<std::string>& configured_effects = GetLevelEffectFiles();
   if (configured_music.empty()) {

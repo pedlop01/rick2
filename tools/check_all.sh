@@ -44,6 +44,8 @@ g++ -std=c++11 tests/character_state_machine_test.cpp src/character_state_machin
 "$build_dir/character-state-machine"
 g++ -std=c++11 tests/gameplay_program_test.cpp src/gameplay_program.cpp -o "$build_dir/gameplay-program"
 "$build_dir/gameplay-program"
+g++ -std=c++11 tests/game_shell_test.cpp src/game_shell.cpp -o "$build_dir/game-shell"
+"$build_dir/game-shell"
 g++ -std=c++11 tests/presentation_state_test.cpp src/presentation_state.cpp -o "$build_dir/presentation-state"
 "$build_dir/presentation-state"
 g++ -std=c++11 tests/combat_test.cpp src/combat.cpp -o "$build_dir/combat"

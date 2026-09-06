@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "kind": "rick2.project",
+  "id": "levels-only-test",
+  "name": "Levels only test",
+  "initialLevel": "levels/one/level.json",
+  "levels": ["levels/one/level.json", "levels/two/level.json"]
+}
