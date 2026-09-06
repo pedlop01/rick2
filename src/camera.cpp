@@ -2,6 +2,8 @@
 #include "death_rules.h"
 #include "enemy.h"
 #include "game_time.h"
+#include "resource_cache.h"
+#include <cmath>
 
 Camera::Camera() {
   pos_x = 0;
@@ -70,8 +72,38 @@ void Camera::PositionBasedOnPlayer(Character* player) {
 
   // Keep the last playable frame through DYING and the one-tick DEAD handoff.
   if (ShouldFreezeCameraForState(player->GetState())) return;
-  SetPosX(player->GetCorrectedPosX() - camera_width/2);
-  SetPosY(player->GetCorrectedPosY() - camera_height/2);
+  const double follow_x = player->GetCorrectedPosX() - camera_width/2;
+  const double follow_y = player->GetCorrectedPosY() - camera_height/2;
+  SetPosX(static_cast<int>(map->GetPresentation()->CameraX(follow_x)));
+  SetPosY(static_cast<int>(map->GetPresentation()->CameraY(follow_y)));
+}
+
+void Camera::DrawParallax(World* world, const char* plane) {
+  const nlohmann::json layers = world->GetPresentation()->Definition().value("parallaxLayers", nlohmann::json::array());
+  for (nlohmann::json::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+    if (it->value("plane", "back") != plane) continue;
+    BitmapResource image = ResourceCache::Instance().LoadBitmap(it->at("image").get<std::string>());
+    if (!image) continue;
+    const int width = al_get_bitmap_width(image.get()), height = al_get_bitmap_height(image.get());
+    const double factor_x = it->value("factorX", 0.0), factor_y = it->value("factorY", 0.0);
+    double start_x = it->value("offsetX", 0.0) - pos_x * factor_x;
+    double start_y = it->value("offsetY", 0.0) - pos_y * factor_y;
+    const bool repeat_x = it->value("repeatX", false), repeat_y = it->value("repeatY", false);
+    if (repeat_x) { start_x = std::fmod(start_x, width); if (start_x > 0) start_x -= width; }
+    if (repeat_y) { start_y = std::fmod(start_y, height); if (start_y > 0) start_y -= height; }
+    const ALLEGRO_COLOR tint = al_map_rgba_f(1, 1, 1, it->value("opacity", 1.0));
+    const double end_x = repeat_x ? pixels_width : start_x + 1, end_y = repeat_y ? pixels_height : start_y + 1;
+    for (double y = start_y; y < end_y; y += height) for (double x = start_x; x < end_x; x += width) al_draw_tinted_bitmap(image.get(), tint, x, y, 0);
+  }
+}
+
+namespace { ALLEGRO_COLOR PresentationColor(const std::string& value, float alpha) { unsigned int rgb = 0; if (value.size() == 7 && value[0] == '#') sscanf(value.c_str() + 1, "%x", &rgb); return al_map_rgba_f(((rgb >> 16) & 255) / 255.0f, ((rgb >> 8) & 255) / 255.0f, (rgb & 255) / 255.0f, alpha); } }
+void Camera::DrawPresentation(World* world, ALLEGRO_FONT* font) {
+  PresentationState* state = world->GetPresentation();
+  const nlohmann::json& message = state->Message();
+  if (!message.is_null()) { const float top = pixels_height - 54; al_draw_filled_rectangle(8, top, pixels_width - 8, pixels_height - 8, al_map_rgba(4, 8, 15, 230)); al_draw_rectangle(8, top, pixels_width - 8, pixels_height - 8, al_map_rgb(87, 211, 255), 1); const std::string speaker = message.value("speaker", ""), text = message.value("text", ""); if (!speaker.empty()) al_draw_text(font, al_map_rgb(125, 211, 252), 14, top + 5, ALLEGRO_ALIGN_LEFT, speaker.c_str()); al_draw_text(font, al_map_rgb(248, 250, 252), 14, top + (speaker.empty() ? 14 : 23), ALLEGRO_ALIGN_LEFT, text.c_str()); }
+  const nlohmann::json& effect = state->Effect();
+  if (!effect.is_null()) { const float progress = static_cast<float>(state->EffectTicks()) / state->EffectDuration(); const std::string kind = effect.value("kind", "flash"); const float alpha = kind == "fadeIn" ? 1 - progress : kind == "fadeOut" ? progress : progress < .5f ? progress * 2 : (1 - progress) * 2; al_draw_filled_rectangle(0, 0, pixels_width, pixels_height, PresentationColor(effect.value("color", "#ffffff"), std::max(0.0f, std::min(1.0f, alpha)))); }
 }
 
 void Camera::SetPosX(int _pos_x) {
@@ -486,6 +518,7 @@ void Camera::DrawScreen(World* world, Character* player, ALLEGRO_FONT *font) {
   // into the screen bitmap  
   al_set_target_bitmap(camera_bitmap);  
   al_clear_to_color(al_map_rgb(0, 0, 0));   // REVISIT: Drawing background as black. This helps with transparent tiles drawing  
+  this->DrawParallax(world, "back");
     
   // Traverse map and draw background tiles in the screen
   this->DrawBackTiles(map, player, font);
@@ -509,8 +542,10 @@ void Camera::DrawScreen(World* world, Character* player, ALLEGRO_FONT *font) {
   this->DrawTriggers(map, player, font);
   // Draw player dying if required
   this->DrawPlayerDying(map, player, font);
+  this->DrawParallax(world, "front");
   // Draw camera views
   this->DrawCameraViews(map, player, font);
+  this->DrawPresentation(world, font);
 
   // Move camera to screen
   al_set_target_bitmap(screen);

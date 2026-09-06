@@ -11,7 +11,11 @@ export type GameplayAction =
   | { type: "setFlag"; flag: string; value: GameplayFlagValue }
   | { type: "toggleFlag"; flag: string }
   | { type: "incrementFlag"; flag: string; amount: number }
-  | { type: "emitEvent"; event: string };
+  | { type: "emitEvent"; event: string }
+  | { type: "setCamera"; mode: "follow" | "fixed"; x?: number; y?: number; durationTicks: number }
+  | { type: "showMessage"; message: string }
+  | { type: "hideMessage" }
+  | { type: "playEffect"; effect: string };
 export type GameplaySequenceStep =
   | { type: "action"; action: GameplayAction }
   | { type: "wait"; ticks: number }
@@ -33,7 +37,7 @@ export function validateGameplayProgram(definition: GameplayProgramDefinition): 
   for (const [index, flag] of (definition.flags ?? []).entries()) { nonEmpty(flag.id, `flags[${index}].id`); if (flags.has(flag.id)) throw new Error(`duplicate flag: ${flag.id}`); if (!valueMatches(flag.type, flag.initial)) throw new Error(`flag ${flag.id} initial value must be ${flag.type}`); if (typeof flag.initial === "number" && !Number.isFinite(flag.initial)) throw new Error(`flag ${flag.id} initial value must be finite`); flags.set(flag.id, flag); }
   for (const [index, event] of (definition.events ?? []).entries()) { nonEmpty(event.id, `events[${index}].id`); if (events.has(event.id) || isKnownEngineEvent(event.id)) throw new Error(`duplicate or reserved event: ${event.id}`); events.add(event.id); }
   const knownEvent = (id: string): boolean => events.has(id) || isKnownEngineEvent(id);
-  const action = (value: GameplayAction): void => { if (value.type === "emitEvent") { if (!knownEvent(value.event)) throw new Error(`event does not exist: ${value.event}`); return; } const flag = flags.get(value.flag); if (!flag) throw new Error(`flag does not exist: ${value.flag}`); if (value.type === "toggleFlag" && flag.type !== "boolean") throw new Error(`flag ${value.flag} must be boolean`); if (value.type === "incrementFlag" && (flag.type !== "number" || !Number.isFinite(value.amount))) throw new Error(`flag ${value.flag} must be a finite number`); if (value.type === "setFlag" && !valueMatches(flag.type, value.value)) throw new Error(`flag ${value.flag} value must be ${flag.type}`); };
+  const action = (value: GameplayAction): void => { if (value.type === "emitEvent") { if (!knownEvent(value.event)) throw new Error(`event does not exist: ${value.event}`); return; } if (value.type === "setCamera") { if (!Number.isInteger(value.durationTicks) || value.durationTicks < 0 || (value.mode === "fixed" && ![value.x, value.y].every(Number.isFinite))) throw new Error("invalid camera action"); return; } if (value.type === "showMessage" || value.type === "hideMessage" || value.type === "playEffect") return; const flag = flags.get(value.flag); if (!flag) throw new Error(`flag does not exist: ${value.flag}`); if (value.type === "toggleFlag" && flag.type !== "boolean") throw new Error(`flag ${value.flag} must be boolean`); if (value.type === "incrementFlag" && (flag.type !== "number" || !Number.isFinite(value.amount))) throw new Error(`flag ${value.flag} must be a finite number`); if (value.type === "setFlag" && !valueMatches(flag.type, value.value)) throw new Error(`flag ${value.flag} value must be ${flag.type}`); };
   const step = (value: GameplaySequenceStep): void => { if (value.type === "action") action(value.action); else if (value.type === "wait") { if (!Number.isInteger(value.ticks) || value.ticks < 1) throw new Error("wait ticks must be a positive integer"); } else { if (!value.steps.length) throw new Error(`${value.type} sequence cannot be empty`); value.steps.forEach(step); } };
   for (const sequence of definition.sequences ?? []) { nonEmpty(sequence.id, "sequence.id"); if (sequences.has(sequence.id)) throw new Error(`duplicate sequence: ${sequence.id}`); if (!sequence.steps.length) throw new Error(`sequence ${sequence.id} cannot be empty`); sequences.add(sequence.id); sequence.steps.forEach(step); }
 }
@@ -47,13 +51,13 @@ export function validateGameplayTrigger(definition: GameplayProgramDefinition, c
 
 export class GameplayState {
   readonly #definitions: ReadonlyMap<string, GameplayFlagDefinition>; readonly #flags = new Map<string, GameplayFlagValue>(); readonly #events = new Set<string>();
-  constructor(readonly definition: GameplayProgramDefinition = {}, readonly onEvent: (event: string) => void = () => undefined) { validateGameplayProgram(definition); this.#definitions = new Map((definition.flags ?? []).map((flag) => [flag.id, structuredClone(flag)])); this.reset(); }
+  constructor(readonly definition: GameplayProgramDefinition = {}, readonly onEvent: (event: string) => void = () => undefined, readonly onRegisteredAction: (action: GameplayAction) => void = () => undefined) { validateGameplayProgram(definition); this.#definitions = new Map((definition.flags ?? []).map((flag) => [flag.id, structuredClone(flag)])); this.reset(); }
   reset(): void { this.#flags.clear(); for (const flag of this.#definitions.values()) this.#flags.set(flag.id, flag.initial); this.#events.clear(); }
   beginTick(): void { this.#events.clear(); }
   flag(id: string): GameplayFlagValue { if (!this.#flags.has(id)) throw new Error(`flag does not exist: ${id}`); return this.#flags.get(id)!; }
   event(id: string): boolean { return this.#events.has(id); }
   matches(condition: GameplayCondition): boolean { return condition.type === "event" ? this.event(condition.event) : compare(this.flag(condition.flag), condition.comparison, condition.value); }
-  execute(action: GameplayAction): void { if (action.type === "emitEvent") { this.#events.add(action.event); this.onEvent(action.event); return; } const current = this.flag(action.flag); if (action.type === "setFlag") this.#flags.set(action.flag, action.value); else if (action.type === "toggleFlag") this.#flags.set(action.flag, !current); else this.#flags.set(action.flag, Number(current) + action.amount); }
+  execute(action: GameplayAction): void { if (action.type === "emitEvent") { this.#events.add(action.event); this.onEvent(action.event); return; } if (action.type === "setCamera" || action.type === "showMessage" || action.type === "hideMessage" || action.type === "playEffect") { this.onRegisteredAction(action); return; } const current = this.flag(action.flag); if (action.type === "setFlag") this.#flags.set(action.flag, action.value); else if (action.type === "toggleFlag") this.#flags.set(action.flag, !current); else this.#flags.set(action.flag, Number(current) + action.amount); }
   sequence(id: string): GameplaySequence { const definition = (this.definition.sequences ?? []).find((sequence) => sequence.id === id); if (!definition) throw new Error(`sequence does not exist: ${id}`); return new GameplaySequence(definition); }
 }
 

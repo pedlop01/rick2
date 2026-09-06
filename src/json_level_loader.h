@@ -69,6 +69,7 @@ const std::string& GetPlayerDefinition();
 const nlohmann::json& GetProjectileDefinition(const char* projectile);
 const nlohmann::json& GetRuntimeProfile();
 const nlohmann::json& GetGameplayProgramDefinition();
+const nlohmann::json& GetPresentationDefinition();
 PlayerControllerConfig GetRuntimePlayerControllerConfig();
 PlayerGameplayConfig GetRuntimePlayerGameplayConfig();
 int ResolveCharacterAnimationStateId(const char* definition,

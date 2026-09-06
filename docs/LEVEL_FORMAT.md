@@ -20,6 +20,8 @@ Version 1 contains:
   `playback`. `initialLoop` controla la repetición inicial; `followUpMusic`
   puede ser `null` o el índice de una segunda pista, cuyo bucle se decide con
   `followUpLoop`.
+- `presentation` (opcional): planos de parallax, mensajes narrativos y efectos
+  visuales registrados que las secuencias y triggers pueden activar.
 
 Asset paths are relative to the package JSON, so levels can be loaded from a
 different location without depending on the process working directory.

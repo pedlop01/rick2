@@ -1,10 +1,10 @@
 PLATFORM := $(shell uname -o)
 ifeq  ($(PLATFORM),GNU/Linux)
-rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o resource_cache.o
-	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o resource_cache.o -O3 -std=c++11 `pkg-config --libs allegro-5 allegro_primitives-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_audio-5 allegro_acodec-5`
+rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o presentation_state.o resource_cache.o
+	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o presentation_state.o resource_cache.o -O3 -std=c++11 `pkg-config --libs allegro-5 allegro_primitives-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_audio-5 allegro_acodec-5`
 else
-rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o resource_cache.o
-	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o resource_cache.o -O3 -std=c++11 -static -lallegro-5.0.10-monolith-md
+rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o presentation_state.o resource_cache.o
+	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o presentation_state.o resource_cache.o -O3 -std=c++11 -static -lallegro-5.0.10-monolith-md
 endif
 
 world.o: ../src/world.cpp
@@ -87,6 +87,9 @@ character_state_machine.o: ../src/character_state_machine.cpp
 
 gameplay_program.o: ../src/gameplay_program.cpp
 	g++ -std=c++11 -c ../src/gameplay_program.cpp
+
+presentation_state.o: ../src/presentation_state.cpp
+	g++ -std=c++11 -c ../src/presentation_state.cpp
 
 resource_cache.o: ../src/resource_cache.cpp
 	g++ -std=c++11 -c ../src/resource_cache.cpp

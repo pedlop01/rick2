@@ -11,7 +11,7 @@ World::World()
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
     target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
-    level_completed(false), gameplay(nullptr)
+    level_completed(false), gameplay(nullptr), presentation(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 }
@@ -20,12 +20,14 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
     target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
-    level_completed(false), gameplay(nullptr)
+    level_completed(false), gameplay(nullptr), presentation(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
 
   LoadLevelPackage(file);
   gameplay = new GameplayProgram(GetGameplayProgramDefinition());
+  presentation = new PresentationState(GetPresentationDefinition());
+  presentation->ValidateProgram(GetGameplayProgramDefinition());
   objective = GetLevelObjectiveConfig();
   const nlohmann::json& map = GetLevelMap();
   map_width = map.at("width").get<int>();
@@ -127,6 +129,7 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
 World::~World()
 {
   delete gameplay;
+  delete presentation;
   for (int x = 0; x < map_width; ++x) {
     for (int y = 0; y < map_height; ++y) {
       delete world_tiles[x][y];
@@ -705,7 +708,15 @@ void World::InitializeTriggers(const char* file) {
                                          trig_action,
                                          trig_face,
                                          trig_recursive);
-    if (trig->contains("gameplay")) world_trigger->ConfigureGameplay(gameplay, trig->at("gameplay"));
+    if (trig->contains("gameplay")) {
+      const nlohmann::json& trigger_gameplay = trig->at("gameplay");
+      const nlohmann::json actions = trigger_gameplay.value("actions", nlohmann::json::array());
+      for (nlohmann::json::const_iterator action = actions.begin(); action != actions.end(); ++action) {
+        const std::string type = action->value("type", "");
+        if (type == "setCamera" || type == "showMessage" || type == "hideMessage" || type == "playEffect") presentation->ValidateAction(*action);
+      }
+      world_trigger->ConfigureGameplay(gameplay, trigger_gameplay);
+    }
 
     printf(" - targets:\n");
     num_targets = 0;
@@ -1087,6 +1098,7 @@ void World::WorldStep(Character* player) {
     gameplay->BeginTick();
     Player* world_player = dynamic_cast<Player*>(player);
     gameplay->SetEventSink(world_player ? std::function<void(const std::string&)>([world_player](const std::string& event) { world_player->DispatchGameplayEvent(event); }) : std::function<void(const std::string&)>());
+    if (presentation) { presentation->Step(); gameplay->SetActionSink([this, player](const nlohmann::json& action) { const double follow_x = player->GetCorrectedPosX() - GetCameraConfig().width / 2.0, follow_y = player->GetCorrectedPosY() - GetCameraConfig().height / 2.0; presentation->Execute(action, presentation->CameraX(follow_x), presentation->CameraY(follow_y)); }); }
     gameplay->StepSequences();
   }
 

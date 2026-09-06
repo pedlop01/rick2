@@ -14,8 +14,10 @@ El bloque opcional `gameplay` contiene tres catálogos:
   de personaje puede consumir;
 - `sequences`: árboles de pasos `action`, `wait`, `serial` y `parallel`.
 
-Las acciones registradas son `setFlag`, `toggleFlag`, `incrementFlag` y
-`emitEvent`. Las comparaciones ordenadas sólo admiten números. Los eventos
+Las acciones registradas son `setFlag`, `toggleFlag`, `incrementFlag`,
+`emitEvent`, `setCamera`, `showMessage`, `hideMessage` y `playEffect`. Las
+cuatro últimas consumen catálogos tipados del bloque `presentation`, descrito
+en [PRESENTATION.md](PRESENTATION.md). Las comparaciones ordenadas sólo admiten números. Los eventos
 viven durante el tick en que se emiten; los flags viven hasta reiniciar el
 nivel. `killed` y `landed` son eventos incorporados y sus nombres están
 reservados.
@@ -78,8 +80,7 @@ referencias cruzadas.
 
 ## Límites deliberados
 
-El registro de acciones es cerrado. Activación genérica de entidades, cámara,
-textos y efectos visuales se incorporarán con nuevas acciones tipadas en las
-tareas correspondientes; no se añadirá una acción de “ejecutar script”. Así
+El registro de acciones es cerrado. Nuevas capacidades se incorporan mediante
+acciones tipadas; no se añadirá una acción de “ejecutar script”. Así
 los proyectos siguen siendo portables, validables y equivalentes entre web y
 C++.

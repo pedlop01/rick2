@@ -240,6 +240,7 @@ void LoadLevelPackage(const char* file) {
       *path = ResolvePath(package_directory, path->get<std::string>());
     for (json::iterator path = audio["effects"].begin(); path != audio["effects"].end(); ++path)
       *path = ResolvePath(package_directory, path->get<std::string>());
+    if (value.contains("presentation") && value["presentation"].contains("parallaxLayers")) for (json::iterator layer = value["presentation"]["parallaxLayers"].begin(); layer != value["presentation"]["parallaxLayers"].end(); ++layer) (*layer)["image"] = ResolvePath(package_directory, (*layer)["image"].get<std::string>());
     music_files = audio.at("music").get<std::vector<std::string> >();
     effect_files = audio.at("effects").get<std::vector<std::string> >();
     initial_music = audio.at("initialMusic").get<int>();
@@ -277,6 +278,7 @@ const nlohmann::json& GetProjectileDefinition(const char* projectile) {
 }
 const nlohmann::json& GetRuntimeProfile() { return runtime_profile; }
 const nlohmann::json& GetGameplayProgramDefinition() { static const json empty = json::object(); return package_data.contains("gameplay") ? package_data.at("gameplay") : empty; }
+const nlohmann::json& GetPresentationDefinition() { static const json empty = json::object(); return package_data.contains("presentation") ? package_data.at("presentation") : empty; }
 PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, 1.0f, 3.0f,
                                    0.1f, 2.0f, 40, 80, 2.0f, 70, 20};

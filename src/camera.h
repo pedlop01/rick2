@@ -94,6 +94,8 @@ class Camera
     void DrawEnemies(World* world, Character *player, ALLEGRO_FONT *font);
     void DrawTriggers(World* world, Character *player, ALLEGRO_FONT *font);
     void DrawCameraViews(World* world, Character *player, ALLEGRO_FONT *font);
+    void DrawParallax(World* world, const char* plane);
+    void DrawPresentation(World* world, ALLEGRO_FONT *font);
     void DrawScreen(World* world, Character *player, ALLEGRO_FONT *font);
 
 };

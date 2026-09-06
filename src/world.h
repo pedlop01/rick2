@@ -31,6 +31,7 @@
 #include "json_level_loader.h"
 #include "resource_cache.h"
 #include "gameplay_program.h"
+#include "presentation_state.h"
 
 using namespace std;
 
@@ -116,6 +117,7 @@ class World
         LevelObjectiveConfig objective;
         bool level_completed;
         GameplayProgram* gameplay;
+        PresentationState* presentation;
 
         BitmapResource world_image;
 
@@ -160,6 +162,7 @@ class World
         void  WorldStep(Character* player);
         bool  IsLevelCompleted() const { return level_completed; }
         bool  FreezeOnComplete() const { return objective.freeze_on_complete; }
+        PresentationState* GetPresentation() const { return presentation; }
 
         void  InitializePlatforms(const char* file);
         void  InitializeItems(const char* file, SoundHandler* sound_handler);

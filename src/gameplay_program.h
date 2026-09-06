@@ -21,6 +21,7 @@ class GameplayProgram {
   const nlohmann::json& Flag(const std::string& id) const;
   bool HasEvent(const std::string& id) const;
   void SetEventSink(const std::function<void(const std::string&)>& sink);
+  void SetActionSink(const std::function<void(const nlohmann::json&)>& sink);
   void ValidateTrigger(const nlohmann::json& definition) const;
 
  private:
@@ -40,6 +41,7 @@ class GameplayProgram {
   std::map<std::string, nlohmann::json> sequences_;
   std::vector<std::shared_ptr<RunningStep> > running_;
   std::function<void(const std::string&)> event_sink_;
+  std::function<void(const nlohmann::json&)> action_sink_;
   bool Advance(const std::shared_ptr<RunningStep>& step);
   void ValidateAction(const nlohmann::json& action) const;
   void ValidateStep(const nlohmann::json& step) const;

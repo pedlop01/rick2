@@ -6,6 +6,7 @@ import { resolveProjectReference } from "./project-io";
 import { validateCharacterForms, type CharacterFormsDefinition } from "./character-forms";
 import { isKnownEngineEvent } from "./engine-events";
 import { validateGameplayProgram, validateGameplayTrigger, type GameplayAction, type GameplayCondition, type GameplayProgramDefinition } from "./gameplay-program";
+import { validatePresentation, type PresentationDefinition } from "./presentation";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -126,6 +127,11 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   );
   const profile = object(level.runtimeProfile); const bindings = object(profile.bindings);
   if (level.gameplay !== undefined) { try { validateGameplayProgram(level.gameplay as GameplayProgramDefinition); } catch (error: unknown) { add("/gameplay", error instanceof Error ? error.message : String(error)); } }
+  const presentation = object(level.presentation); if (level.presentation !== undefined) { try { validatePresentation(level.presentation as PresentationDefinition); } catch (error: unknown) { add("/presentation", error instanceof Error ? error.message : String(error)); } const layers = presentation.parallaxLayers; if (Array.isArray(layers)) layers.forEach((raw, index) => asset(object(raw).image, `/presentation/parallaxLayers/${index}/image`)); }
+  const messageIds = new Set(Array.isArray(presentation.messages) ? presentation.messages.map((entry) => object(entry).id) : []), effectIds = new Set(Array.isArray(presentation.effects) ? presentation.effects.map((entry) => object(entry).id) : []);
+  const validatePresentationAction = (action: GameplayAction, path: string): void => { if (action.type === "showMessage" && !messageIds.has(action.message)) add(path, `Message not found: ${action.message}`); if (action.type === "playEffect" && !effectIds.has(action.effect)) add(path, `Visual effect not found: ${action.effect}`); };
+  const validatePresentationStep = (step: unknown, path: string): void => { const value = object(step); if (value.type === "action") validatePresentationAction(value.action as GameplayAction, `${path}/action`); else if (Array.isArray(value.steps)) value.steps.forEach((child, index) => validatePresentationStep(child, `${path}/steps/${index}`)); };
+  const gameplaySequences = object(level.gameplay).sequences; if (Array.isArray(gameplaySequences)) gameplaySequences.forEach((sequence, sequenceIndex) => { const steps = object(sequence).steps; if (Array.isArray(steps)) steps.forEach((step, stepIndex) => validatePresentationStep(step, `/gameplay/sequences/${sequenceIndex}/steps/${stepIndex}`)); });
   if (profile.characterForms !== undefined) {
     try { validateCharacterForms(profile.characterForms as CharacterFormsDefinition); }
     catch (error: unknown) { add("/runtimeProfile/characterForms", error instanceof Error ? error.message : String(error)); }
@@ -201,7 +207,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
         add(`/entities/triggers/${triggerIndex}/targets/${targetIndex}`, `${target.type} not found: ${target.id}`);
       }
     });
-    const gameplay = object(object(rawTrigger).gameplay); if (Object.keys(gameplay).length) { try { validateGameplayTrigger((level.gameplay ?? {}) as GameplayProgramDefinition, (Array.isArray(gameplay.conditions) ? gameplay.conditions : []) as GameplayCondition[], (Array.isArray(gameplay.actions) ? gameplay.actions : []) as GameplayAction[], typeof gameplay.sequence === "string" ? gameplay.sequence : undefined); } catch (error: unknown) { add(`/entities/triggers/${triggerIndex}/gameplay`, error instanceof Error ? error.message : String(error)); } }
+    const gameplay = object(object(rawTrigger).gameplay); if (Object.keys(gameplay).length) { const actions = (Array.isArray(gameplay.actions) ? gameplay.actions : []) as GameplayAction[]; try { validateGameplayTrigger((level.gameplay ?? {}) as GameplayProgramDefinition, (Array.isArray(gameplay.conditions) ? gameplay.conditions : []) as GameplayCondition[], actions, typeof gameplay.sequence === "string" ? gameplay.sequence : undefined); } catch (error: unknown) { add(`/entities/triggers/${triggerIndex}/gameplay`, error instanceof Error ? error.message : String(error)); } actions.forEach((action, actionIndex) => validatePresentationAction(action, `/entities/triggers/${triggerIndex}/gameplay/actions/${actionIndex}`)); }
   });
   return diagnostics;
 }

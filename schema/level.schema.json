@@ -29,6 +29,7 @@
     },
     "runtimeProfile": { "$ref": "#/$defs/runtimeProfile" },
     "gameplay": { "$ref": "#/$defs/gameplayProgram" },
+    "presentation": { "$ref": "#/$defs/presentation" },
     "objective": { "$ref": "#/$defs/objective" },
     "camera": {
       "allOf": [
@@ -114,7 +115,11 @@
       { "type": "object", "additionalProperties": false, "required": ["type", "flag", "value"], "properties": { "type": { "const": "setFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" }, "value": { "type": ["boolean", "number", "string"] } } },
       { "type": "object", "additionalProperties": false, "required": ["type", "flag"], "properties": { "type": { "const": "toggleFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" } } },
       { "type": "object", "additionalProperties": false, "required": ["type", "flag", "amount"], "properties": { "type": { "const": "incrementFlag" }, "flag": { "$ref": "#/$defs/nonEmptyString" }, "amount": { "type": "number" } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "emitEvent" }, "event": { "$ref": "#/$defs/nonEmptyString" } } }
+      { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "emitEvent" }, "event": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "mode", "durationTicks"], "properties": { "type": { "const": "setCamera" }, "mode": { "enum": ["follow", "fixed"] }, "x": { "type": "number" }, "y": { "type": "number" }, "durationTicks": { "$ref": "#/$defs/nonNegativeInteger" } }, "allOf": [{ "if": { "properties": { "mode": { "const": "fixed" } }, "required": ["mode"] }, "then": { "required": ["x", "y"] } }] },
+      { "type": "object", "additionalProperties": false, "required": ["type", "message"], "properties": { "type": { "const": "showMessage" }, "message": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "hideMessage" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "effect"], "properties": { "type": { "const": "playEffect" }, "effect": { "$ref": "#/$defs/nonEmptyString" } } }
     ] },
     "gameplayStep": { "oneOf": [
       { "type": "object", "additionalProperties": false, "required": ["type", "action"], "properties": { "type": { "const": "action" }, "action": { "$ref": "#/$defs/gameplayAction" } } },
@@ -122,6 +127,10 @@
       { "type": "object", "additionalProperties": false, "required": ["type", "steps"], "properties": { "type": { "enum": ["serial", "parallel"] }, "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gameplayStep" } } } }
     ] },
     "gameplaySequence": { "type": "object", "additionalProperties": false, "required": ["id", "steps"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gameplayStep" } } } },
+    "presentation": { "type": "object", "additionalProperties": false, "properties": { "parallaxLayers": { "type": "array", "items": { "$ref": "#/$defs/parallaxLayer" } }, "messages": { "type": "array", "items": { "$ref": "#/$defs/presentationMessage" } }, "effects": { "type": "array", "items": { "$ref": "#/$defs/presentationEffect" } } } },
+    "parallaxLayer": { "type": "object", "additionalProperties": false, "required": ["id", "image", "plane", "factorX", "factorY"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "image": { "$ref": "#/$defs/nonEmptyString" }, "plane": { "enum": ["back", "front"] }, "factorX": { "type": "number" }, "factorY": { "type": "number" }, "offsetX": { "type": "number" }, "offsetY": { "type": "number" }, "repeatX": { "type": "boolean" }, "repeatY": { "type": "boolean" }, "opacity": { "type": "number", "minimum": 0, "maximum": 1 } } },
+    "presentationMessage": { "type": "object", "additionalProperties": false, "required": ["id", "text"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "speaker": { "type": "string" }, "text": { "$ref": "#/$defs/nonEmptyString" }, "durationTicks": { "$ref": "#/$defs/nonNegativeInteger" } } },
+    "presentationEffect": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "color", "durationTicks"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "kind": { "enum": ["fadeIn", "fadeOut", "flash"] }, "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }, "durationTicks": { "$ref": "#/$defs/positiveInteger" } } },
     "runtimeProfile": {
       "type": "object",
       "additionalProperties": false,

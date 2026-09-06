@@ -21,6 +21,7 @@ with typed definitions matching this catalog.
 | Projectiles | shoot/bomb definition, size, Y offset, optional bounding box | Typed forms with sprite/bounds overlay. |
 | Definitions | object/character, name, numeric state IDs, state names, bitmap, frame duration and sprite rectangles | Definition library and animation timeline. IDs and names are unique per definition. |
 | Audio | initial music index, music list, playback policy and seven ordered effects | Asset list with one-shot/loop and optional intro-to-loop chaining; the fixed effect ordering is a current runtime constraint. |
+| Presentation | back/front parallax layers, messages, fades and flashes | Typed catalogs edited from Gameplay logic; actions reference stable IDs and preview identically in web and C++. |
 
 GID `0` is empty. Visual GIDs start at `1`. Collision-layer values also use the
 runtime tile constants, so the editor must initially present named collision

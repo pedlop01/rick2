@@ -4,6 +4,7 @@ import { RuntimeBehaviorRegistry } from "./runtime-behaviors";
 import { WebPlayer, type PlayerInput, type PlayerObstacle, type PlayerPlatform, type PlayerSnapshot } from "./web-player";
 import type { CharacterFormsDefinition } from "./character-forms";
 import { GameplayState, validateGameplayTrigger, type GameplayAction, type GameplayCondition, type GameplayFlagValue, type GameplayProgramDefinition, type GameplaySequence } from "./gameplay-program";
+import { PresentationState, type ParallaxLayerDefinition, type PresentationDefinition, type PresentationSnapshot } from "./presentation";
 
 export type RuntimeBodyKind = "player" | "platform" | "hazard" | "item" | "block" | "background" | "laser" | "enemy" | "shoot" | "bomb";
 export interface RuntimeBody { key: string; kind: RuntimeBodyKind; x: number; y: number; width: number; height: number; frame: number; definition?: string; state?: string; face?: "left" | "right"; spriteX?: number; spriteY?: number; animationOnce?: boolean; spriteScale?: number; spriteVisible?: boolean; }
@@ -28,6 +29,7 @@ const NO_TRAITS: BodyTraits = Object.freeze({ solid: false, damaging: false, col
 const NO_INPUT: PlayerInput = { left: false, right: false, up: false, down: false, action: false };
 const gameplayStates = new WeakMap<PreviewRuntime, { state: GameplayState; sequences: GameplaySequence[] }>();
 export class PreviewRuntime {
+  readonly #presentation: PresentationState;
   readonly #source: EditableLevel; readonly #player: WebPlayer; readonly #sessionRules: Readonly<SessionRules>; readonly #bindings: Readonly<RuntimeProfileBindings>; readonly #objective: Readonly<LevelObjective>; readonly #bodyBehaviors: RuntimeBehaviorRegistry<MovingBodyKind, MovingBody>; readonly #enemyBehaviors: RuntimeBehaviorRegistry<EnemyAIKind, EnemyStepContext>; #tick = 0; #playerAnimationState = "stop"; #playerAnimationTicks = 0; #playerAnimationMoving = false; #bodies: MovingBody[] = []; #enemies: EnemyBody[] = []; #transients: TransientBody[] = []; #triggers: RuntimeTrigger[] = []; #cameraViews: RuntimeCameraView[] = []; #cameraViewsEnabled = true; #cameraFrame = { x: 0, y: 0, width: 256, height: 200, viewId: -1 }; #audioEvents: number[] = []; #invulnerable = false; #dangerContact = false; #lives = 3; #gameOver = false; #completed = false;
   constructor(level: EditableLevel, options: PreviewRuntimeOptions = {}) {
     this.#source = structuredClone(level);
@@ -38,7 +40,8 @@ export class PreviewRuntime {
     const profileActions = record(profile.actionBindings) as Partial<PlayerActionBindings>;
     const characterForms = profile.characterForms as CharacterFormsDefinition | undefined;
     this.#player = new WebPlayer(this.#source, { ...profileController, ...options.playerController }, { ...profileCapabilities, ...options.playerCapabilities }, { ...profileActions, ...options.playerActionBindings }, characterForms);
-    gameplayStates.set(this, { state: new GameplayState(record(this.#source).gameplay as GameplayProgramDefinition | undefined, (event) => this.#player.dispatchGameplayEvent(event)), sequences: [] });
+    this.#presentation = new PresentationState(record(this.#source).presentation as PresentationDefinition | undefined);
+    gameplayStates.set(this, { state: new GameplayState(record(this.#source).gameplay as GameplayProgramDefinition | undefined, (event) => this.#player.dispatchGameplayEvent(event), (action) => this.#presentation.execute(action, this.#cameraFrame.x, this.#cameraFrame.y)), sequences: [] });
     const levelSession = record(this.#source.session);
     this.#sessionRules = sessionRules({ initialLives: number(levelSession.initialLives, 3), ...record(profile.session) as Partial<SessionRules>, ...options.sessionRules });
     const profileBindings = record(profile.bindings);
@@ -71,6 +74,8 @@ export class PreviewRuntime {
   get completed(): boolean { return this.#completed; }
   get cameraViewsEnabled(): boolean { return this.#cameraViewsEnabled; }
   get cameraFrame(): Readonly<{ x: number; y: number; width: number; height: number; viewId: number }> { return this.#cameraFrame; }
+  get presentation(): PresentationSnapshot { return this.#presentation.snapshot; }
+  get parallaxLayers(): readonly ParallaxLayerDefinition[] { return this.#presentation.definition.parallaxLayers ?? []; }
   gameplayFlag(id: string): GameplayFlagValue { return gameplayStates.get(this)!.state.flag(id); }
   gameplayEvent(id: string): boolean { return gameplayStates.get(this)!.state.event(id); }
   startGameplaySequence(id: string): void { const gameplay = gameplayStates.get(this)!; gameplay.sequences.push(gameplay.state.sequence(id)); }
@@ -104,6 +109,7 @@ export class PreviewRuntime {
   get bodies(): readonly RuntimeBody[] { const player = this.#player.snapshot, playerDefinition = this.#player.activeDefinition ?? String(record(this.#source.player).definition ?? "characters/rick"), playerState = this.#player.activeAnimation ?? this.#bindings.playerStates[player.state]; return [...this.#bodies.filter((body) => body.visible), ...this.#enemies.filter((enemy) => enemy.alive).map((enemy) => ({ ...enemy, state: enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : this.#bindings.enemyStates.running, face: enemy.direction > 0 ? "right" as const : "left" as const, animationOnce: enemy.dyingTicks > 0, spriteVisible: enemy.frozenTicks === 0 || Math.floor((100 - enemy.frozenTicks) / 4) % 2 === 0 })), ...this.#transients, { key: "player", kind: "player", x: player.collisionX, y: player.collisionY, width: player.collisionWidth, height: player.collisionHeight, frame: this.#playerAnimationTicks, definition: playerDefinition, state: playerState, face: player.face, spriteX: player.x, spriteY: player.y, animationOnce: player.state === "crouching" && !this.#playerAnimationMoving, spriteScale: this.#player.deathScale }]; }
   reset(): void {
     const gameplay = gameplayStates.get(this)!; const gameplayState = gameplay.state; gameplay.state.reset(); gameplay.sequences.length = 0;
+    this.#presentation.reset();
     this.#tick = 0; this.#lives = this.#sessionRules.initialLives; this.#gameOver = false; this.#completed = false; this.#player.reset(); this.#playerAnimationState = this.#player.snapshot.state; this.#playerAnimationTicks = 0; this.#playerAnimationMoving = false; this.#dangerContact = false; this.#bodies = []; this.#enemies = []; this.#transients = []; this.#triggers = []; this.#cameraViews = []; this.#audioEvents = []; const entities = record(this.#source.entities);
     for (const group of ["platforms", "hazards"]) for (const raw of list(entities[group])) { const entity = record(raw); const attributes = record(entity.attributes); const actions = list(record(entity.actions).action).map(record); const active = group === "hazards" ? Boolean(attributes.trigger) : attributes.ini_state === undefined || attributes.ini_state === "moving"; this.#bodies.push({ key: `${group}:${String(entity.id)}`, kind: group === "hazards" ? "hazard" : "platform", traits: group === "hazards" ? { ...NO_TRAITS, damaging: true } : NO_TRAITS, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, definition: String(attributes.definition ?? ""), state: active ? "OBJ_STATE_MOVING" : "OBJ_STATE_STOP", actions, action: 0, progress: 0, wait: 0, recursive: group === "hazards" ? Boolean(attributes.trigger) : Boolean(attributes.recursive), visible: group === "platforms" ? attributes.visible !== 0 : active || !Boolean(attributes.stop_inactive), active, condActions: false, oneUse: group === "platforms" && Boolean(attributes.one_use), used: false, stopInactive: group === "hazards" && Boolean(attributes.stop_inactive) }); }
     for (const group of ["items", "blocks"]) for (const raw of list(entities[group])) { const entity = record(raw), attributes = record(entity.attributes), definition = String(attributes.definition ?? ""), definitionData = record(record(this.#source.definitions)[definition]), definitionName = String(definitionData.name ?? definition.split("/").pop() ?? ""), bonus = group === "items" && definitionName === "bonus", explosive = attributes.exploits === undefined || Boolean(attributes.exploits); this.#bodies.push({ key: `${group}:${String(entity.id)}`, kind: group === "items" ? "item" : "block", traits: group === "items" ? { ...NO_TRAITS, collectible: true, destructible: true } : { ...NO_TRAITS, solid: true, destructible: true }, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: 0, definition, state: "OBJ_STATE_STOP", actions: [], action: 0, progress: 0, wait: 0, recursive: false, visible: true, active: false, condActions: false, destructionMode: group === "blocks" ? explosive ? "animated" : "escape" : bonus ? "instant" : "animated", pickup: group === "items" ? bonus ? { mode: "rise", audioSlot: 4, durationTicks: 30, riseSpeed: 3 } : { mode: "instant", audioSlot: 5, durationTicks: 0, riseSpeed: 0 } : undefined }); }
@@ -134,6 +140,7 @@ export class PreviewRuntime {
   }
   step(input: PlayerInput = NO_INPUT): void {
     const gameplay = gameplayStates.get(this)!; gameplay.state.beginTick(); gameplay.sequences = gameplay.sequences.filter((sequence) => !sequence.step(gameplay.state));
+    this.#presentation.step();
     if (this.#completed && this.#objective.type === "reachZone" && this.#objective.onComplete === "freeze") return;
     this.#tick += 1;
     const previous = new Map(this.#bodies.map((body) => [body.key, { x: body.x, y: body.y }]));
@@ -163,7 +170,7 @@ export class PreviewRuntime {
     const player = this.#player.snapshot; if (!force && player.state === "dead") return;
     const config = record(this.#source.camera), width = Math.max(1, number(config.width, 256)), height = Math.max(1, number(config.height, 200)), probeX = player.x + (player.face === "right" ? 23 : 0), probeY = player.y;
     const candidates = this.#cameraViewsEnabled ? this.#cameraViews.filter((view) => probeX >= view.left && probeX < view.right && probeY >= view.top && probeY < view.bottom) : []; let view = candidates[0]; for (const candidate of candidates.slice(1)) if ((player.face === "right" && candidate.left > view!.left) || (player.face === "left" && candidate.left < view!.left)) view = candidate;
-    if (this.#cameraViewsEnabled && !view) view = this.#cameraViews.find((candidate) => candidate.id === this.#cameraFrame.viewId); const mapWidth = this.#source.map.width * this.#source.map.tileWidth, mapHeight = this.#source.map.height * this.#source.map.tileHeight, left = view?.left ?? 0, top = view?.top ?? 0, right = view?.right ?? mapWidth, bottom = view?.bottom ?? mapHeight, frameWidth = Math.min(width, right - left), frameHeight = Math.min(height, bottom - top), x = Math.min(right - frameWidth, Math.max(left, player.x - frameWidth / 2)), y = Math.min(bottom - frameHeight, Math.max(top, player.y - frameHeight / 2));
+    if (this.#cameraViewsEnabled && !view) view = this.#cameraViews.find((candidate) => candidate.id === this.#cameraFrame.viewId); const mapWidth = this.#source.map.width * this.#source.map.tileWidth, mapHeight = this.#source.map.height * this.#source.map.tileHeight, left = view?.left ?? 0, top = view?.top ?? 0, right = view?.right ?? mapWidth, bottom = view?.bottom ?? mapHeight, frameWidth = Math.min(width, right - left), frameHeight = Math.min(height, bottom - top), followX = player.x - frameWidth / 2, followY = player.y - frameHeight / 2, presented = this.#presentation.cameraPosition(followX, followY), x = Math.min(right - frameWidth, Math.max(left, presented.x)), y = Math.min(bottom - frameHeight, Math.max(top, presented.y));
     this.#cameraFrame = { x, y, width: frameWidth, height: frameHeight, viewId: view?.id ?? -1 };
   }
   #stepBody(body: MovingBody): void {

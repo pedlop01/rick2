@@ -3,6 +3,7 @@ import { tileSource, visibleTileBounds } from "./map-view";
 import type { TileMapDocument, TileRect } from "./level-document";
 import { ENTITY_COLORS, type EntityBox, type EntityRef, type GameplayLine, type GameplayZone } from "./entity-document";
 import type { RuntimeBody } from "./preview-runtime";
+import type { ParallaxLayerDefinition, PresentationSnapshot } from "./presentation";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 
@@ -44,6 +45,10 @@ export class WorkspacePreview {
   #runtimeAnimations = new Map<string, RuntimeAnimation>();
   #runtimeSpritesVisible = true;
   #runtimeBoundsVisible = true;
+  #presentation: PresentationSnapshot | null = null;
+  #presentationCamera = { x: 0, y: 0, width: 256, height: 200 };
+  #parallaxLayers: readonly ParallaxLayerDefinition[] = [];
+  #parallaxImages = new Map<string, ImageBitmap>();
 
   constructor(canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -111,6 +116,7 @@ export class WorkspacePreview {
     this.#events.abort();
     this.#tileset?.close();
     for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close();
+    for (const image of this.#parallaxImages.values()) image.close();
     if (this.#frame) cancelAnimationFrame(this.#frame);
   }
 
@@ -118,7 +124,7 @@ export class WorkspacePreview {
     const levelPath = project.manifest.initialLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`${levelPath} was not found`);
-    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }> };
+    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }>; presentation?: { parallaxLayers?: ParallaxLayerDefinition[] } };
     const asset = getProjectAsset(project, levelPath, level.map.tileset.image);
     const extension = level.map.tileset.image.split(".").pop()?.toLowerCase();
     const mime = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
@@ -126,11 +132,14 @@ export class WorkspacePreview {
     this.#tileset?.close();
     this.#tileset = bitmap;
     for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close(); this.#runtimeAnimations.clear();
+    for (const image of this.#parallaxImages.values()) image.close(); this.#parallaxImages.clear();
     const bitmapCache = new Map<string, ImageBitmap>();
     for (const [definitionId, definition] of Object.entries(level.definitions ?? {})) for (const state of definition.states ?? []) {
       const animation = state.animation, reference = animation?.bitmap; if (!state.name || !reference || !animation?.sprites?.length) continue;
       try { let image = bitmapCache.get(reference); if (!image) { const imageBytes = getProjectAsset(project, levelPath, reference); image = await createImageBitmap(new Blob([imageBytes.slice().buffer])); bitmapCache.set(reference, image); } this.#runtimeAnimations.set(`${definitionId}:${state.name}`, { bitmap: image, duration: Math.max(1, animation.frameDurationTicks ?? 1), frames: animation.sprites }); } catch { /* Validation reports missing assets; the debug box remains visible. */ }
     }
+    this.#parallaxLayers = level.presentation?.parallaxLayers ?? [];
+    for (const layer of this.#parallaxLayers) try { const imageBytes = getProjectAsset(project, levelPath, layer.image); this.#parallaxImages.set(layer.id, await createImageBitmap(new Blob([imageBytes.slice().buffer]))); } catch { /* Validation reports missing presentation assets. */ }
     this.#map = editableMap ?? level.map;
     if (fitView) this.fit(); else this.#scheduleDraw();
   }
@@ -139,6 +148,8 @@ export class WorkspacePreview {
     this.#tileset?.close();
     this.#tileset = null;
     for (const animation of this.#runtimeAnimations.values()) animation.bitmap.close(); this.#runtimeAnimations.clear();
+    for (const image of this.#parallaxImages.values()) image.close(); this.#parallaxImages.clear();
+    this.#parallaxLayers = []; this.#presentation = null;
     this.#map = null;
     this.#scheduleDraw();
   }
@@ -160,6 +171,7 @@ export class WorkspacePreview {
   setRuntimeBodies(bodies: readonly RuntimeBody[]): void { this.#runtimeBodies = bodies; this.#scheduleDraw(); }
   setRuntimeSpritesVisible(visible: boolean): void { this.#runtimeSpritesVisible = visible; this.#scheduleDraw(); }
   setRuntimeBoundsVisible(visible: boolean): void { this.#runtimeBoundsVisible = visible; this.#scheduleDraw(); }
+  setPresentation(snapshot: PresentationSnapshot | null, layers: readonly ParallaxLayerDefinition[] = [], camera = { x: 0, y: 0, width: 256, height: 200 }): void { this.#presentation = snapshot; this.#parallaxLayers = layers; this.#presentationCamera = camera; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
   tileAtClient(clientX: number, clientY: number): PointerPosition | null {
@@ -248,13 +260,18 @@ export class WorkspacePreview {
     const map = this.#map;
     context.fillStyle = "#000";
     context.fillRect(0, 0, map.width * map.tileWidth, map.height * map.tileHeight);
+    this.#drawParallax("back");
     if (this.#visibleLayers.tiles) this.#drawTileLayer(map.layers.tiles);
     if (this.#visibleLayers.frontTiles) this.#drawTileLayer(map.layers.frontTiles);
     if (this.#visibleLayers.collisions) this.#drawCollisionLayer(map.layers.collisions);
-    this.#drawGameplayGuides(); this.#drawEntities(); this.#drawRuntimeBodies();
+    this.#drawGameplayGuides(); this.#drawEntities(); this.#drawRuntimeBodies(); this.#drawParallax("front");
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
     if (this.#selection) this.#drawSelection(this.#selection);
+    this.#drawPresentationOverlay();
   }
+
+  #drawParallax(plane: "back" | "front"): void { const context = this.#context, camera = this.#presentationCamera; for (const layer of this.#parallaxLayers.filter((item) => item.plane === plane)) { const image = this.#parallaxImages.get(layer.id); if (!image) continue; const x = camera.x * (1 - layer.factorX) + (layer.offsetX ?? 0), y = camera.y * (1 - layer.factorY) + (layer.offsetY ?? 0); context.save(); context.globalAlpha = layer.opacity ?? 1; const startX = layer.repeatX ? x - Math.ceil((x + camera.width) / image.width) * image.width : x, startY = layer.repeatY ? y - Math.ceil((y + camera.height) / image.height) * image.height : y; const endX = layer.repeatX ? camera.x + camera.width + image.width : startX + 1, endY = layer.repeatY ? camera.y + camera.height + image.height : startY + 1; for (let py = startY; py < endY; py += image.height) for (let px = startX; px < endX; px += image.width) context.drawImage(image, px, py); context.restore(); } }
+  #drawPresentationOverlay(): void { if (!this.#presentation) return; const context = this.#context, dpr = window.devicePixelRatio || 1, width = this.#canvas.clientWidth, height = this.#canvas.clientHeight; context.setTransform(dpr, 0, 0, dpr, 0, 0); const message = this.#presentation.message; if (message) { const boxHeight = 72; context.fillStyle = "rgba(4, 8, 15, .9)"; context.strokeStyle = "#57d3ff"; context.lineWidth = 2; context.fillRect(18, height - boxHeight - 18, width - 36, boxHeight); context.strokeRect(18, height - boxHeight - 18, width - 36, boxHeight); context.font = "bold 13px ui-sans-serif"; context.fillStyle = "#7dd3fc"; context.fillText(message.speaker || "", 30, height - boxHeight + 2); context.font = "14px ui-sans-serif"; context.fillStyle = "#f8fafc"; context.fillText(message.text, 30, height - 42, width - 60); } const effect = this.#presentation.effect; if (effect) { const progress = this.#presentation.effectTicks / effect.durationTicks, alpha = effect.kind === "fadeIn" ? 1 - progress : effect.kind === "fadeOut" ? progress : progress < .5 ? progress * 2 : (1 - progress) * 2; context.save(); context.globalAlpha = Math.max(0, Math.min(1, alpha)); context.fillStyle = effect.color; context.fillRect(0, 0, width, height); context.restore(); } }
 
   #visibleBounds(): { left: number; top: number; right: number; bottom: number } {
     const map = this.#map!;

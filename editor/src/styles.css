@@ -125,6 +125,7 @@ button:focus-visible, canvas:focus-visible, input:focus-visible, select:focus-vi
 .gameplay-workspace { position: absolute; inset: 0; overflow: auto; padding: 18px; color: #71839b; background: #080d16; }
 .gameplay-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .gameplay-tabs button.selected { color: #07111d; background: #57d3ff; }
+.gameplay-presentation-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .gameplay-step { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 5px; margin: 6px 0; padding: 7px; background: #111d30; border: 1px solid #31425e; border-radius: 5px; }
 .gameplay-step .gameplay-step { grid-column: 1 / -1; margin-left: 12px; }
 .gameplay-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 12px; margin-top: 16px; }
