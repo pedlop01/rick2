@@ -76,6 +76,16 @@ class EditorContractTest(unittest.TestCase):
         self.assertNotRegex("../outside.json", re.compile(pattern))
         self.assertIn(manifest["initialLevel"], manifest["levels"])
 
+    def test_campaign_contract_uses_paths_and_explicit_completion_rules(self):
+        schema = json.loads(
+            (ROOT / "schema/project.schema.json").read_text(encoding="utf-8")
+        )
+        campaign = schema["$defs"]["campaign"]
+        self.assertEqual(campaign["required"], ["order", "unlockRules"])
+        rule = schema["$defs"]["unlockRule"]
+        self.assertEqual(rule["required"], ["level", "requiresCompleted"])
+        self.assertEqual(rule["properties"]["level"]["$ref"], "#/$defs/safeRelativeJsonPath")
+
 
 if __name__ == "__main__":
     unittest.main()

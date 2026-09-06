@@ -8,6 +8,7 @@ import { isKnownEngineEvent } from "./engine-events";
 import { validateGameplayProgram, validateGameplayTrigger, type GameplayAction, type GameplayCondition, type GameplayProgramDefinition } from "./gameplay-program";
 import { validatePresentation, type PresentationDefinition } from "./presentation";
 import { validateCombat, type CombatDefinition } from "./combat";
+import { campaignErrors } from "./project-campaign";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -221,8 +222,13 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
 
 export function validateProject(project: Rick2Project): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  if (!validateManifest(project.manifest)) {
+  const manifestMatchesSchema = validateManifest(project.manifest);
+  if (!manifestMatchesSchema) {
     diagnostics.push(...schemaDiagnostics("project.json", validateManifest.errors));
+  } else {
+    for (const message of campaignErrors(project.manifest)) {
+      diagnostics.push({ severity: "error", file: "project.json", path: "/campaign", message, source: "semantic" });
+    }
   }
   for (const path of project.manifest.levels) {
     let level: unknown;

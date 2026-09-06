@@ -75,6 +75,13 @@ export function renameLevel(project: Rick2Project, sourcePath: string, newId: st
   writeJson(project, target, level);
   project.manifest.levels[index] = target;
   if (project.manifest.initialLevel === sourcePath) project.manifest.initialLevel = target;
+  if (project.manifest.campaign) {
+    project.manifest.campaign.order = project.manifest.campaign.order.map((path) => path === sourcePath ? target : path);
+    for (const rule of project.manifest.campaign.unlockRules) {
+      if (rule.level === sourcePath) rule.level = target;
+      rule.requiresCompleted = rule.requiresCompleted.map((path) => path === sourcePath ? target : path);
+    }
+  }
   syncManifest(project);
   return target;
 }
@@ -83,6 +90,7 @@ export function removeLevel(project: Rick2Project, path: string): string {
   const index = project.manifest.levels.indexOf(path);
   if (index < 0) throw new Error(`Level is not declared: ${path}`);
   if (project.manifest.levels.length === 1) throw new Error("A project must contain at least one level");
+  if (project.manifest.campaign?.order.includes(path)) throw new Error("Remove the level from the campaign before deleting it");
   project.manifest.levels.splice(index, 1);
   project.files.delete(path);
   if (project.manifest.initialLevel === path) project.manifest.initialLevel = project.manifest.levels[Math.min(index, project.manifest.levels.length - 1)]!;
@@ -100,6 +108,9 @@ export function moveLevel(project: Rick2Project, path: string, offset: -1 | 1): 
 
 export function setInitialLevel(project: Rick2Project, path: string): void {
   if (!project.manifest.levels.includes(path)) throw new Error(`Level is not declared: ${path}`);
+  if (project.manifest.campaign && project.manifest.campaign.order[0] !== path) {
+    throw new Error("The initial level must be the first campaign level");
+  }
   project.manifest.initialLevel = path;
   syncManifest(project);
 }

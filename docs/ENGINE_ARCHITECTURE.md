@@ -72,6 +72,43 @@ Its machine-readable contract is `schema/project.schema.json`. The
 `initialLevel` value must also occur in `levels`; this cross-field semantic rule
 is checked by the editor because JSON Schema cannot express it portably here.
 
+Projects may additionally opt into campaign progression. Omitting `campaign`
+keeps the task-35 behavior: every declared level can be opened independently
+and completing one does not imply a transition. A campaign separates its
+playable order from the editor's complete level inventory:
+
+```json
+{
+  "campaign": {
+    "order": [
+      "levels/one/level.json",
+      "levels/two/level.json",
+      "levels/final/level.json"
+    ],
+    "unlockRules": [
+      { "level": "levels/one/level.json", "requiresCompleted": [] },
+      { "level": "levels/two/level.json", "requiresCompleted": ["levels/one/level.json"] },
+      { "level": "levels/final/level.json", "requiresCompleted": ["levels/one/level.json", "levels/two/level.json"] }
+    ]
+  }
+}
+```
+
+Every campaign level has exactly one explicit rule. The first rule has no
+requirements; every later rule requires at least the immediately preceding
+level, so the declared order cannot be bypassed. Additional earlier levels may
+be required (for example, Rick's final level lists all four main levels).
+Campaign paths must occur in `levels`, requirements must occur earlier in the
+campaign, and `initialLevel` is the first campaign entry. These invariants make
+cycles impossible without relying on level IDs.
+
+Runtime progress is the set of completed level paths. A level is unlocked when
+all paths in its `requiresCompleted` list occur in that set. Completing an
+unlocked level records it once and selects the next unlocked entry after it;
+completing the last entry finishes the campaign. This evaluation lives in
+`editor/src/project-campaign.ts` as a runtime-independent reference for the C++
+game shell planned by task 37.
+
 The `levels` array is ordered and is the editor's source of truth for the level
 selector. Level documents live at `levels/<id>/level.json`, while reusable
 assets remain under `assets/`; keeping every level at the same directory depth

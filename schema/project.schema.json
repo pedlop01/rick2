@@ -19,12 +19,46 @@
       "minItems": 1,
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/safeRelativeJsonPath" }
+    },
+    "campaign": {
+      "$ref": "#/$defs/campaign"
     }
   },
   "$defs": {
     "safeRelativeJsonPath": {
       "type": "string",
       "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*//)[^:]+\\.json$"
+    },
+    "campaign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "unlockRules"],
+      "properties": {
+        "order": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeRelativeJsonPath" }
+        },
+        "unlockRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/unlockRule" }
+        }
+      }
+    },
+    "unlockRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "requiresCompleted"],
+      "properties": {
+        "level": { "$ref": "#/$defs/safeRelativeJsonPath" },
+        "requiresCompleted": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeRelativeJsonPath" }
+        }
+      }
     }
   }
 }

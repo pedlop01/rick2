@@ -1,4 +1,5 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { assertValidCampaign } from "./project-campaign";
 
 export interface ProjectManifest {
   formatVersion: 1;
@@ -7,6 +8,17 @@ export interface ProjectManifest {
   name: string;
   initialLevel: string;
   levels: string[];
+  campaign?: CampaignDefinition;
+}
+
+export interface CampaignUnlockRule {
+  level: string;
+  requiresCompleted: string[];
+}
+
+export interface CampaignDefinition {
+  order: string[];
+  unlockRules: CampaignUnlockRule[];
 }
 
 export interface Rick2Project {
@@ -59,7 +71,28 @@ function validateManifest(value: unknown): ProjectManifest {
   if (!levels.includes(initialLevel) || new Set(levels).size !== levels.length) {
     throw new Error("The initial level must appear exactly once in levels");
   }
-  return { ...manifest, initialLevel, levels } as ProjectManifest;
+  let campaign: CampaignDefinition | undefined;
+  if (manifest.campaign !== undefined) {
+    const raw = manifest.campaign as Partial<CampaignDefinition>;
+    if (!raw || !Array.isArray(raw.order) || !Array.isArray(raw.unlockRules)) {
+      throw new Error("The campaign must declare order and unlockRules");
+    }
+    campaign = {
+      order: raw.order.map((path) => normalizeProjectPath(path)),
+      unlockRules: raw.unlockRules.map((rule) => {
+        if (!rule || typeof rule.level !== "string" || !Array.isArray(rule.requiresCompleted)) {
+          throw new Error("Every campaign unlock rule needs a level and requiresCompleted");
+        }
+        return {
+          level: normalizeProjectPath(rule.level),
+          requiresCompleted: rule.requiresCompleted.map((path) => normalizeProjectPath(path)),
+        };
+      }),
+    };
+  }
+  const validated = { ...manifest, initialLevel, levels, ...(campaign ? { campaign } : {}) } as ProjectManifest;
+  assertValidCampaign(validated);
+  return validated;
 }
 
 export function loadProjectFiles(input: ReadonlyMap<string, Uint8Array>): Rick2Project {
