@@ -22,10 +22,16 @@
 #include "sound_handler.h"
 #include "runtime_options.h"
 #include "game_shell.h"
+#include "project_archive.h"
 
 using namespace std;
 
 namespace {
+std::string ParentPath(const std::string& path) {
+  const std::string::size_type separator = path.find_last_of("/\\");
+  return separator == std::string::npos ? "." : path.substr(0, separator);
+}
+
 class AllegroSystemGuard {
  public:
   AllegroSystemGuard() : initialized(false) {}
@@ -51,6 +57,7 @@ int main(int argc, char *argv[]) {
   std::string level_file;
   RuntimeOptions options;
   unique_ptr<GameShell> game_shell;
+  unique_ptr<ProjectArchive> project_archive;
   const bool resource_check = getenv("RICK2_RESOURCE_CHECK") != nullptr;
   const char* smoke_ticks_value = getenv("RICK2_SMOKE_TEST_TICKS");
   const unsigned int smoke_tick_limit = smoke_ticks_value
@@ -79,9 +86,16 @@ int main(int argc, char *argv[]) {
       return 0;
     }
     if (!options.project_file.empty()) {
-      game_shell.reset(new GameShell(GameShell::FromProject(options.project_file)));
+      std::string manifest = options.project_file;
+      if (manifest.size() >= 14 && manifest.substr(manifest.size() - 14) == ".rick2-project") {
+        project_archive.reset(new ProjectArchive(ProjectArchive::Open(manifest)));
+        manifest = project_archive->ManifestPath();
+      }
+      SetProjectRoot(ParentPath(manifest));
+      game_shell.reset(new GameShell(GameShell::FromProject(manifest)));
       level_file = game_shell->CurrentLevel();
     } else {
+      SetProjectRoot("");
       level_file = options.level_file.empty()
                        ? GetInitialLevelFromGamePackage("../game.json")
                        : options.level_file;

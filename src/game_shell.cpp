@@ -16,8 +16,26 @@ std::string ParentPath(const std::string& path) {
 }
 
 std::string ResolvePath(const std::string& base, const std::string& path) {
-  if (path.empty() || path[0] == '/' || (path.size() > 1 && path[1] == ':')) return path;
   return base + "/" + path;
+}
+
+std::string ProjectPath(const std::string& base, const json& value,
+                        const std::string& project_file) {
+  if (!value.is_string()) throw DataLoadError("Invalid '" + project_file + "': invalid project path");
+  const std::string path = value.get<std::string>();
+  if (path.empty() || path[0] == '/' || path.find('\\') != std::string::npos ||
+      path.find(':') != std::string::npos || path.find("//") != std::string::npos)
+    throw DataLoadError("Invalid '" + project_file + "': unsafe project path");
+  std::size_t start = 0;
+  while (start < path.size()) {
+    const std::size_t slash = path.find('/', start);
+    const std::string part = path.substr(start, slash == std::string::npos ? slash : slash - start);
+    if (part.empty() || part == "." || part == "..")
+      throw DataLoadError("Invalid '" + project_file + "': unsafe project path");
+    if (slash == std::string::npos) break;
+    start = slash + 1;
+  }
+  return ResolvePath(base, path);
 }
 
 const CampaignUnlockRule* RuleFor(const std::vector<CampaignUnlockRule>& rules,
@@ -54,10 +72,10 @@ GameShell GameShell::FromProject(const std::string& project_file) {
 
     GameShell shell;
     const std::string base = ParentPath(project_file);
-    shell.initial_level_ = ResolvePath(base, manifest.at("initialLevel").get<std::string>());
+    shell.initial_level_ = ProjectPath(base, manifest.at("initialLevel"), project_file);
     for (json::const_iterator level = manifest.at("levels").begin(); level != manifest.at("levels").end(); ++level) {
       if (!level->is_string()) throw DataLoadError("Invalid '" + project_file + "': invalid level path");
-      shell.levels_.push_back(ResolvePath(base, level->get<std::string>()));
+      shell.levels_.push_back(ProjectPath(base, *level, project_file));
     }
     if (shell.levels_.empty() || std::count(shell.levels_.begin(), shell.levels_.end(), shell.initial_level_) != 1)
       throw DataLoadError("Invalid '" + project_file + "': initial level is not declared");
@@ -71,7 +89,7 @@ GameShell GameShell::FromProject(const std::string& project_file) {
       shell.has_campaign_ = true;
       std::set<std::string> order_set;
       for (json::const_iterator level = campaign.at("order").begin(); level != campaign.at("order").end(); ++level) {
-        const std::string path = ResolvePath(base, level->get<std::string>());
+        const std::string path = ProjectPath(base, *level, project_file);
         if (!order_set.insert(path).second || std::find(shell.levels_.begin(), shell.levels_.end(), path) == shell.levels_.end())
           throw DataLoadError("Invalid '" + project_file + "': invalid campaign order");
         shell.campaign_order_.push_back(path);
@@ -81,10 +99,10 @@ GameShell GameShell::FromProject(const std::string& project_file) {
         if (!raw->is_object() || !raw->contains("level") || !raw->contains("requiresCompleted") || !raw->at("requiresCompleted").is_array())
           throw DataLoadError("Invalid '" + project_file + "': invalid unlock rule");
         CampaignUnlockRule rule;
-        rule.level = ResolvePath(base, raw->at("level").get<std::string>());
+        rule.level = ProjectPath(base, raw->at("level"), project_file);
         if (!targets.insert(rule.level).second) throw DataLoadError("Invalid '" + project_file + "': duplicate unlock rule");
         for (json::const_iterator requirement = raw->at("requiresCompleted").begin(); requirement != raw->at("requiresCompleted").end(); ++requirement)
-          rule.requires_completed.push_back(ResolvePath(base, requirement->get<std::string>()));
+          rule.requires_completed.push_back(ProjectPath(base, *requirement, project_file));
         shell.unlock_rules_.push_back(rule);
       }
       if (shell.campaign_order_.empty() || shell.campaign_order_[0] != shell.initial_level_)

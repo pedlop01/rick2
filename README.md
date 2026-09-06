@@ -135,16 +135,24 @@ cd bin
 ./rick2 --debug
 ./rick2 --debug ../levels/level1/level.json
 ./rick2 --project ../project.json
+./rick2 ../build/rick2-level1.rick2-project
 ```
 
 Passing a level path keeps the direct, single-level runtime. Passing
-`--project project.json` enables the game shell: intro, main menu, new game,
+`--project project.json` or a `.rick2-project` package enables the game shell:
+the package is extracted into a private temporary directory and removed when
+the process ends. The shell provides intro, main menu, new game,
 continue, unlocked-level selection, automatic campaign transitions and the
 campaign-complete screen. Controls outside gameplay are `Space` to confirm or
 start a new game, `A` to continue, `Z` to open level selection, arrow keys to
 move the selection and `Esc` to return to the menu or quit. Progress is kept by
 the shell for the running game session; campaign paths and unlock requirements
 come entirely from `project.json`.
+
+Archive loading accepts only bounded ZIP files using stored or deflate entries.
+Absolute paths, traversal, duplicate destinations, symlinks, encryption and
+references escaping the extracted project are rejected before game resources
+are used.
 
 The command-line mode has a standalone parsing check:
 

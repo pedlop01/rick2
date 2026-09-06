@@ -29,7 +29,10 @@ inline RuntimeOptions ParseRuntimeOptions(int argc, char* argv[]) {
       throw std::invalid_argument("Unknown option: " + argument);
     } else if (options.level_file.empty()) {
       if (!options.project_file.empty()) throw std::invalid_argument("A project and a direct level cannot be selected together");
-      options.level_file = argument;
+      if (argument.size() >= 14 && argument.substr(argument.size() - 14) == ".rick2-project")
+        options.project_file = argument;
+      else
+        options.level_file = argument;
     } else {
       throw std::invalid_argument("Only one level package can be selected");
     }

@@ -11,6 +11,7 @@ python3 tests/level_schema_test.py
 python3 tests/format_compatibility_test.py
 python3 tests/package_editor_project_test.py
 python3 tests/editor_level1_roundtrip_test.py
+python3 tests/native_project_archive_test.py
 python3 tests/native_animation_contract_test.py
 g++ -std=c++11 tests/game_time_test.cpp -o "$build_dir/game-time"
 "$build_dir/game-time"

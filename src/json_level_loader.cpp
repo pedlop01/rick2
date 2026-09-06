@@ -9,6 +9,8 @@
 #include "character_state_machine.h"
 #include "combat.h"
 #include <memory>
+#include <climits>
+#include <cstdlib>
 
 namespace {
 using json = nlohmann::json;
@@ -22,6 +24,7 @@ ViewportConfig display_config;
 ViewportConfig camera_config;
 int initial_music;
 std::unique_ptr<CombatCatalog> combat_catalog;
+std::string project_root;
 
 std::string ParentPath(const std::string& path) {
   const std::string::size_type separator = path.find_last_of("/\\");
@@ -29,11 +32,19 @@ std::string ParentPath(const std::string& path) {
 }
 
 std::string ResolvePath(const std::string& base, const std::string& path) {
-  if (path.empty() || path[0] == '/' ||
-      (path.size() > 1 && path[1] == ':')) {
-    return path;
-  }
-  return base + "/" + path;
+  const std::string candidate = path.empty() || path[0] == '/' ||
+      (path.size() > 1 && path[1] == ':') ? path : base + "/" + path;
+  if (project_root.empty()) return candidate;
+  if (path.empty() || path[0] == '/' || path.find('\\') != std::string::npos)
+    throw DataLoadError("Project reference is absolute or invalid: " + path);
+  char resolved[PATH_MAX];
+  if (!realpath(candidate.c_str(), resolved))
+    throw DataLoadError("Project reference does not exist: " + path);
+  const std::string canonical(resolved);
+  if (canonical != project_root &&
+      (canonical.size() <= project_root.size() || canonical.compare(0, project_root.size(), project_root) != 0 || canonical[project_root.size()] != '/'))
+    throw DataLoadError("Project reference points outside the project: " + path);
+  return canonical;
 }
 
 const json& Require(const json& object, const char* key, const char* file) {
@@ -194,6 +205,13 @@ void ValidatePackage(const json& package, const char* file) {
 bool IsJsonLevelFile(const char* file) {
   const std::string path(file);
   return path.size() >= 5 && path.substr(path.size() - 5) == ".json";
+}
+
+void SetProjectRoot(const std::string& root) {
+  if (root.empty()) { project_root.clear(); return; }
+  char resolved[PATH_MAX];
+  if (!realpath(root.c_str(), resolved)) throw DataLoadError("Cannot resolve project root: " + root);
+  project_root = resolved;
 }
 
 std::string GetInitialLevelFromGamePackage(const char* file) {

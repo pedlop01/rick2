@@ -63,6 +63,7 @@ struct LevelObjectiveConfig {
 bool IsJsonLevelFile(const char* file);
 std::string GetInitialLevelFromGamePackage(const char* file);
 void LoadLevelPackage(const char* file);
+void SetProjectRoot(const std::string& root);
 const nlohmann::json& GetAnimationDefinition(const char* key);
 const nlohmann::json& GetLevelMap();
 const nlohmann::json& GetLevelEntities(const char* group);

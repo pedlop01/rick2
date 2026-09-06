@@ -24,6 +24,10 @@ int main() {
   assert(project_options.project_file == project);
   assert(project_options.level_file.empty());
 
+  char archive[] = "game.rick2-project";
+  char* archive_arguments[] = {program, archive};
+  assert(ParseRuntimeOptions(2, archive_arguments).project_file == archive);
+
   char unknown[] = "--unknown";
   char* invalid_arguments[] = {program, unknown};
   bool rejected = false;

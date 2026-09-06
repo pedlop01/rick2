@@ -1,10 +1,10 @@
 PLATFORM := $(shell uname -o)
 ifeq  ($(PLATFORM),GNU/Linux)
-rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o presentation_state.o resource_cache.o combat.o
-	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o presentation_state.o resource_cache.o combat.o -O3 -std=c++11 `pkg-config --libs allegro-5 allegro_primitives-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_audio-5 allegro_acodec-5`
+rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o project_archive.o presentation_state.o resource_cache.o combat.o
+	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o project_archive.o presentation_state.o resource_cache.o combat.o -O3 -std=c++11 `pkg-config --libs allegro-5 allegro_primitives-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_audio-5 allegro_acodec-5` -lz
 else
-rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o presentation_state.o resource_cache.o combat.o
-	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o presentation_state.o resource_cache.o combat.o -O3 -std=c++11 -static -lallegro-5.0.10-monolith-md
+rick2: ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o project_archive.o presentation_state.o resource_cache.o combat.o
+	g++ -o rick2 ../src/main.cpp world.o keyboard.o camera.o camera_view.o sprite.o animation.o character.o player.o enemy.o colbox.o timer.o object.o platform.o item.o laser.o shoot.o bomb.o static_object.o block.o hazard.o checkpoint.o trigger.o enemy_ia.o sound_handler.o json_level_loader.o character_state_machine.o gameplay_program.o game_shell.o project_archive.o presentation_state.o resource_cache.o combat.o -O3 -std=c++11 -static -lallegro-5.0.10-monolith-md -lz
 endif
 
 world.o: ../src/world.cpp
@@ -90,6 +90,9 @@ gameplay_program.o: ../src/gameplay_program.cpp
 
 game_shell.o: ../src/game_shell.cpp ../src/game_shell.h
 	g++ -std=c++11 -c ../src/game_shell.cpp
+
+project_archive.o: ../src/project_archive.cpp ../src/project_archive.h
+	g++ -std=c++11 -c ../src/project_archive.cpp
 
 presentation_state.o: ../src/presentation_state.cpp
 	g++ -std=c++11 -c ../src/presentation_state.cpp
