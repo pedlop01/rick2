@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <vector>
 #include <map>
+#include <memory>
+#include <string>
 
 #include "rick_params.h"
 #include "world.h"
@@ -13,6 +15,7 @@
 #include "colbox.h"
 #include "animation.h"
 #include "sound_handler.h"
+#include "combat.h"
 
 #define CHARACTER_PLAYER 0
 #define CHARACTER_ENEMY  1
@@ -125,6 +128,7 @@ class Character {
     Camera* camera;
 
     SoundHandler* sound_handler;
+    std::unique_ptr<CombatantState> combat_state;
 
   public:    
 	  Character();    // class constructor
@@ -144,6 +148,10 @@ class Character {
     int  GetState()      { return state;     }
     int  GetDirection()  { return direction; }
     int  GetFace()       { return face;      }
+    void ConfigureCombat(const CombatProfile* profile) { combat_state.reset(profile ? new CombatantState(profile) : NULL); }
+    CombatantState* GetCombatState() { return combat_state.get(); }
+    virtual std::string GetCombatStateName() const;
+    int GetCombatFrame() const { return AnimationForState(AnimationState())->GetCurrentAnim(); }
 
     int  GetBBX()        { return bb_x;      }
     int  GetBBY()        { return bb_y;      }

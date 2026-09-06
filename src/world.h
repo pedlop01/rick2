@@ -32,6 +32,7 @@
 #include "resource_cache.h"
 #include "gameplay_program.h"
 #include "presentation_state.h"
+#include "combat.h"
 
 using namespace std;
 
@@ -118,6 +119,7 @@ class World
         bool level_completed;
         GameplayProgram* gameplay;
         PresentationState* presentation;
+        map<Character*, pair<string, int> > combat_activations;
 
         BitmapResource world_image;
 
@@ -163,6 +165,7 @@ class World
         bool  IsLevelCompleted() const { return level_completed; }
         bool  FreezeOnComplete() const { return objective.freeze_on_complete; }
         PresentationState* GetPresentation() const { return presentation; }
+        void StartGameplaySequence(const std::string& id) { if (gameplay) gameplay->StartSequence(id); }
 
         void  InitializePlatforms(const char* file);
         void  InitializeItems(const char* file, SoundHandler* sound_handler);

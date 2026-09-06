@@ -45,6 +45,7 @@ export class WorkspacePreview {
   #runtimeAnimations = new Map<string, RuntimeAnimation>();
   #runtimeSpritesVisible = true;
   #runtimeBoundsVisible = true;
+  #combatBoxesVisible = { hurt: true, attack: true, guard: true };
   #presentation: PresentationSnapshot | null = null;
   #presentationCamera = { x: 0, y: 0, width: 256, height: 200 };
   #parallaxLayers: readonly ParallaxLayerDefinition[] = [];
@@ -171,6 +172,7 @@ export class WorkspacePreview {
   setRuntimeBodies(bodies: readonly RuntimeBody[]): void { this.#runtimeBodies = bodies; this.#scheduleDraw(); }
   setRuntimeSpritesVisible(visible: boolean): void { this.#runtimeSpritesVisible = visible; this.#scheduleDraw(); }
   setRuntimeBoundsVisible(visible: boolean): void { this.#runtimeBoundsVisible = visible; this.#scheduleDraw(); }
+  setCombatBoxesVisible(kind: "hurt" | "attack" | "guard", visible: boolean): void { this.#combatBoxesVisible[kind] = visible; this.#scheduleDraw(); }
   setPresentation(snapshot: PresentationSnapshot | null, layers: readonly ParallaxLayerDefinition[] = [], camera = { x: 0, y: 0, width: 256, height: 200 }): void { this.#presentation = snapshot; this.#parallaxLayers = layers; this.#presentationCamera = camera; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
@@ -372,7 +374,7 @@ export class WorkspacePreview {
       else context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, x, y, width, height);
     }
     if (!this.#runtimeBoundsVisible) return; context.lineWidth = 2 / this.#zoom;
-    for (const body of this.#runtimeBodies) { const player = body.kind === "player", shoot = body.kind === "shoot", bomb = body.kind === "bomb", enemy = body.kind === "enemy"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); for (const [boxes, color] of [[body.hurtboxes, "#22d3ee"], [body.attackboxes, "#ef4444"], [body.guardboxes, "#3b82f6"]] as const) { context.strokeStyle = color; for (const box of boxes ?? []) context.strokeRect(box.x, box.y, box.width, box.height); } }
+    for (const body of this.#runtimeBodies) { const player = body.kind === "player", shoot = body.kind === "shoot", bomb = body.kind === "bomb", enemy = body.kind === "enemy"; context.fillStyle = player ? "rgba(250, 204, 21, .4)" : shoot ? "rgba(74, 222, 128, .4)" : bomb ? "rgba(232, 121, 249, .4)" : enemy ? "rgba(248, 113, 113, .35)" : "rgba(34, 211, 238, .3)"; context.strokeStyle = player ? "#facc15" : shoot ? "#4ade80" : bomb ? "#e879f9" : enemy ? "#f87171" : "#22d3ee"; context.fillRect(body.x, body.y, body.width, body.height); context.strokeRect(body.x, body.y, body.width, body.height); for (const [kind, boxes, color] of [["hurt", body.hurtboxes, "#22d3ee"], ["attack", body.attackboxes, "#ef4444"], ["guard", body.guardboxes, "#3b82f6"]] as const) { if (!this.#combatBoxesVisible[kind]) continue; context.strokeStyle = color; for (const box of boxes ?? []) context.strokeRect(box.x, box.y, box.width, box.height); } }
   }
 
   #drawEmptyGrid(width: number, height: number): void {

@@ -40,7 +40,26 @@ animación, física y capacidades de combate.
 Los campos históricos `ia_type` continúan aceptándose durante la migración de
 Rick: `walker` equivale a `patrol` y `chaser` a `chase`. Los nuevos proyectos
 deben usar `behavior`; la retirada del formato histórico requiere una migración
-de versión y no se hará silenciosamente.
+de versión y no se hará silenciosamente. Cada enemigo declara exactamente una
+de las dos ramas, por lo que no puede haber dos fuentes de decisión simultáneas.
+
+## Editor y diagnóstico
+
+La sección **Profile → Combat profiles** permite crear el catálogo, editar los
+tipos de daño, salud, facción y las cajas numéricas. El selector de estado se
+alimenta de las definiciones de personaje disponibles. Durante la preview, el
+menú **Test** contiene una leyenda y controles independientes para hurtboxes
+cian, ataques rojos y guardias azules. `Bounds` sigue controlando el overlay de
+depuración completo.
+
+El runtime C++ muestra las mismas cajas con `--debug`. Web y C++ convierten el
+tick transcurrido de la animación a frame visual antes de filtrar una ventana y
+mantienen una identidad de activación separada del tick global.
+
+El fixture `tests/fixtures/combat_and_ai.json` documenta espada, guardia y dos
+enemigos derivados de la escena de validación: uno terrestre y otro aéreo. Es
+un fragmento de datos reutilizable y no introduce nombres ni ramas específicas
+del juego histórico.
 
 ## Límites
 

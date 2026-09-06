@@ -83,6 +83,18 @@ class LevelSchemaTest(unittest.TestCase):
         configured["gameplay"]["flags"][0]["initial"] = "wrong"
         self.assertTrue(list(self.validator.iter_errors(configured)))
 
+    def test_enemy_accepts_exactly_one_ai_contract(self):
+        configured = copy.deepcopy(self.level)
+        enemy = configured["entities"]["enemies"][0]
+        for key in ["ia_type", "ia_random", "ia_randomness", "ia_block_steps",
+                    "ia_orig_x", "ia_orig_y", "ia_limit_x", "ia_limit_y"]:
+            enemy.pop(key)
+        enemy["behavior"] = {"type": "flyPatrol", "axis": "both", "distance": 32,
+                             "phaseTicks": 20}
+        self.assertEqual(list(self.validator.iter_errors(configured)), [])
+        enemy["ia_type"] = "walker"
+        self.assertTrue(list(self.validator.iter_errors(configured)))
+
 
 if __name__ == "__main__":
     unittest.main()

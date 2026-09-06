@@ -5,6 +5,8 @@
 #include "resource_cache.h"
 #include <cmath>
 
+namespace { void DrawCombatOverlay(Character* character, int camera_x, int camera_y) { CombatantState* combat = character->GetCombatState(); if (!combat || !combat->Profile()) return; CombatPose pose = { static_cast<double>(character->GetPosX()), static_cast<double>(character->GetPosY()), static_cast<double>(character->GetWidth()), character->GetFace() == CHAR_DIR_LEFT, character->GetCombatStateName(), character->GetCombatFrame(), 0 }; const std::vector<WorldCombatBox> families[] = { ActiveHurtboxes(*combat->Profile(), pose), ActiveAttackboxes(*combat->Profile(), pose), ActiveGuardboxes(*combat->Profile(), pose) }; const ALLEGRO_COLOR colors[] = { al_map_rgb(34, 211, 238), al_map_rgb(239, 68, 68), al_map_rgb(59, 130, 246) }; for (int family = 0; family < 3; ++family) for (std::vector<WorldCombatBox>::const_iterator box = families[family].begin(); box != families[family].end(); ++box) al_draw_rectangle(box->x - camera_x, box->y - camera_y, box->x + box->width - camera_x, box->y + box->height - camera_y, colors[family], 1.5f); } }
+
 Camera::Camera() {
   pos_x = 0;
   pos_y = 0;
@@ -339,6 +341,7 @@ void Camera::DrawPlayer(World* world, Character* player, ALLEGRO_FONT *font) {
                     player->GetPosX() + player->GetBBX() + player->GetBBWidth() - 1 - GetPosX() + 1,
                     player->GetPosY() + player->GetBBY() + player->GetBBHeight() - 1 - GetPosY() + 1,
                     al_map_rgb(0xAF, 0xAF, 0xAF), 1.0);
+  DrawCombatOverlay(player, GetPosX(), GetPosY());
   }
 }
 
@@ -478,6 +481,7 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
                         enemy->GetPosX() + enemy->GetBBX() + enemy->GetBBWidth() - 1 - GetPosX() + 1,
                         enemy->GetPosY() + enemy->GetBBY() + enemy->GetBBHeight() - 1 - GetPosY() + 1,
                         al_map_rgb(0xAF, 0xAF, 0xAF), 1.0);
+      DrawCombatOverlay(enemy, GetPosX(), GetPosY());
       char buffer[30];
       sprintf(buffer, "%d", enemy->GetId());
       al_draw_text(font,

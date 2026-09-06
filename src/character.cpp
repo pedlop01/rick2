@@ -227,6 +227,7 @@ void Character::Reset() {
   blockCollisionRight = false;
   blockCollisionPtr = 0;
   stop_move_block_col = false;
+  if (combat_state) combat_state->Reset();
 }
 
 void Character::SetKilled(World* map) {
@@ -1156,4 +1157,8 @@ Animation* Character::AnimationForState(int state_id) const {
 
 float Character::GetCurrentAnimationScalingFactor() {
   return animation_scaling_factor;
+}
+
+std::string Character::GetCombatStateName() const {
+  switch (state) { case CHAR_STATE_STOP: return "CHAR_STATE_STOP"; case CHAR_STATE_RUNNING: return "CHAR_STATE_RUNNING"; case CHAR_STATE_JUMPING: return "CHAR_STATE_JUMPING"; case CHAR_STATE_CROUCHING: return "CHAR_STATE_CROUCHING"; case CHAR_STATE_CLIMBING: return "CHAR_STATE_CLIMBING"; case CHAR_STATE_SHOOTING: return "CHAR_STATE_SHOOTING"; case CHAR_STATE_BOMBING: return "CHAR_STATE_BOMBING"; case CHAR_STATE_HITTING: return "CHAR_STATE_HITTING"; case CHAR_STATE_DYING: return "CHAR_STATE_DYING"; default: return "CHAR_STATE_DEAD"; }
 }

@@ -88,6 +88,7 @@ void Player::ApplyFormProfile(const nlohmann::json& form) {
   if (!can_shoot) { if (action_up_state == CHAR_STATE_SHOOTING) action_up_state = -1; if (action_down_state == CHAR_STATE_SHOOTING) action_down_state = -1; if (action_horizontal_state == CHAR_STATE_SHOOTING) action_horizontal_state = -1; }
   if (!can_bomb) { if (action_up_state == CHAR_STATE_BOMBING) action_up_state = -1; if (action_down_state == CHAR_STATE_BOMBING) action_down_state = -1; if (action_horizontal_state == CHAR_STATE_BOMBING) action_horizontal_state = -1; }
   if (!can_hit) { if (action_up_state == CHAR_STATE_HITTING) action_up_state = -1; if (action_down_state == CHAR_STATE_HITTING) action_down_state = -1; if (action_horizontal_state == CHAR_STATE_HITTING) action_horizontal_state = -1; }
+  const std::string combat_profile = form.value("combatProfile", GetPlayerConfig().value("combatProfile", "")); ConfigureCombat(GetCombatCatalog().Find(combat_profile));
 }
 
 void Player::LoadFormAnimations(const std::string& definition_id) {
@@ -142,6 +143,7 @@ Player::Player() : Character() {
   bb_height = 21;
   bb_height_orig = bb_height;
   ApplyRuntimeControllerProfile();
+  ConfigureCombat(GetCombatCatalog().Find(GetPlayerConfig().value("combatProfile", "")));
   const nlohmann::json& profile = GetRuntimeProfile(); if (profile.contains("characterForms")) { forms.reset(new CharacterForms(profile.at("characterForms"), "right")); ApplyFormProfile(forms->ActiveDefinition()); SelectFormAnimation(); }
 }
 
@@ -165,6 +167,7 @@ Player::Player(const char* file) : Character(file) {
   bb_height = 21;
   bb_height_orig = bb_height;
   ApplyRuntimeControllerProfile();
+  ConfigureCombat(GetCombatCatalog().Find(GetPlayerConfig().value("combatProfile", "")));
   const nlohmann::json& profile = GetRuntimeProfile(); if (profile.contains("characterForms")) { forms.reset(new CharacterForms(profile.at("characterForms"), "right")); ApplyFormProfile(forms->ActiveDefinition()); SelectFormAnimation(); }
 }
 
@@ -172,6 +175,8 @@ Player::Player(const char* file) : Character(file) {
 Player::~Player() {  
 
 }
+
+std::string Player::GetCombatStateName() const { if (forms) { const nlohmann::json& active = ActiveState(*forms); if (active.contains("animation")) return active.at("animation").get<std::string>(); } return Character::GetCombatStateName(); }
 
 void Player::Reset() {
   Character::Reset();

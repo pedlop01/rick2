@@ -3,6 +3,9 @@
 #include "world.h"
 #include "game_time.h"
 #include "animation_rules.h"
+#include "enemy_behavior_rules.h"
+#include <algorithm>
+#include <cmath>
 
 // class constructor
 Enemy::Enemy() : Character() {
@@ -17,7 +20,8 @@ Enemy::Enemy(const char* file,
              int _bb_x, int _bb_y, int _bb_width, int _bb_height,
              int _direction, float _speed_x, float _speed_y,
              int _ia_type, bool _ia_random, int _ia_randomness, int _ia_block_steps,
-             int _ia_orig_x, int _ia_orig_y, int _ia_limit_x, int _ia_limit_y) : Character(file) {
+             int _ia_orig_x, int _ia_orig_y, int _ia_limit_x, int _ia_limit_y,
+             const nlohmann::json& _behavior, const std::string& combat_profile) : Character(file) {
   id = _id;
   type = CHARACTER_ENEMY;
 
@@ -44,6 +48,8 @@ Enemy::Enemy(const char* file,
 
   freezed = false;
   freeze_elapsed_ticks = 0;
+  behavior = _behavior; behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0;
+  ConfigureCombat(GetCombatCatalog().Find(combat_profile));
 
   ia = new EnemyIA(_ia_type, _ia_random, _ia_randomness, _ia_block_steps,
                    id, pos_x, pos_y, _ia_orig_x, _ia_orig_y,
@@ -63,6 +69,15 @@ void Enemy::CharacterStep(World* map, Character* player) {
 
   keyboard_enemy.SetKeys(0);
 
+  const std::string behavior_type = behavior.value("type", "");
+  if (behavior_type == "jumper") { ++behavior_ticks; int keys = direction == CHAR_DIR_LEFT ? KEY_LEFT : KEY_RIGHT; if (behavior_ticks >= behavior.at("intervalTicks").get<int>() && inFloor) { keys |= KEY_UP; behavior_ticks = 0; } jump_height = behavior.at("jumpHeight").get<int>(); speed_x_max = behavior.value("horizontalSpeed", speed_x_max); keyboard_enemy.SetKeys(keys); Character::CharacterStep(map, keyboard_enemy); return; }
+  if (behavior_type == "flyPatrol" || behavior_type == "verticalPatrol" || behavior_type == "bossSequence") {
+    if (behavior_type == "bossSequence") { if (!behavior_started) { map->StartGameplaySequence(behavior.at("sequence").get<std::string>()); behavior_started = true; } }
+    else if (behavior_type == "flyPatrol") { const int phase = behavior.value("phaseTicks", std::max(1, static_cast<int>(behavior.at("distance").get<double>() / std::max(1.0f, std::max(speed_x_max, speed_y_max))))), sign = PatrolPhaseDirection(behavior_ticks, phase); const std::string axis = behavior.at("axis").get<std::string>(); if (axis != "vertical") pos_x += sign * speed_x_max; if (axis != "horizontal") pos_y += sign * speed_y_max; direction = sign > 0 ? CHAR_DIR_RIGHT : CHAR_DIR_LEFT; }
+    else if (behavior_type == "verticalPatrol") { const int distance = behavior.at("distance").get<int>(), phase = std::max(1, static_cast<int>(distance / std::max(1.0f, speed_y_max))), sign0 = behavior.value("initialDirection", "down") == "up" ? -1 : 1, sign = PatrolPhaseDirection(behavior_ticks, phase, sign0); pos_y += sign * speed_y_max; }
+    ++behavior_ticks; Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); return;
+  }
+
   // Lethal hits have priority over the freeze pause. Objects are stepped
   // before enemies, so a laser can set killed during this same world tick.
   if (killed) {
@@ -78,7 +93,7 @@ void Enemy::CharacterStep(World* map, Character* player) {
       this->GetCollisionsInternalWeightBoxExt(map, weightColExt);
 
       // Check if there is a collision with the player
-      this->CheckCollisionPlayer(map, player);
+      if (!GetCombatState() || !player->GetCombatState()) this->CheckCollisionPlayer(map, player);
 
       ia->IAStep(keyboard_enemy,
                  (Player*)player, this);

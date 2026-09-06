@@ -7,30 +7,18 @@ The objective is to make combat and enemy movement reusable by Rick Dangerous,
 Camelot Warriors and other simple platform games, with equivalent behaviour in
 the web preview and native C++ runtime.
 
-Do not commit the task until the user has tested and approved it. The working
-tree deliberately contains an incomplete first block.
+The task has been implemented, validated and approved. Its final commit follows
+the intermediate web-combat commit `2b01109`.
 
 ## Repository state
 
 - Repository: `/home/plopez/proj/rick2`
 - Branch: `master`
-- Last commit: `4398b52 feat: generalize level presentation`
-- Task 43 is marked `En curso`.
-- The worktree has only task-43 changes; there are no known unrelated edits.
-- `git diff --check` passes.
-
-Modified files:
-
-- `DEVELOPMENT_PLAN.md`
-- `editor/scripts/build.mjs`
-- `editor/src/validation.ts`
-- `schema/level.schema.json`
-
-New files:
-
-- `docs/COMBAT_AND_AI.md`
-- `editor/src/combat.ts`
-- `editor/tests/combat.test.mjs`
+- Last commit: `2b01109 feat: add data-driven web combat`
+- Task 43 is marked `Completada`.
+- Commit `2b01109` contains the schema/core and initial web-preview block.
+- Use `git log -2 --oneline` to identify both task-43 commits after opening a
+  new chat.
 
 ## Decisions already made
 
@@ -92,14 +80,15 @@ that must stay synchronized with the final implementation.
 
 ## Verification already completed
 
-After the current edits:
+At commit `2b01109`:
 
 ```sh
 cd /home/plopez/proj/rick2/editor
 npm run check
 ```
 
-passes all 18 Node test files, including `combat.test.mjs`.
+passes all 18 Node test files, including `combat.test.mjs` and the combat
+integration cases in `preview-runtime.test.mjs`.
 
 ```sh
 cd /home/plopez/proj/rick2
@@ -155,26 +144,44 @@ invulnerability, death and knockback, and exposes combat boxes through
 `preview-runtime.test.mjs` covers sword damage, guarding, one hit per activation,
 death, form-specific profiles and the existing legacy Rick contact semantics.
 
-## Next block: editor authoring
+## Implemented final block
 
-1. Add human-friendly editor panels for damage types, profiles and their boxes.
-   State selectors must come from the selected character definition/form.
-   Geometry should be editable numerically and visually over the sprite.
-2. Add toggles/legend entries for hurt, attack and guard boxes.
-3. Implement the same combat data model and resolver in C++, with focused native
-   tests before connecting it to `World`, `Player`, `Enemy` and `Camera` debug
-   rendering.
-4. Replace the web enemy `walker/chaser` dispatch with an adapter into the new
-   behavior registry, then add deterministic implementations for flight,
-   vertical patrol and jumping. Preserve all existing chaser staircase tests.
-5. Add equivalent native C++ behavior dispatch and tests.
-6. Express boss behavior as registered deterministic actions/sequences. It must
-   not be a hard-coded dragon class.
-7. Add generic and Camelot-derived fixtures covering at least one grounded and
-   one airborne enemy, sword and guard. Keep legacy Camelot outside the build:
-   `/home/plopez/proj/camelot/game` is read-only reference material.
-8. Update data catalog/runtime documentation, run `./tools/check_all.sh`, mark
-   task 43 complete, ask the user to test, and stop before committing.
+- The editor profile panel authors damage types, profiles and numeric combat
+  boxes, with state choices sourced from character definitions.
+- Preview controls independently toggle hurt (cyan), attack (red) and guard
+  (blue) boxes while retaining ordinary bounds.
+- The schema requires exactly one enemy decision branch: complete v1 IA fields
+  or one typed `behavior`.
+- Web behavior dispatch adapts walker/chaser and implements flight, vertical
+  patrol, jumping and registered boss sequences deterministically.
+- Native `CombatCatalog`/`CombatantState` implement the same pose, mirroring,
+  frame windows, guard, damage, invulnerability, activation and knockback model.
+- Native `World`, `Player`, `Enemy` and `Camera` are connected to combat and
+  debug rendering. Character forms select their own profiles.
+- Native enemies accept the same behavior branch. Focused combat and behavior
+  rule tests are part of `tools/check_all.sh`.
+- `tests/fixtures/combat_and_ai.json` covers sword, guard, a grounded enemy and
+  an airborne enemy without identifiers tied to a game.
+
+## Verification at handoff
+
+- `./tools/check_all.sh` passes, including seven schema tests, native combat and
+  behavior tests, and all 18 editor suites.
+- A separate strict native build using all `src/*.cpp` succeeds with
+  `-Werror=return-type`.
+- A clean `make` in `bin/` succeeds; `combat.o` is explicitly part of both the
+  Linux and Windows link targets. This check is included in `check_all.sh`.
+- The user approved closing the task after the Makefile build failure was fixed.
+
+## Continue in the next chat
+
+1. Read this file and `DEVELOPMENT_PLAN.md`; do not reconstruct prior chats.
+2. Run `git status --short` and `git diff --check`.
+3. Confirm task 43 is clean and committed; do not reopen it unless a regression
+   is reported.
+4. Continue with the next task explicitly requested by the user. According to
+   the plan, task 44 depends on unfinished tasks 35–38, so resolve that ordering
+   deliberately rather than starting the Camelot migration implicitly.
 
 ## Acceptance sources
 

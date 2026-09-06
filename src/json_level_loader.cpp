@@ -7,6 +7,8 @@
 #include "format_versions.h"
 #include "rick_params.h"
 #include "character_state_machine.h"
+#include "combat.h"
+#include <memory>
 
 namespace {
 using json = nlohmann::json;
@@ -19,6 +21,7 @@ json runtime_profile;
 ViewportConfig display_config;
 ViewportConfig camera_config;
 int initial_music;
+std::unique_ptr<CombatCatalog> combat_catalog;
 
 std::string ParentPath(const std::string& path) {
   const std::string::size_type separator = path.find_last_of("/\\");
@@ -253,7 +256,7 @@ void LoadLevelPackage(const char* file) {
     const json& camera = value.at("camera");
     camera_config = {camera.at("x").get<int>(), camera.at("y").get<int>(),
                      camera.at("width").get<int>(), camera.at("height").get<int>()};
-    package_data = value;
+    package_data = value; combat_catalog.reset(new CombatCatalog(value.value("combat", json::object())));
   } catch (const DataLoadError&) { throw; }
   catch (const std::exception& error) {
     throw DataLoadError(std::string("Invalid '") + file + "': " + error.what());
@@ -279,6 +282,8 @@ const nlohmann::json& GetProjectileDefinition(const char* projectile) {
 const nlohmann::json& GetRuntimeProfile() { return runtime_profile; }
 const nlohmann::json& GetGameplayProgramDefinition() { static const json empty = json::object(); return package_data.contains("gameplay") ? package_data.at("gameplay") : empty; }
 const nlohmann::json& GetPresentationDefinition() { static const json empty = json::object(); return package_data.contains("presentation") ? package_data.at("presentation") : empty; }
+const nlohmann::json& GetPlayerConfig() { return package_data.at("player"); }
+const CombatCatalog& GetCombatCatalog() { static const CombatCatalog empty; return combat_catalog ? *combat_catalog : empty; }
 PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, 1.0f, 3.0f,
                                    0.1f, 2.0f, 40, 80, 2.0f, 70, 20};

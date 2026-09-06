@@ -588,7 +588,11 @@
     "enemyArray": { "type": "array", "items": { "$ref": "#/$defs/enemy" } },
     "enemy": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "x", "y", "bb_x", "bb_y", "bb_width", "bb_height", "direction", "speed_x", "speed_y", "ia_type", "ia_random", "ia_randomness", "ia_block_steps", "ia_orig_x", "ia_orig_y", "ia_limit_x", "ia_limit_y", "definition"],
+      "required": ["id", "x", "y", "bb_x", "bb_y", "bb_width", "bb_height", "direction", "speed_x", "speed_y", "definition"],
+      "oneOf": [
+        { "required": ["ia_type", "ia_random", "ia_randomness", "ia_block_steps", "ia_orig_x", "ia_orig_y", "ia_limit_x", "ia_limit_y"], "not": { "required": ["behavior"] } },
+        { "required": ["behavior"], "not": { "required": ["ia_type"] } }
+      ],
       "properties": {
         "id": { "$ref": "#/$defs/nonNegativeInteger" }, "x": { "type": "integer" }, "y": { "type": "integer" },
         "bb_x": { "$ref": "#/$defs/nonNegativeInteger" }, "bb_y": { "$ref": "#/$defs/nonNegativeInteger" },

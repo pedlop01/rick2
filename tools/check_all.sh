@@ -24,6 +24,8 @@ g++ -std=c++11 tests/runtime_options_test.cpp -o "$build_dir/runtime-options"
 "$build_dir/runtime-options"
 g++ -std=c++11 tests/enemy_ia_rules_test.cpp -o "$build_dir/enemy-ia-rules"
 "$build_dir/enemy-ia-rules"
+g++ -std=c++11 tests/enemy_behavior_rules_test.cpp -o "$build_dir/enemy-behavior-rules"
+"$build_dir/enemy-behavior-rules"
 g++ -std=c++11 tests/character_collision_rules_test.cpp -o "$build_dir/character-collision-rules"
 "$build_dir/character-collision-rules"
 g++ -std=c++11 tests/vertical_collision_rules_test.cpp -o "$build_dir/vertical-collision-rules"
@@ -44,10 +46,14 @@ g++ -std=c++11 tests/gameplay_program_test.cpp src/gameplay_program.cpp -o "$bui
 "$build_dir/gameplay-program"
 g++ -std=c++11 tests/presentation_state_test.cpp src/presentation_state.cpp -o "$build_dir/presentation-state"
 "$build_dir/presentation-state"
+g++ -std=c++11 tests/combat_test.cpp src/combat.cpp -o "$build_dir/combat"
+"$build_dir/combat"
 g++ -std=c++11 tests/checkpoint_test.cpp src/checkpoint.cpp -o "$build_dir/checkpoint"
 "$build_dir/checkpoint"
-g++ -std=c++11 tests/json_level_loader_test.cpp src/json_level_loader.cpp src/character_state_machine.cpp -o "$build_dir/json-loader"
+g++ -std=c++11 tests/json_level_loader_test.cpp src/json_level_loader.cpp src/character_state_machine.cpp src/combat.cpp -o "$build_dir/json-loader"
 "$build_dir/json-loader"
+make -C bin clean
+make -C bin
 cd editor
 npm ci
 npm run check

@@ -1,0 +1,19 @@
+{
+  "combat": {
+    "damageTypes": [{ "id": "melee" }],
+    "profiles": [
+      {
+        "id": "sword-user", "faction": "heroes", "maxHealth": 3,
+        "hurtboxes": [{ "id": "body", "x": 0, "y": 0, "width": 24, "height": 40 }],
+        "attacks": [{ "id": "sword", "states": ["SWORD"], "frames": [1], "x": 18, "y": 8, "width": 18, "height": 12, "damageType": "melee", "damage": 1 }],
+        "guards": [{ "id": "guard", "states": ["GUARD"], "x": 16, "y": 4, "width": 10, "height": 28, "damageTypes": ["melee"], "facingOnly": true }]
+      },
+      { "id": "ground-foe", "faction": "enemies", "maxHealth": 2, "hurtboxes": [{ "id": "body", "x": 0, "y": 0, "width": 16, "height": 24 }] },
+      { "id": "air-foe", "faction": "enemies", "maxHealth": 1, "hurtboxes": [{ "id": "body", "x": 0, "y": 0, "width": 20, "height": 16 }] }
+    ]
+  },
+  "enemies": [
+    { "id": 1, "x": 80, "y": 80, "bb_x": 0, "bb_y": 0, "bb_width": 16, "bb_height": 24, "direction": "left", "speed_x": 1, "speed_y": 3, "definition": "ground", "combatProfile": "ground-foe", "behavior": { "type": "patrol", "turnAtEdges": true, "turnAtWalls": true } },
+    { "id": 2, "x": 96, "y": 32, "bb_x": 0, "bb_y": 0, "bb_width": 20, "bb_height": 16, "direction": "left", "speed_x": 1, "speed_y": 1, "definition": "air", "combatProfile": "air-foe", "behavior": { "type": "flyPatrol", "axis": "both", "distance": 32, "phaseTicks": 32 } }
+  ]
+}

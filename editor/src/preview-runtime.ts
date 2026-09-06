@@ -19,8 +19,8 @@ interface RuntimeTarget { key: string; delay: number; trigger: boolean; triggerC
 interface RuntimeTrigger { key: string; x: number; y: number; width: number; height: number; action: string; face: string; recursive: boolean; wasIn: boolean; alreadyTriggered: boolean; firing: boolean; steps: number; previousAction: boolean; targets: RuntimeTarget[]; conditions: GameplayCondition[]; gameplayActions: GameplayAction[]; sequence?: string; }
 interface RuntimeCameraView { id: number; left: number; top: number; right: number; bottom: number; }
 interface TransientBody extends RuntimeBody { kind: "shoot" | "bomb"; vx: number; vy: number; age: number; fuse: number; explosion: number; exploding: boolean; bbX: number; bbY: number; bbWidth: number; bbHeight: number; contactBlockKey?: string; }
-type EnemyAIKind = "walker" | "chaser";
-interface EnemyBody extends RuntimeBody { kind: "enemy"; spriteX: number; spriteY: number; bbX: number; bbY: number; direction: -1 | 1; speedX: number; speedY: number; verticalSpeed: number; iaType: EnemyAIKind; originX: number; originY: number; limitX: number; limitY: number; blockSteps: number; decisionLock: number; randomDecisions: boolean; randomness: number; randomState: number; climbing: boolean; animationState: "running" | "climbing" | "dying"; frozenTicks: number; dyingTicks: number; alive: boolean; combat?: CombatantState; combatActivation: number; combatState: string; }
+type EnemyAIKind = "patrol" | "chase" | "flyPatrol" | "verticalPatrol" | "jumper" | "bossSequence";
+interface EnemyBody extends RuntimeBody { kind: "enemy"; spriteX: number; spriteY: number; bbX: number; bbY: number; direction: -1 | 1; speedX: number; speedY: number; verticalSpeed: number; iaType: EnemyAIKind; behavior: Record<string, unknown>; behaviorTicks: number; behaviorStarted: boolean; originX: number; originY: number; limitX: number; limitY: number; blockSteps: number; decisionLock: number; randomDecisions: boolean; randomness: number; randomState: number; climbing: boolean; animationState: "running" | "climbing" | "dying"; frozenTicks: number; dyingTicks: number; alive: boolean; combat?: CombatantState; combatActivation: number; combatState: string; }
 interface EnemyStepContext { enemy: EnemyBody; player: PlayerSnapshot; spriteX: number; spriteY: number; insideChaseZone: boolean; decisionsBlocked: boolean; movementConsumed: boolean; }
 function record(value: unknown): Record<string, unknown> { return value && typeof value === "object" ? value as Record<string, unknown> : {}; }
 function number(value: unknown, fallback = 0): number { return typeof value === "number" ? value : fallback; }
@@ -61,8 +61,12 @@ export class PreviewRuntime {
       .register("background", (body) => { body.frame += 1; })
       .register("laser", (body) => this.#stepLaser(body));
     this.#enemyBehaviors = new RuntimeBehaviorRegistry<EnemyAIKind, EnemyStepContext>()
-      .register("walker", (context) => this.#stepWalkerAI(context))
-      .register("chaser", (context) => this.#stepChaserAI(context));
+      .register("patrol", (context) => this.#stepWalkerAI(context))
+      .register("chase", (context) => this.#stepChaserAI(context))
+      .register("flyPatrol", (context) => this.#stepFlyPatrol(context))
+      .register("verticalPatrol", (context) => this.#stepVerticalPatrol(context))
+      .register("jumper", (context) => this.#stepJumper(context))
+      .register("bossSequence", (context) => this.#stepBossSequence(context));
     this.reset();
   }
   get tick(): number { return this.#tick; }
@@ -118,9 +122,9 @@ export class PreviewRuntime {
     for (const raw of list(entities.backgroundObjects)) { const entity = record(raw), attributes = record(entity.attributes); this.#bodies.push({ key: `backgroundObjects:${String(entity.id)}`, kind: "background", traits: NO_TRAITS, x: number(attributes.ini_x), y: number(attributes.ini_y), width: number(attributes.width, 8), height: number(attributes.height, 8), frame: Math.max(0, number(attributes.skip_num_anims)), definition: String(attributes.definition ?? ""), state: "OBJ_STATE_MOVING", actions: [], action: 0, progress: 0, wait: 0, recursive: false, visible: true, active: false, condActions: false }); }
     for (const raw of list(entities.enemies)) {
       const enemy = record(raw), spriteX = number(enemy.x), spriteY = number(enemy.y), bbX = number(enemy.bb_x), bbY = number(enemy.bb_y);
-      const iaType = String(enemy.ia_type ?? "walker") as EnemyAIKind;
+      const behavior = record(enemy.behavior), legacyType = enemy.ia_type === "walker" ? "patrol" : enemy.ia_type === "chaser" ? "chase" : enemy.ia_type, iaType = String(behavior.type ?? legacyType ?? "patrol") as EnemyAIKind;
       if (!this.#enemyBehaviors.has(iaType)) throw new Error(`Unregistered enemy AI: ${iaType}`);
-      const combatProfile = this.#combatProfiles.get(String(enemy.combatProfile ?? "")); this.#enemies.push({ key: `enemies:${String(enemy.id)}`, kind: "enemy", x: spriteX + bbX, y: spriteY + bbY, spriteX, spriteY, bbX, bbY, width: number(enemy.bb_width, 10), height: number(enemy.bb_height, 21), frame: 0, definition: String(enemy.definition ?? ""), direction: enemy.direction === "left" ? -1 : 1, speedX: Math.max(0, number(enemy.speed_x, 1)), speedY: Math.max(0, number(enemy.speed_y, 3)), verticalSpeed: 0, iaType, originX: number(enemy.ia_orig_x, spriteX), originY: number(enemy.ia_orig_y, spriteY), limitX: Math.max(0, number(enemy.ia_limit_x)), limitY: Math.max(0, number(enemy.ia_limit_y)), blockSteps: Math.max(1, number(enemy.ia_block_steps, 1)), decisionLock: 0, randomDecisions: Boolean(enemy.ia_random), randomness: Math.max(1, Math.floor(number(enemy.ia_randomness, 15))), randomState: (Math.imul(Math.floor(number(enemy.id)) + 1, 0x9e3779b1) >>> 0), climbing: false, animationState: "running", frozenTicks: 0, dyingTicks: 0, alive: true, combat: combatProfile ? new CombatantState(combatProfile) : undefined, combatActivation: 0, combatState: "" });
+      const combatProfile = this.#combatProfiles.get(String(enemy.combatProfile ?? "")); this.#enemies.push({ key: `enemies:${String(enemy.id)}`, kind: "enemy", x: spriteX + bbX, y: spriteY + bbY, spriteX, spriteY, bbX, bbY, width: number(enemy.bb_width, 10), height: number(enemy.bb_height, 21), frame: 0, definition: String(enemy.definition ?? ""), direction: enemy.direction === "left" ? -1 : 1, speedX: Math.max(0, number(enemy.speed_x, 1)), speedY: Math.max(0, number(enemy.speed_y, 3)), verticalSpeed: 0, iaType, behavior, behaviorTicks: 0, behaviorStarted: false, originX: number(enemy.ia_orig_x, spriteX), originY: number(enemy.ia_orig_y, spriteY), limitX: Math.max(0, number(enemy.ia_limit_x)), limitY: Math.max(0, number(enemy.ia_limit_y)), blockSteps: Math.max(1, number(enemy.ia_block_steps, 1)), decisionLock: 0, randomDecisions: Boolean(enemy.ia_random), randomness: Math.max(1, Math.floor(number(enemy.ia_randomness, 15))), randomState: (Math.imul(Math.floor(number(enemy.id)) + 1, 0x9e3779b1) >>> 0), climbing: false, animationState: "running", frozenTicks: 0, dyingTicks: 0, alive: true, combat: combatProfile ? new CombatantState(combatProfile) : undefined, combatActivation: 0, combatState: "" });
     }
     for (const raw of list(entities.lasers)) {
       const laser = record(raw), bbX = number(laser.bb_x), bbY = number(laser.bb_y), startX = number(laser.x) + bbX, startY = number(laser.y) + bbY, speed = Math.max(0, number(laser.speed));
@@ -258,6 +262,22 @@ export class PreviewRuntime {
       }
       if (!decisionsBlocked) enemy.direction = player.x > spriteX ? 1 : -1;
   }
+  #stepFlyPatrol(context: EnemyStepContext): void { const { enemy } = context; context.movementConsumed = true;
+    const axis = String(enemy.behavior.axis), distance = number(enemy.behavior.distance), phase = Math.max(1, number(enemy.behavior.phaseTicks, Math.ceil(distance / Math.max(1, enemy.speedX || enemy.speedY)))), cycle = phase * 2, progress = enemy.behaviorTicks++ % cycle, sign = progress < phase ? 1 : -1, dx = axis === "vertical" ? 0 : sign * enemy.speedX, dy = axis === "horizontal" ? 0 : sign * enemy.speedY;
+    enemy.direction = sign > 0 ? 1 : -1; enemy.x += dx; enemy.y += dy; enemy.spriteX = enemy.x - enemy.bbX; enemy.spriteY = enemy.y - enemy.bbY; enemy.frame += 1;
+  }
+  #stepVerticalPatrol(context: EnemyStepContext): void { const { enemy } = context; context.movementConsumed = true;
+    const distance = number(enemy.behavior.distance), downFirst = enemy.behavior.initialDirection !== "up", loop = enemy.behavior.loop !== false, speed = Math.max(0, enemy.speedY), travelled = Math.abs(enemy.spriteY - enemy.originY); let sign = downFirst ? 1 : -1;
+    if (travelled >= distance) { if (!loop) { enemy.frame += 1; return; } sign = enemy.spriteY >= enemy.originY ? -1 : 1; }
+    enemy.y += sign * speed; enemy.spriteY = enemy.y - enemy.bbY; enemy.frame += 1;
+  }
+  #stepJumper(context: EnemyStepContext): void { const { enemy } = context; context.movementConsumed = true;
+    const interval = Math.max(1, number(enemy.behavior.intervalTicks)), jumpHeight = number(enemy.behavior.jumpHeight), horizontal = number(enemy.behavior.horizontalSpeed); enemy.behaviorTicks += 1;
+    if (enemy.verticalSpeed === 0 && this.#enemyGrounded(enemy) && enemy.behaviorTicks >= interval) { enemy.verticalSpeed = -Math.sqrt(2 * .4 * jumpHeight); enemy.behaviorTicks = 0; }
+    if (enemy.verticalSpeed !== 0 || !this.#enemyGrounded(enemy)) { const nextY = enemy.y + enemy.verticalSpeed, landing = this.#enemyLandingY(enemy, nextY); if (landing !== null && enemy.verticalSpeed >= 0) { enemy.y = landing; enemy.verticalSpeed = 0; } else { enemy.y = nextY; enemy.verticalSpeed += .4; } enemy.x += enemy.direction * horizontal; }
+    enemy.spriteX = enemy.x - enemy.bbX; enemy.spriteY = enemy.y - enemy.bbY; enemy.frame += 1;
+  }
+  #stepBossSequence(context: EnemyStepContext): void { const { enemy } = context; context.movementConsumed = true; if (!enemy.behaviorStarted) { this.startGameplaySequence(String(enemy.behavior.sequence)); enemy.behaviorStarted = true; } enemy.frame += 1; }
   #stepEnemyRandomDecision({ enemy, decisionsBlocked }: EnemyStepContext): void {
     if (enemy.randomDecisions && !decisionsBlocked && this.#randomEnemyDecision(enemy)) { enemy.direction = enemy.direction > 0 ? -1 : 1; enemy.decisionLock = enemy.blockSteps; }
   }

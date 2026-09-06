@@ -27,6 +27,7 @@ class Player : public Character {
     void Reset() override;
     void ComputeNextState(World* map, Keyboard& keyboard) override;
     void DispatchGameplayEvent(const std::string& event);
+    std::string GetCombatStateName() const override;
 };
 
 #endif // PLAYER_H

@@ -909,7 +909,8 @@ void World::InitializeEnemies(const char* file) {
                           "': incorrect direction for enemy " +
                           std::to_string(enemy_id));
     }
-    const std::string ai_type = enemy->at("ia_type").get<std::string>();
+    const nlohmann::json behavior = enemy->value("behavior", nlohmann::json::object());
+    const std::string ai_type = enemy->value("ia_type", behavior.value("type", "patrol") == "chase" ? "chaser" : "walker");
     if (ai_type == "walker") {
       enemy_ia_type = ENEMY_IA_WALKER;
     } else if (ai_type == "chaser") {
@@ -919,13 +920,13 @@ void World::InitializeEnemies(const char* file) {
                           "': incorrect AI type for enemy " +
                           std::to_string(enemy_id));
     }
-    enemy_ia_random = enemy->at("ia_random").get<int>() != 0;
-    enemy_ia_randomness = enemy->at("ia_randomness").get<int>();
-    enemy_ia_block_steps = enemy->at("ia_block_steps").get<int>();
-    enemy_ia_orig_x = enemy->at("ia_orig_x").get<int>();
-    enemy_ia_orig_y = enemy->at("ia_orig_y").get<int>();
-    enemy_ia_limit_x = enemy->at("ia_limit_x").get<int>();
-    enemy_ia_limit_y = enemy->at("ia_limit_y").get<int>();
+    enemy_ia_random = enemy->value("ia_random", 0) != 0;
+    enemy_ia_randomness = enemy->value("ia_randomness", 15);
+    enemy_ia_block_steps = enemy->value("ia_block_steps", 1);
+    enemy_ia_orig_x = enemy->value("ia_orig_x", enemy_x);
+    enemy_ia_orig_y = enemy->value("ia_orig_y", enemy_y);
+    enemy_ia_limit_x = enemy->value("ia_limit_x", behavior.value("detectionWidth", 0));
+    enemy_ia_limit_y = enemy->value("ia_limit_y", behavior.value("detectionHeight", 0));
 
     const std::string definition_file = enemy->at("definition").get<std::string>();
     printf(" - file = %s\n", definition_file.c_str());
@@ -954,7 +955,8 @@ void World::InitializeEnemies(const char* file) {
                                    enemy_bb_x, enemy_bb_y, enemy_bb_width, enemy_bb_height,
                                    enemy_direction, enemy_speed_x, enemy_speed_y,
                                    enemy_ia_type, enemy_ia_random, enemy_ia_randomness, enemy_ia_block_steps,
-                                   enemy_ia_orig_x, enemy_ia_orig_y, enemy_ia_limit_x, enemy_ia_limit_y);
+                                   enemy_ia_orig_x, enemy_ia_orig_y, enemy_ia_limit_x, enemy_ia_limit_y,
+                                   behavior, enemy->value("combatProfile", ""));
     enemies.push_back(world_enemy);
   }  
 
@@ -1232,6 +1234,12 @@ void World::WorldStep(Character* player) {
   for (vector<Character*>::iterator it = enemies.begin(); it != enemies.end(); it++) {
     Enemy* enemy = (Enemy*)*it;
     enemy->CharacterStep(this, player);
+  }
+
+  if (player->GetCombatState()) {
+    CombatantState* player_combat = player->GetCombatState(); player_combat->Step(); const std::string player_state = player->GetCombatStateName(); pair<string, int>& player_activation = combat_activations[player]; if (player_activation.first != player_state) { player_activation.first = player_state; ++player_activation.second; }
+    CombatPose player_pose = { static_cast<double>(player->GetPosX()), static_cast<double>(player->GetPosY()), static_cast<double>(player->GetWidth()), player->GetFace() == CHAR_DIR_LEFT, player_state, player->GetCombatFrame(), player_activation.second };
+    for (vector<Character*>::iterator it = enemies.begin(); it != enemies.end(); ++it) { Enemy* enemy = static_cast<Enemy*>(*it); CombatantState* enemy_combat = enemy->GetCombatState(); if (!enemy_combat || enemy->GetState() == CHAR_STATE_DYING || enemy->GetState() == CHAR_STATE_DEAD) continue; enemy_combat->Step(); const std::string enemy_state = enemy->GetCombatStateName(); pair<string, int>& enemy_activation = combat_activations[enemy]; if (enemy_activation.first != enemy_state) { enemy_activation.first = enemy_state; ++enemy_activation.second; } CombatPose enemy_pose = { static_cast<double>(enemy->GetPosX()), static_cast<double>(enemy->GetPosY()), static_cast<double>(enemy->GetWidth()), enemy->GetFace() == CHAR_DIR_LEFT, enemy_state, enemy->GetCombatFrame(), enemy_activation.second }; CombatHit hit; if (ResolveCombat(*player_combat, player_pose, *enemy_combat, enemy_pose, &hit) && hit.applied) { enemy->SetPosX(this, enemy->GetPosX() + static_cast<int>(hit.knockback_x)); enemy->SetPosY(this, enemy->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!enemy_combat->Alive()) enemy->SetKilled(); } if (GetRuntimeSessionRules().damage_enabled && ResolveCombat(*enemy_combat, enemy_pose, *player_combat, player_pose, &hit) && hit.applied) { player->SetPosX(this, player->GetPosX() + static_cast<int>(hit.knockback_x)); player->SetPosY(this, player->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!player_combat->Alive()) player->SetKilled(this); } }
   }
 
   // Check if player has been killed in this step

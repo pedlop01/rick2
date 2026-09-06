@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "combat.h"
 struct ViewportConfig {
   int x;
   int y;
@@ -70,6 +71,8 @@ const nlohmann::json& GetProjectileDefinition(const char* projectile);
 const nlohmann::json& GetRuntimeProfile();
 const nlohmann::json& GetGameplayProgramDefinition();
 const nlohmann::json& GetPresentationDefinition();
+const nlohmann::json& GetPlayerConfig();
+const CombatCatalog& GetCombatCatalog();
 PlayerControllerConfig GetRuntimePlayerControllerConfig();
 PlayerGameplayConfig GetRuntimePlayerGameplayConfig();
 int ResolveCharacterAnimationStateId(const char* definition,
