@@ -285,7 +285,8 @@
             "x": { "type": "integer" }, "y": { "type": "integer" },
             "width": { "$ref": "#/$defs/positiveInteger" },
             "height": { "$ref": "#/$defs/positiveInteger" },
-            "onComplete": { "enum": ["continue", "freeze"] }
+            "onComplete": { "enum": ["continue", "freeze"] },
+            "conditions": { "type": "array", "items": { "$ref": "#/$defs/gameplayCondition" } }
           }
         }
       ]

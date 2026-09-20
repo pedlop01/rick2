@@ -11,7 +11,7 @@
 World::World()
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
+    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false, nlohmann::json::array()}),
     level_completed(false), gameplay(nullptr), presentation(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
@@ -20,7 +20,7 @@ World::World()
 World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOption)
   : map_width(0), map_height(0), world_tiles(nullptr),
     world_tiles_front(nullptr), current_checkpoint(nullptr),
-    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false}),
+    target_checkpoints(nullptr), objective({false, 0, 0, 0, 0, false, nlohmann::json::array()}),
     level_completed(false), gameplay(nullptr), presentation(nullptr)
 {
   boundary_tile.SetType(TILE_COL);
@@ -1302,9 +1302,13 @@ void World::WorldStep(Character* player) {
   if (!level_completed && objective.enabled && !player->GetKilled() &&
       player->GetState() != CHAR_STATE_DYING &&
       player->GetState() != CHAR_STATE_DEAD) {
+    bool conditions_match = true;
+    for (nlohmann::json::const_iterator condition = objective.conditions.begin();
+         condition != objective.conditions.end(); ++condition)
+      conditions_match = conditions_match && gameplay->Matches(*condition);
     const int left = player->GetPosX() + player->GetBBX();
     const int top = player->GetPosY() + player->GetBBY();
-    level_completed = left < objective.x + objective.width &&
+    level_completed = conditions_match && left < objective.x + objective.width &&
                       left + player->GetBBWidth() > objective.x &&
                       top < objective.y + objective.height &&
                       top + player->GetBBHeight() > objective.y;

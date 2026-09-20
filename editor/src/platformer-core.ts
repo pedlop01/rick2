@@ -56,7 +56,7 @@ export interface RuntimeProfileBindingOverrides {
   objectStates?: Partial<RuntimeProfileBindings["objectStates"]>;
   audio?: Partial<RuntimeProfileBindings["audio"]>;
 }
-export type LevelObjective = { type: "none" } | { type: "reachZone"; x: number; y: number; width: number; height: number; onComplete: "continue" | "freeze" };
+export type LevelObjective = { type: "none" } | { type: "reachZone"; x: number; y: number; width: number; height: number; onComplete: "continue" | "freeze"; conditions: import("./gameplay-program").GameplayCondition[] };
 
 export interface DirectionalActionInput {
   action: boolean;
@@ -210,7 +210,8 @@ export function levelObjective(value: unknown): Readonly<LevelObjective> {
   for (const coordinate of ["x", "y"] as const) if (!Number.isInteger(objective[coordinate])) throw new Error(`objective.${coordinate} must be an integer`);
   for (const dimension of ["width", "height"] as const) if (!Number.isInteger(objective[dimension]) || Number(objective[dimension]) <= 0) throw new Error(`objective.${dimension} must be a positive integer`);
   if (objective.onComplete !== "continue" && objective.onComplete !== "freeze") throw new Error("objective.onComplete is not supported");
-  return Object.freeze({ type: "reachZone", x: Number(objective.x), y: Number(objective.y), width: Number(objective.width), height: Number(objective.height), onComplete: objective.onComplete });
+  const conditions = Array.isArray(objective.conditions) ? structuredClone(objective.conditions) : [];
+  return Object.freeze({ type: "reachZone", x: Number(objective.x), y: Number(objective.y), width: Number(objective.width), height: Number(objective.height), onComplete: objective.onComplete, conditions });
 }
 
 export function groundActionForInput(

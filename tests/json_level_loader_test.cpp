@@ -133,6 +133,7 @@ int main() {
   assert(objective.x == 10 && objective.y == 20);
   assert(objective.width == 16 && objective.height == 24);
   assert(objective.freeze_on_complete);
+  assert(objective.conditions.empty());
 
   player_states[1]["id"] = player_states[0]["id"];
   const char* duplicate_file = "/tmp/rick2-duplicate-state.json";

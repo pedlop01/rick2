@@ -44,3 +44,6 @@ Mantén el parsing histórico en `tools/`. No portes Allegro 4 ni añadas nombre
 históricos como discriminadores del runtime. Conserva compatibilidad web/C++.
 Tras cambios nativos, ejecuta `make -C bin clean && make -C bin -j2`.
 Trabaja en un bloque revisable y no hagas un commit adicional sin autorización.
+
+
+La fase 2 se convierte ya mediante `tools/convert_camelot.py` como segundo nivel de una campaña conjunta. Antes de ampliar la fase 3, revisa `docs/TASK_44_HANDOFF.md` y `tests/camelot_phase2_conversion_test.py`; conserva el flujo de televisor, los 18 enemigos acuáticos, los cuatro checkpoints y los dos planos de agua. El bloque está implementado sin commit y espera la revisión global acordada.

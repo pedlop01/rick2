@@ -181,7 +181,7 @@ export class PreviewRuntime {
     this.#updateCamera(false);
     this.#updateObjective();
   }
-  #updateObjective(): void { if (this.#completed || this.#objective.type === "none") return; const player = this.#player.snapshot, objective = this.#objective; this.#completed = player.state !== "dead" && player.collisionX < objective.x + objective.width && player.collisionX + player.collisionWidth > objective.x && player.collisionY < objective.y + objective.height && player.collisionY + player.collisionHeight > objective.y; }
+  #updateObjective(): void { if (this.#completed || this.#objective.type === "none") return; const player = this.#player.snapshot, objective = this.#objective, gameplay = gameplayStates.get(this)!.state; this.#completed = objective.conditions.every((condition) => gameplay.matches(condition)) && player.state !== "dead" && player.collisionX < objective.x + objective.width && player.collisionX + player.collisionWidth > objective.x && player.collisionY < objective.y + objective.height && player.collisionY + player.collisionHeight > objective.y; }
   #updateCamera(force: boolean): void {
     const player = this.#player.snapshot; if (!force && player.state === "dead") return;
     const config = record(this.#source.camera), width = Math.max(1, number(config.width, 256)), height = Math.max(1, number(config.height, 200)), probeX = player.x + (player.face === "right" ? 23 : 0), probeY = player.y;

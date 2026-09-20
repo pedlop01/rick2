@@ -509,7 +509,8 @@ RuntimeSessionRules GetRuntimeSessionRules() {
 }
 
 LevelObjectiveConfig GetLevelObjectiveConfig() {
-  LevelObjectiveConfig result = {false, 0, 0, 0, 0, false};
+  LevelObjectiveConfig result = {false, 0, 0, 0, 0, false,
+                                 nlohmann::json::array()};
   if (!package_data.contains("objective") ||
       package_data.at("objective").value("type", std::string("none")) == "none")
     return result;
@@ -523,6 +524,7 @@ LevelObjectiveConfig GetLevelObjectiveConfig() {
   result.height = value.at("height").get<int>();
   result.freeze_on_complete =
       value.at("onComplete").get<std::string>() == "freeze";
+  result.conditions = value.value("conditions", nlohmann::json::array());
   if (result.width <= 0 || result.height <= 0)
     throw DataLoadError("Invalid level objective zone");
   return result;

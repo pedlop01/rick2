@@ -61,6 +61,7 @@ struct LevelObjectiveConfig {
   int width;
   int height;
   bool freeze_on_complete;
+  nlohmann::json conditions;
 };
 bool IsJsonLevelFile(const char* file);
 std::string GetInitialLevelFromGamePackage(const char* file);

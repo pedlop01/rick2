@@ -1027,3 +1027,42 @@ regenerated archive SHA-256 is
 `9e844eff37790aa10ead2e8b0aa4662d764fdbe7bfadfff2de268e35d757b270`.
 The frog correction was manually verified. The user also approved committing
 the complete phase-1 migration block before beginning phase 2.
+
+## Phase 2 complete conversion (implemented, awaiting final review)
+
+`tools/convert_camelot.py` now packages phases 1 and 2 as one deterministic
+campaign. Phase 2 preserves the historical 92x48 map, 453-tile aquatic
+tileset, two masked water parallax planes, looping `roki.wav`, its single
+2944x1536 camera region, four-node checkpoint chain and alternate-form spawn.
+
+All 18 historical enemy records are converted. Static bubbles and sea urchin
+use `idle`, ordinary swimming enemies use horizontal `flyPatrol`, and the two
+records with independent X/Y displacement use `xyPatrol`. Definitions and
+bitmaps are deduplicated by family; every enemy retains position, direction,
+authored limits, fourfold visual scale, contact combat, stationary Camelot
+death and delayed reset behavior.
+
+The two television records implement the complete script flow. The active
+television is a fixed pickup which sets `carrying-object`; entering the final
+zone without it emits `killed`. Entering with it starts a typed 50-tick offer
+sequence, shows the inactive television at its historical position, freezes
+control, consumes the carried object, sets `offered-object`, hides the scene
+object and restores control. The objective occupies the historical final zone
+but requires `offered-object`, so the campaign cannot advance before the
+delivery finishes. This optional generic objective condition is enforced in
+both runtimes.
+
+The first native review exposed two coupled startup symptoms. Phase 2's atlas
+declares 501 pixels of tile-sheet width; the legacy runtime uses integer
+division by the 32-pixel tile size, yielding 15 columns. Using 16 displaced
+GIDs and produced the black/misaligned cells visible in the capture. The
+converter now derives the same 15-column value. The frog was frozen because
+the provisional objective began inside its 128-pixel spawn body and completed
+on the first tick; the conditioned historical zone removes that accidental
+completion while preserving the scripted delivery gate.
+
+`tests/camelot_phase2_conversion_test.py` checks byte-for-byte reproducibility,
+both schemas, campaign order, map dimensions and collision vocabulary,
+parallax, alternate form, checkpoints, complete enemy inventory, objects,
+sequence timing and objective. The combined loss report inventories every
+phase-2 source and retains only the existing historical state-transition loss.
