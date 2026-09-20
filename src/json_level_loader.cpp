@@ -80,7 +80,7 @@ void ValidatePackage(const json& package, const char* file) {
       Require(map, "tileHeight", file).get<int>() <= 0)
     throw DataLoadError(std::string("Invalid '") + file + "': invalid map dimensions");
   const json& tileset = Require(map, "tileset", file);
-  Require(tileset, "image", file); Require(tileset, "tileCount", file);
+  Require(tileset, "image", file); const int tile_count = Require(tileset, "tileCount", file).get<int>();
   Require(tileset, "columns", file);
   const json& layers = Require(map, "layers", file);
   const std::size_t cells = static_cast<std::size_t>(width) * height;
@@ -89,6 +89,16 @@ void ValidatePackage(const json& package, const char* file) {
     const json& layer = Require(layers, name, file);
     if (!layer.is_array() || layer.size() != cells)
       throw DataLoadError(std::string("Invalid '") + file + "': invalid layer " + name);
+    for (json::const_iterator gid = layer.begin(); gid != layer.end(); ++gid) {
+      if (!gid->is_number_integer())
+        throw DataLoadError(std::string("Invalid '") + file + "': invalid GID in layer " + name);
+      const int value = gid->get<int>();
+      const bool valid = std::string(name) == "collisions"
+          ? value == 0 || (value >= tile_count + 1 && value <= tile_count + 6)
+          : value >= 0 && value <= tile_count;
+      if (!valid)
+        throw DataLoadError(std::string("Invalid '") + file + "': GID outside range in layer " + name);
+    }
   }
   const json& entities = Require(package, "entities", file);
   const char* groups[] = {"platforms", "items", "backgroundObjects", "blocks",
@@ -122,6 +132,11 @@ void ValidatePackage(const json& package, const char* file) {
       if (Require(animation, "frameDurationTicks", file).get<int>() <= 0)
         throw DataLoadError(std::string("Invalid '") + file +
                             "': animation duration must be positive");
+      if (animation.contains("frameDurationMs") &&
+          (!animation.at("frameDurationMs").is_number_integer() ||
+           animation.at("frameDurationMs").get<int>() <= 0))
+        throw DataLoadError(std::string("Invalid '") + file +
+                            "': animation millisecond duration must be positive");
       const json& sprites = Require(animation, "sprites", file);
       if (!sprites.is_array() || sprites.empty())
         throw DataLoadError(std::string("Invalid '") + file + "': animation without sprites");
@@ -303,7 +318,7 @@ const nlohmann::json& GetPresentationDefinition() { static const json empty = js
 const nlohmann::json& GetPlayerConfig() { return package_data.at("player"); }
 const CombatCatalog& GetCombatCatalog() { static const CombatCatalog empty; return combat_catalog ? *combat_catalog : empty; }
 PlayerControllerConfig GetRuntimePlayerControllerConfig() {
-  PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, 1.0f, 3.0f,
+  PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, true, 1.0f, 3.0f,
                                    0.1f, 2.0f, 40, 80, 2.0f, 70, 20};
   if (runtime_profile.empty() || !runtime_profile.contains("controller"))
     return config;
@@ -314,6 +329,7 @@ PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   config.crouching_height = value.value("crouchingHeight", config.crouching_height);
   config.collision_offset_x = value.value("collisionOffsetX", config.collision_offset_x);
   config.run_speed = value.value("runSpeed", config.run_speed);
+  config.air_control = value.value("airControl", config.air_control);
   config.minimum_vertical_speed = value.value("minimumVerticalSpeed", config.minimum_vertical_speed);
   config.maximum_vertical_speed = value.value("maximumVerticalSpeed", config.maximum_vertical_speed);
   config.vertical_acceleration = value.value("verticalAcceleration", config.vertical_acceleration);
@@ -337,7 +353,7 @@ PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   return config;
 }
 PlayerGameplayConfig GetRuntimePlayerGameplayConfig() {
-  PlayerGameplayConfig config = {true, true, true, true, true, true,
+  PlayerGameplayConfig config = {true, true, true, true, true, true, -1,
                                  CHAR_STATE_SHOOTING, CHAR_STATE_BOMBING,
                                  CHAR_STATE_HITTING};
   if (runtime_profile.empty()) return config;
@@ -362,22 +378,26 @@ PlayerGameplayConfig GetRuntimePlayerGameplayConfig() {
   };
   if (runtime_profile.contains("actionBindings")) {
     const json& value = runtime_profile.at("actionBindings");
+    config.action_neutral = action_state(value, "neutral", config.action_neutral);
     config.action_up = action_state(value, "up", config.action_up);
     config.action_down = action_state(value, "down", config.action_down);
     config.action_horizontal = action_state(value, "horizontal",
                                             config.action_horizontal);
   }
   if (!config.shoot) {
+    if (config.action_neutral == CHAR_STATE_SHOOTING) config.action_neutral = -1;
     if (config.action_up == CHAR_STATE_SHOOTING) config.action_up = -1;
     if (config.action_down == CHAR_STATE_SHOOTING) config.action_down = -1;
     if (config.action_horizontal == CHAR_STATE_SHOOTING) config.action_horizontal = -1;
   }
   if (!config.bomb) {
+    if (config.action_neutral == CHAR_STATE_BOMBING) config.action_neutral = -1;
     if (config.action_up == CHAR_STATE_BOMBING) config.action_up = -1;
     if (config.action_down == CHAR_STATE_BOMBING) config.action_down = -1;
     if (config.action_horizontal == CHAR_STATE_BOMBING) config.action_horizontal = -1;
   }
   if (!config.hit) {
+    if (config.action_neutral == CHAR_STATE_HITTING) config.action_neutral = -1;
     if (config.action_up == CHAR_STATE_HITTING) config.action_up = -1;
     if (config.action_down == CHAR_STATE_HITTING) config.action_down = -1;
     if (config.action_horizontal == CHAR_STATE_HITTING) config.action_horizontal = -1;
@@ -512,3 +532,8 @@ const std::vector<std::string>& GetLevelEffectFiles() { return effect_files; }
 const ViewportConfig& GetDisplayConfig() { return display_config; }
 const ViewportConfig& GetCameraConfig() { return camera_config; }
 int GetInitialMusic() { return initial_music; }
+bool GetInitialMusicLoop() {
+  if (!package_data.contains("audio")) return false;
+  const json& audio = package_data.at("audio");
+  return audio.value("playback", json::object()).value("initialLoop", false);
+}

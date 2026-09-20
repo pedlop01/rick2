@@ -25,4 +25,12 @@ std::size_t EraseAndDisposeIf(Container& container,
   return erased;
 }
 
+template <typename Container>
+typename Container::value_type FindByTypeId(Container& container, int id) {
+  for (typename Container::iterator it = container.begin(); it != container.end(); ++it) {
+    if ((*it)->GetTypeId() == id) return *it;
+  }
+  return nullptr;
+}
+
 #endif // CONTAINER_UTILS_H

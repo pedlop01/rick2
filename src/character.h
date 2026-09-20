@@ -16,6 +16,7 @@
 #include "animation.h"
 #include "sound_handler.h"
 #include "combat.h"
+#include "test_invulnerability_rules.h"
 
 #define CHARACTER_PLAYER 0
 #define CHARACTER_ENEMY  1
@@ -67,11 +68,14 @@ class Character {
     bool can_jump;
     bool can_crouch;
     bool can_climb;
+    int action_neutral_state;
     int action_up_state;
     int action_down_state;
     int action_horizontal_state;
     bool damage_enabled;
+    bool test_invulnerable = false;
     bool respawn_from_checkpoint;
+    bool scale_during_death = true;
 
     int stepsInState;
     int stepsInDirectionX;
@@ -112,6 +116,7 @@ class Character {
     bool stop_move_block_col;
 
     float animation_scaling_factor;
+    float visual_scale;
 
     Platform* inPlatformPtr;
     Block*    blockCollisionPtr;
@@ -121,6 +126,7 @@ class Character {
     map<int, Animation*> animations;
 
     Animation* AnimationForState(int state_id) const;
+    virtual void OnAnimationCycleComplete() {}
     virtual int AnimationState() const { return state; }
 
     // Camera pointer
@@ -150,6 +156,8 @@ class Character {
     int  GetFace()       { return face;      }
     void ConfigureCombat(const CombatProfile* profile) { combat_state.reset(profile ? new CombatantState(profile) : NULL); }
     CombatantState* GetCombatState() { return combat_state.get(); }
+    void SetTestInvulnerable(bool enabled) { test_invulnerable = enabled; }
+    bool IsDamageEnabled() const { return PlayerDamageEnabled(damage_enabled, test_invulnerable); }
     virtual std::string GetCombatStateName() const;
     int GetCombatFrame() const { return AnimationForState(AnimationState())->GetCurrentAnim(); }
 
@@ -188,6 +196,7 @@ class Character {
     int GetCurrentAnimationWidth();
     int GetCurrentAnimationHeight();
     float GetCurrentAnimationScalingFactor();
+    void SetVisualScale(float value) { visual_scale = value; }
 
     void RegisterCamera(Camera* _camera) { camera = _camera; }
 
@@ -204,6 +213,9 @@ class Character {
   protected:
     void FixHorizontalDirection(Keyboard& keyboard);
     bool AlignToStairs(World* map);
+    bool SlopeStandingY(World* map, int at_x, int at_y, int tolerance,
+                        int* standing_y) const;
+    bool SnapToSlope(World* map, int tolerance);
     int GroundActionState(Keyboard& keyboard) const;
     bool IsActionStatePressed(int action_state, Keyboard& keyboard) const;
 };

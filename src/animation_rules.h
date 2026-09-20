@@ -10,6 +10,24 @@ struct AnimationClockStep {
   int ticks;
 };
 
+struct MillisecondAnimationStep {
+  int frame;
+  int elapsed_ms;
+};
+
+inline MillisecondAnimationStep AdvanceLoopingAnimationMilliseconds(
+    int frame, int elapsed_ms, int frame_count, int duration_ms,
+    int tick_ms = 20) {
+  if (frame_count <= 0) return MillisecondAnimationStep{0, 0};
+  const int duration = std::max(1, duration_ms);
+  elapsed_ms += std::max(1, tick_ms);
+  while (elapsed_ms >= duration) {
+    elapsed_ms -= duration;
+    frame = (frame + 1) % frame_count;
+  }
+  return MillisecondAnimationStep{frame, elapsed_ms};
+}
+
 inline AnimationClockStep AdvanceAnimationOnce(int frame, int ticks,
                                                 int frame_count,
                                                 int duration_ticks) {

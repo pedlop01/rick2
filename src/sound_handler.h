@@ -36,7 +36,7 @@ class SoundHandler
     ~SoundHandler();
 
     void InitializeSounds();
-    void PlayMusic(int id);
+    void PlayMusic(int id, bool loop = false);
     void PlaySound(int id, bool loop);
     void StopSound(int id);
 };

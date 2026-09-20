@@ -38,7 +38,7 @@ export class LevelDocumentModel {
   isValidGid(layer: MapLayerName, gid: number): boolean {
     if (!Number.isInteger(gid) || gid < 0) return false;
     if (layer === "collisions") {
-      return gid === 0 || (gid >= this.map.tileset.tileCount + 1 && gid <= this.map.tileset.tileCount + 4);
+      return gid === 0 || (gid >= this.map.tileset.tileCount + 1 && gid <= this.map.tileset.tileCount + 6);
     }
     return gid <= this.map.tileset.tileCount;
   }

@@ -21,6 +21,7 @@ class StaticObject : public Object {
 
     void Init(const char* _file, int _x, int _y, int _width, int _height, int _anim_step);
     void StaticObjectStep();
+    void RestartAnimation();
 };
 
 #endif // STATIC_OBJECT_H

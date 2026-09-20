@@ -40,7 +40,7 @@ export class TilePalette {
     title.textContent = this.#layer === "collisions" ? "Collision type" : "Tileset";
     this.#host.append(title);
     if (this.#layer === "collisions") {
-      const names = ["Solid", "Platform", "Ladder", "Ladder top"];
+      const names = ["Solid", "Platform", "Ladder", "Ladder top", "Slope rises left", "Slope rises right"];
       const list = document.createElement("div");
       list.className = "collision-palette";
       names.forEach((name, index) => {

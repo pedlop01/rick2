@@ -6,16 +6,27 @@
 Item::Item() {
   steps_dying = 0;
   obj_type = OBJ_ITEM;
+  affected_by_gravity = true;
+  gameplay_program = NULL;
 }
 
 Item::Item(int _type_id) {
   type_id = _type_id;
   steps_dying = 0;
   obj_type = OBJ_ITEM;  
+  affected_by_gravity = true;
+  gameplay_program = NULL;
 }
 
 Item::~Item() {
   printf("Calling destructor!\n");
+}
+
+void Item::ConfigureCollection(GameplayProgram* program, const nlohmann::json& actions) {
+  gameplay_program = program;
+  on_collect = actions;
+  if (gameplay_program && !on_collect.empty())
+    gameplay_program->ValidateTrigger({{"actions", on_collect}});
 }
 
 void Item::UpdateFSMState(World* map) {
@@ -30,6 +41,9 @@ void Item::UpdateFSMState(World* map) {
     case OBJ_STATE_MOVING:
 
       if (playerCol) {
+        if (gameplay_program)
+          for (nlohmann::json::const_iterator action = on_collect.begin(); action != on_collect.end(); ++action)
+            gameplay_program->Execute(*action);
         if(strcmp(name, "bonus") != 0) {
           state = OBJ_STATE_DEAD;
           const int slot = GetRuntimeAudioBindings().item_pickup;
@@ -48,7 +62,7 @@ void Item::UpdateFSMState(World* map) {
         } else {
           state = OBJ_STATE_DEAD;
         }
-      } else if (inAir) {
+      } else if (affected_by_gravity && inAir) {
         state = OBJ_STATE_MOVING;
         direction = OBJ_DIR_DOWN;
       } else {

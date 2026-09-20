@@ -10,6 +10,7 @@ python3 tests/editor_contract_test.py
 python3 tests/level_schema_test.py
 python3 tests/format_compatibility_test.py
 python3 tests/package_editor_project_test.py
+python3 tests/camelot_phase1_conversion_test.py
 python3 tests/editor_level1_roundtrip_test.py
 python3 tests/native_project_archive_test.py
 python3 tests/native_animation_contract_test.py
@@ -41,6 +42,12 @@ g++ -std=c++11 tests/death_rules_test.cpp -o "$build_dir/death-rules"
 "$build_dir/death-rules"
 g++ -std=c++11 tests/trigger_rules_test.cpp -o "$build_dir/trigger-rules"
 "$build_dir/trigger-rules"
+g++ -std=c++11 tests/collision_gid_rules_test.cpp -o "$build_dir/collision-gid-rules"
+"$build_dir/collision-gid-rules"
+g++ -std=c++11 tests/slope_collision_rules_test.cpp -o "$build_dir/slope-collision-rules"
+"$build_dir/slope-collision-rules"
+g++ -std=c++11 tests/sprite_anchor_rules_test.cpp -o "$build_dir/sprite-anchor-rules"
+"$build_dir/sprite-anchor-rules"
 g++ -std=c++11 tests/character_state_machine_test.cpp src/character_state_machine.cpp -o "$build_dir/character-state-machine"
 "$build_dir/character-state-machine"
 g++ -std=c++11 tests/gameplay_program_test.cpp src/gameplay_program.cpp -o "$build_dir/gameplay-program"
@@ -53,6 +60,14 @@ g++ -std=c++11 tests/combat_test.cpp src/combat.cpp -o "$build_dir/combat"
 "$build_dir/combat"
 g++ -std=c++11 tests/checkpoint_test.cpp src/checkpoint.cpp -o "$build_dir/checkpoint"
 "$build_dir/checkpoint"
+g++ -std=c++11 tests/player_spawn_rules_test.cpp src/checkpoint.cpp -o "$build_dir/player-spawn-rules"
+"$build_dir/player-spawn-rules"
+g++ -std=c++11 tests/player_jump_rules_test.cpp -o "$build_dir/player-jump-rules"
+"$build_dir/player-jump-rules"
+g++ -std=c++11 tests/player_motion_rules_test.cpp -o "$build_dir/player-motion-rules"
+"$build_dir/player-motion-rules"
+g++ -std=c++11 tests/test_invulnerability_rules_test.cpp -o "$build_dir/test-invulnerability-rules"
+"$build_dir/test-invulnerability-rules"
 g++ -std=c++11 tests/json_level_loader_test.cpp src/json_level_loader.cpp src/character_state_machine.cpp src/combat.cpp -o "$build_dir/json-loader"
 "$build_dir/json-loader"
 make -C bin clean

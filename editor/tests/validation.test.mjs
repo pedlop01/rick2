@@ -15,6 +15,15 @@ function writeLevel(project, level) {
   project.files.set(project.manifest.initialLevel, strToU8(`${JSON.stringify(level)}\n`));
 }
 
+test("forced player state references must exist in every form", () => {
+  const project = createPlatformerDemoProject(), level = readLevel(project);
+  level.runtimeProfile ??= {}; level.runtimeProfile.characterForms = rickCharacterForms();
+  level.entities.triggers ??= [];
+  level.entities.triggers.push({ id: 901, attributes: { x: 1, y: 1, width: 4, height: 4, recursive: 0, onehot: 0, action: "stays", face: "any", activation: "continuousPoint" }, gameplay: { actions: [{ type: "forcePlayerState", state: "missing", previousState: "running" }] } });
+  writeLevel(project, level);
+  assert.ok(validateProject(project).some((diagnostic) => diagnostic.message.includes("Forced player state is missing")));
+});
+
 test("new project satisfies structural and semantic contracts", () => {
   const diagnostics = validateProject(createEmptyProject());
   assert.deepEqual(diagnostics, []);
@@ -57,6 +66,10 @@ test("semantic validation rejects duplicate IDs and broken references", () => {
   assert.ok(diagnostics.some((item) => item.message.includes("Checkpoint not found")));
 });
 
+test("item collection actions validate gameplay and presentation references", () => {
+  const project = createEmptyProject(), level = readLevel(project); level.gameplay = { flags: [{ id: "collected", type: "boolean", initial: false }] }; level.entities.items.push({ id: 7, attributes: { ini_x: 8, ini_y: 8, width: 8, height: 8, definition: "objects/bomb" }, onCollect: [{ type: "setFlag", flag: "missing", value: true }, { type: "showMessage", message: "missing" }] }); writeLevel(project, level); const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.path.includes("/entities/items/0/onCollect") && item.message.includes("flag does not exist"))); assert.ok(diagnostics.some((item) => item.path.includes("/entities/items/0/onCollect/1") && item.message.includes("Message not found")));
+});
+
 test("asset validation rejects duplicate states, missing bitmaps and frames outside PNG bounds", () => {
   const project = createEmptyProject(); const level = readLevel(project); const definition = level.definitions["objects/bomb"];
   definition.states.push(structuredClone(definition.states[0])); definition.states[0].animation.sprites[0].width = 2; definition.states[1].animation.bitmap = "../../assets/images/missing.png"; writeLevel(project, level);
@@ -69,6 +82,14 @@ test("asset validation rejects duplicate states, missing bitmaps and frames outs
 test("integral validation rejects invalid GIDs, geometry and tileset metadata", () => {
   const project = createEmptyProject(); const level = readLevel(project); level.map.layers.tiles[3] = 99; level.map.tileset.imageWidth = 9; level.entities.items.push({ id: 0, attributes: { ini_x: 30, ini_y: 20, width: 8, height: 8, definition: "objects/bomb" } }); writeLevel(project, level);
   const diagnostics = validateProject(project); assert.ok(diagnostics.some((item) => item.path.endsWith("/tiles/3"))); assert.ok(diagnostics.some((item) => item.message.includes("Declared dimensions"))); assert.ok(diagnostics.some((item) => item.message.includes("map boundaries")));
+});
+
+test("collision validation accepts both slope GIDs and rejects later offsets", () => {
+  const project = createEmptyProject(); const level = readLevel(project); const first = level.map.tileset.tileCount + 1;
+  level.map.layers.collisions[0] = first + 4; level.map.layers.collisions[1] = first + 5; writeLevel(project, level);
+  assert.equal(validateProject(project).some((item) => item.path.includes("/map/layers/collisions")), false);
+  level.map.layers.collisions[2] = first + 6; writeLevel(project, level);
+  assert.ok(validateProject(project).some((item) => item.path.endsWith("/collisions/2")));
 });
 
 test("warnings are visible but do not block export", () => {

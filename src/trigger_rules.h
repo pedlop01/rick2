@@ -27,6 +27,10 @@ inline bool RectanglesOverlap(int first_x, int first_y,
          first_y + first_height > second_y;
 }
 
+inline bool PointInInclusiveZone(int point_x, int point_y, int x, int y, int width, int height) {
+  return width > 0 && height > 0 && point_x >= x && point_x <= x + width && point_y >= y && point_y <= y + height;
+}
+
 inline bool DoesTriggerFaceMatch(int expected_face, int player_face) {
   return expected_face == ACTION_FACE_ANY ||
          (expected_face == ACTION_FACE_RIGHT && player_face == CHAR_DIR_RIGHT) ||

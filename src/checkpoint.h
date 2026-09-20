@@ -22,6 +22,9 @@ class Checkpoint {
     int player_x;
     int player_y;
     int player_face;
+    bool preserve_player_face;
+    bool activate_by_top_left;
+    bool activation_enabled;
 
     // List of next checkpoints from the current one
     vector<Checkpoint*> next_checkpoints;
@@ -29,7 +32,10 @@ class Checkpoint {
   public:
     Checkpoint(int _chk_id,
                int _chk_x, int _chk_y, int _chk_width, int _chk_height,
-               int _player_x, int _player_y, int _player_face);
+               int _player_x, int _player_y, int _player_face,
+               bool _preserve_player_face = false,
+               bool _activate_by_top_left = false,
+               bool _activation_enabled = true);
     ~Checkpoint();
 
     void AddNextCheckpoint(Checkpoint* _next_chk);
@@ -41,14 +47,25 @@ class Checkpoint {
     int GetChkWidth()  { return chk_width;  }
     int GetChkHeight() { return chk_height; }    
 
-    int GetPlayerX()    { return player_x;    }
-    int GetPlayerY()    { return player_y;    }
-    int GetPlayerFace() { return player_face; }
+    int GetPlayerX() const    { return player_x;    }
+    int GetPlayerY() const    { return player_y;    }
+    int GetPlayerFace() const { return player_face; }
+    bool PreservePlayerFace() const { return preserve_player_face; }
 
     vector<Checkpoint*>* GetNextCheckpoints() { return &next_checkpoints; }
 
     bool InCheckpoint(int x, int y, int width, int height);
 
 };
+
+inline Checkpoint* AdvanceCheckpoint(Checkpoint* current,
+                                     int x, int y, int width, int height) {
+    if (!current) return current;
+    vector<Checkpoint*>* eligible = current->GetNextCheckpoints();
+    for (vector<Checkpoint*>::iterator it = eligible->begin(); it != eligible->end(); ++it) {
+        if ((*it)->InCheckpoint(x, y, width, height)) return *it;
+    }
+    return current;
+}
 
 #endif // CHECKPOINT_H

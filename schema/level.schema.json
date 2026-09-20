@@ -120,7 +120,11 @@
       { "type": "object", "additionalProperties": false, "required": ["type", "mode", "durationTicks"], "properties": { "type": { "const": "setCamera" }, "mode": { "enum": ["follow", "fixed"] }, "x": { "type": "number" }, "y": { "type": "number" }, "durationTicks": { "$ref": "#/$defs/nonNegativeInteger" } }, "allOf": [{ "if": { "properties": { "mode": { "const": "fixed" } }, "required": ["mode"] }, "then": { "required": ["x", "y"] } }] },
       { "type": "object", "additionalProperties": false, "required": ["type", "message"], "properties": { "type": { "const": "showMessage" }, "message": { "$ref": "#/$defs/nonEmptyString" } } },
       { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "hideMessage" } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "effect"], "properties": { "type": { "const": "playEffect" }, "effect": { "$ref": "#/$defs/nonEmptyString" } } }
+      { "type": "object", "additionalProperties": false, "required": ["type", "effect"], "properties": { "type": { "const": "playEffect" }, "effect": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "entityType", "id", "visible"], "properties": { "type": { "const": "setEntityVisible" }, "entityType": { "const": "backgroundObject" }, "id": { "$ref": "#/$defs/nonNegativeInteger" }, "visible": { "type": "boolean" }, "restartAnimation": { "type": "boolean" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "visible", "controllable"], "properties": { "type": { "const": "setPlayerMode" }, "visible": { "type": "boolean" }, "controllable": { "type": "boolean" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "state", "previousState"], "properties": { "type": { "const": "forcePlayerState" }, "state": { "$ref": "#/$defs/nonEmptyString" }, "previousState": { "$ref": "#/$defs/nonEmptyString" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "keepPlayerMoving" } } }
     ] },
     "gameplayStep": { "oneOf": [
       { "type": "object", "additionalProperties": false, "required": ["type", "action"], "properties": { "type": { "const": "action" }, "action": { "$ref": "#/$defs/gameplayAction" } } },
@@ -140,12 +144,14 @@
     "combatProfile": { "type": "object", "additionalProperties": false, "required": ["id", "faction", "maxHealth", "hurtboxes"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" }, "faction": { "$ref": "#/$defs/nonEmptyString" }, "maxHealth": { "$ref": "#/$defs/positiveInteger" }, "invulnerabilityTicks": { "$ref": "#/$defs/nonNegativeInteger" }, "hurtboxes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hurtbox" } }, "attacks": { "type": "array", "items": { "$ref": "#/$defs/attackBox" } }, "guards": { "type": "array", "items": { "$ref": "#/$defs/guardBox" } } } },
     "combat": { "type": "object", "additionalProperties": false, "required": ["damageTypes", "profiles"], "properties": { "damageTypes": { "type": "array", "minItems": 1, "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "$ref": "#/$defs/nonEmptyString" } } } }, "profiles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/combatProfile" } } } },
     "enemyBehavior": { "oneOf": [
-      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "patrol" }, "turnAtEdges": { "type": "boolean" }, "turnAtWalls": { "type": "boolean" } } },
-      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "chase" }, "useStairs": { "type": "boolean" }, "detectionWidth": { "type": "number", "exclusiveMinimum": 0 }, "detectionHeight": { "type": "number", "exclusiveMinimum": 0 } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "axis", "distance"], "properties": { "type": { "const": "flyPatrol" }, "axis": { "enum": ["horizontal", "vertical", "both"] }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "phaseTicks": { "$ref": "#/$defs/positiveInteger" } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "distance"], "properties": { "type": { "const": "verticalPatrol" }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "initialDirection": { "enum": ["up", "down"] }, "loop": { "type": "boolean" } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "intervalTicks", "jumpHeight"], "properties": { "type": { "const": "jumper" }, "intervalTicks": { "$ref": "#/$defs/positiveInteger" }, "jumpHeight": { "type": "number", "exclusiveMinimum": 0 }, "horizontalSpeed": { "type": "number", "minimum": 0 } } },
-      { "type": "object", "additionalProperties": false, "required": ["type", "sequence"], "properties": { "type": { "const": "bossSequence" }, "sequence": { "$ref": "#/$defs/nonEmptyString" }, "repeat": { "type": "boolean" } } }
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "idle" }, "deathMotion": { "enum": ["arc", "stationary"] } } },
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "patrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "turnAtEdges": { "type": "boolean" }, "turnAtWalls": { "type": "boolean" }, "distance": { "type": "number", "exclusiveMinimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "chase" }, "deathMotion": { "enum": ["arc", "stationary"] }, "useStairs": { "type": "boolean" }, "detectionWidth": { "type": "number", "exclusiveMinimum": 0 }, "detectionHeight": { "type": "number", "exclusiveMinimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "axis", "distance"], "properties": { "type": { "const": "flyPatrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "axis": { "enum": ["horizontal", "vertical", "both"] }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "phaseTicks": { "$ref": "#/$defs/positiveInteger" }, "initialDirection": { "enum": ["left", "right"] } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "distance"], "properties": { "type": { "const": "verticalPatrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "initialDirection": { "enum": ["up", "down"] }, "loop": { "type": "boolean" }, "onLimit": { "enum": ["stop", "die"] }, "respawnDelayTicks": { "$ref": "#/$defs/positiveInteger" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "distanceX", "distanceY", "stepsPerTick", "initialDirectionX", "initialDirectionY"], "properties": { "type": { "const": "xyPatrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "distanceX": { "$ref": "#/$defs/positiveInteger" }, "distanceY": { "$ref": "#/$defs/positiveInteger" }, "stepsPerTick": { "$ref": "#/$defs/positiveInteger" }, "initialDirectionX": { "enum": ["left", "right"] }, "initialDirectionY": { "enum": ["up", "down"] }, "respawnDelayTicks": { "$ref": "#/$defs/positiveInteger" } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "intervalTicks", "jumpHeight"], "properties": { "type": { "const": "jumper" }, "deathMotion": { "enum": ["arc", "stationary"] }, "intervalTicks": { "$ref": "#/$defs/positiveInteger" }, "jumpHeight": { "type": "number", "exclusiveMinimum": 0 }, "horizontalSpeed": { "type": "number", "minimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "sequence"], "properties": { "type": { "const": "bossSequence" }, "deathMotion": { "enum": ["arc", "stationary"] }, "sequence": { "$ref": "#/$defs/nonEmptyString" }, "repeat": { "type": "boolean" } } }
     ] },
     "runtimeProfile": {
       "type": "object",
@@ -161,11 +167,13 @@
             "crouchingHeight": { "$ref": "#/$defs/positiveInteger" },
             "collisionOffsetX": { "type": "number", "minimum": 0 },
             "runSpeed": { "type": "number", "minimum": 0 },
+            "airControl": { "type": "boolean" },
             "minimumVerticalSpeed": { "type": "number", "exclusiveMinimum": 0 },
             "maximumVerticalSpeed": { "type": "number", "exclusiveMinimum": 0 },
             "verticalAcceleration": { "type": "number", "exclusiveMinimum": 0 },
             "climbSpeed": { "type": "number", "minimum": 0 },
             "jumpHeight": { "type": "number", "minimum": 0 },
+            "jumpDistanceX": { "type": "number", "minimum": 0 },
             "deathRise": { "type": "number", "minimum": 0 },
             "deathSpeedMultiplier": { "type": "number", "exclusiveMinimum": 0 },
             "deathRespawnTicks": { "$ref": "#/$defs/positiveInteger" },
@@ -178,7 +186,7 @@
         },
         "actionBindings": {
           "type": "object", "additionalProperties": false,
-          "properties": { "up": { "$ref": "#/$defs/playerAction" }, "down": { "$ref": "#/$defs/playerAction" }, "horizontal": { "$ref": "#/$defs/playerAction" } }
+          "properties": { "neutral": { "$ref": "#/$defs/playerAction" }, "up": { "$ref": "#/$defs/playerAction" }, "down": { "$ref": "#/$defs/playerAction" }, "horizontal": { "$ref": "#/$defs/playerAction" } }
         },
         "characterForms": { "$ref": "#/$defs/characterForms" },
         "session": {
@@ -201,6 +209,7 @@
       "required": ["id", "stateMachine"],
       "properties": {
         "id": { "$ref": "#/$defs/nonEmptyString" },
+        "visualScale": { "type": "number", "exclusiveMinimum": 0 },
         "definition": { "$ref": "#/$defs/nonEmptyString" },
         "controller": { "$ref": "#/$defs/runtimeProfile/properties/controller" },
         "capabilities": { "$ref": "#/$defs/runtimeProfile/properties/capabilities" },
@@ -241,7 +250,7 @@
         { "type": "object", "additionalProperties": false, "required": ["type", "control", "pressed"], "properties": { "type": { "const": "control" }, "control": { "enum": ["left", "right", "up", "down", "action"] }, "pressed": { "type": "boolean" } } },
         { "type": "object", "additionalProperties": false, "required": ["type", "action", "active"], "properties": { "type": { "const": "action" }, "action": { "$ref": "#/$defs/nonEmptyString" }, "active": { "type": "boolean" } } },
         { "type": "object", "additionalProperties": false, "required": ["type", "event"], "properties": { "type": { "const": "event" }, "event": { "$ref": "#/$defs/nonEmptyString" } } },
-        { "type": "object", "additionalProperties": false, "required": ["type", "signal", "value"], "properties": { "type": { "const": "signal" }, "signal": { "enum": ["grounded", "onStairs", "canDescendStairs", "canStand", "ceilingBlocked"] }, "value": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["type", "signal", "value"], "properties": { "type": { "const": "signal" }, "signal": { "enum": ["grounded", "onStairs", "canDescendStairs", "canStand", "ceilingBlocked", "descending"] }, "value": { "type": "boolean" } } },
         { "type": "object", "additionalProperties": false, "required": ["type", "comparison", "value"], "properties": { "type": { "const": "elapsedTicks" }, "comparison": { "$ref": "#/$defs/comparison" }, "value": { "type": "number", "minimum": 0 } } },
         { "type": "object", "additionalProperties": false, "required": ["type", "axis", "comparison", "value"], "properties": { "type": { "const": "distance" }, "axis": { "enum": ["x", "y"] }, "comparison": { "$ref": "#/$defs/comparison" }, "value": { "type": "number", "minimum": 0 } } },
         { "type": "object", "additionalProperties": false, "required": ["type", "comparison", "state"], "properties": { "type": { "const": "previousState" }, "comparison": { "enum": ["equal", "notEqual"] }, "state": { "$ref": "#/$defs/nonEmptyString" } } }
@@ -461,8 +470,9 @@
       "required": ["id", "attributes"],
       "properties": {
         "id": { "$ref": "#/$defs/nonNegativeInteger" },
+        "onCollect": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gameplayAction" } },
         "attributes": {
-          "allOf": [{ "$ref": "#/$defs/placementAttributes" }],
+          "allOf": [{ "$ref": "#/$defs/placementAttributes" }, { "type": "object", "properties": { "physics": { "enum": ["falling", "fixed"] }, "visualScale": { "type": "number", "exclusiveMinimum": 0 } } }],
           "unevaluatedProperties": false
         }
       }
@@ -477,7 +487,7 @@
           "unevaluatedProperties": false,
           "allOf": [
             { "$ref": "#/$defs/placementAttributes" },
-            { "type": "object", "required": ["skip_num_anims"], "properties": { "skip_num_anims": { "$ref": "#/$defs/nonNegativeInteger" } } }
+            { "type": "object", "required": ["skip_num_anims"], "properties": { "skip_num_anims": { "$ref": "#/$defs/nonNegativeInteger" }, "visible": { "$ref": "#/$defs/booleanInteger" }, "visualScale": { "type": "number", "exclusiveMinimum": 0 } } }
           ]
         }
       }
@@ -525,7 +535,8 @@
         "chk_x": { "type": "integer" }, "chk_y": { "type": "integer" },
         "chk_width": { "$ref": "#/$defs/positiveInteger" }, "chk_height": { "$ref": "#/$defs/positiveInteger" },
         "pl_x": { "type": "integer" }, "pl_y": { "type": "integer" },
-        "pl_face": { "enum": ["left", "right"] },
+        "pl_face": { "enum": ["left", "right", "preserve"] },
+        "activation": { "enum": ["overlap", "topLeft", "disabled"] },
         "nxt_chks": { "type": "array", "items": { "$ref": "#/$defs/nonNegativeInteger" }, "uniqueItems": true }
       }
     },
@@ -571,7 +582,8 @@
             "x": { "type": "integer" }, "y": { "type": "integer" },
             "width": { "$ref": "#/$defs/positiveInteger" }, "height": { "$ref": "#/$defs/positiveInteger" },
             "recursive": { "$ref": "#/$defs/booleanInteger" }, "onehot": { "$ref": "#/$defs/booleanInteger" },
-            "action": { "enum": ["enters", "stays", "exits", "hits"] }, "face": { "enum": ["any", "left", "right"] }
+            "action": { "enum": ["enters", "stays", "exits", "hits"] }, "face": { "enum": ["any", "left", "right"] },
+            "activation": { "const": "continuousPoint" }
           }
         },
         "targets": { "$ref": "#/$defs/triggerTargets" },
@@ -604,6 +616,7 @@
         "ia_orig_x": { "type": "integer" }, "ia_orig_y": { "type": "integer" },
         "ia_limit_x": { "$ref": "#/$defs/nonNegativeInteger" }, "ia_limit_y": { "$ref": "#/$defs/nonNegativeInteger" },
         "definition": { "$ref": "#/$defs/definitionReference" },
+        "visualScale": { "type": "number", "exclusiveMinimum": 0 },
         "combatProfile": { "$ref": "#/$defs/nonEmptyString" },
         "behavior": { "$ref": "#/$defs/enemyBehavior" }
       }
@@ -642,6 +655,7 @@
                 "properties": {
                   "bitmap": { "$ref": "#/$defs/nonEmptyString" },
                   "frameDurationTicks": { "type": "integer", "minimum": 1 },
+                  "frameDurationMs": { "type": "integer", "minimum": 1 },
                   "sprites": {
                     "type": "array",
                     "minItems": 1,

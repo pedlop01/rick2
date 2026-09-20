@@ -33,6 +33,8 @@ const LABELS: Readonly<Record<string, string>> = {
   speed_x: "Horizontal speed",
   speed_y: "Vertical speed",
   frameDurationTicks: "Frame duration (ticks)",
+  frameDurationMs: "Frame duration (ms)",
+  visualScale: "Visual scale",
   kind: "Type",
 };
 

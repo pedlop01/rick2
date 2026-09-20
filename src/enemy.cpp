@@ -10,6 +10,7 @@
 // class constructor
 Enemy::Enemy() : Character() {
   type = CHARACTER_ENEMY;
+  scale_during_death = false;
   freezed = false;
   freeze_elapsed_ticks = 0;
 }
@@ -24,9 +25,12 @@ Enemy::Enemy(const char* file,
              const nlohmann::json& _behavior, const std::string& combat_profile) : Character(file) {
   id = _id;
   type = CHARACTER_ENEMY;
+  scale_during_death = false;
 
   pos_x = _x;
   pos_y = _y;
+  initial_x = _x;
+  initial_y = _y;
 
   using_bb    = true;
   width       = _bb_width;
@@ -42,13 +46,26 @@ Enemy::Enemy(const char* file,
   bb_height_orig = bb_height;
 
   direction = _direction;
+  face = _direction;
+  initial_direction = _direction;
 
   speed_x_max = _speed_x;
   speed_y_max = _speed_y;
+  speed_x = _speed_x;
+  speed_y = _speed_y;
+  initial_speed_x = _speed_x;
+  initial_speed_y = _speed_y;
+  initial_state = state;
 
   freezed = false;
   freeze_elapsed_ticks = 0;
-  behavior = _behavior; behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0;
+  behavior = _behavior; behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0; respawn_ticks = 0;
+  if (behavior.value("type", "") == "xyPatrol") {
+    direction = behavior.value("initialDirectionX", "right") == "left" ? CHAR_DIR_LEFT : CHAR_DIR_RIGHT;
+    face = direction; initial_direction = direction;
+  }
+  patrol_anchor_x = pos_x; patrol_anchor_y = pos_y;
+  patrol_y_direction = behavior.value("initialDirectionY", "down") == "up" ? -1 : 1;
   ConfigureCombat(GetCombatCatalog().Find(combat_profile));
 
   ia = new EnemyIA(_ia_type, _ia_random, _ia_randomness, _ia_block_steps,
@@ -61,30 +78,71 @@ Enemy::~Enemy() {
   delete ia;
 }
 
+void Enemy::Reset() {
+  Character::Reset();
+  behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0; respawn_ticks = 0;
+  patrol_anchor_x = pos_x; patrol_anchor_y = pos_y;
+  patrol_y_direction = behavior.value("initialDirectionY", "down") == "up" ? -1 : 1;
+  freezed = false; freeze_elapsed_ticks = 0;
+  for (map<int, Animation*>::iterator it = animations.begin(); it != animations.end(); ++it)
+    it->second->ResetAnim();
+}
+
 void Enemy::CharacterStep(World* map, Character* player) {
   Keyboard keyboard_enemy;
 
-  if (state == CHAR_STATE_DEAD)
+  if (state == CHAR_STATE_DEAD) {
+    const int delay = behavior.value("respawnDelayTicks", 0);
+    if (delay > 0 && ++respawn_ticks >= delay) Reset();
     return;
+  }
 
   keyboard_enemy.SetKeys(0);
 
-  const std::string behavior_type = behavior.value("type", "");
-  if (behavior_type == "jumper") { ++behavior_ticks; int keys = direction == CHAR_DIR_LEFT ? KEY_LEFT : KEY_RIGHT; if (behavior_ticks >= behavior.at("intervalTicks").get<int>() && inFloor) { keys |= KEY_UP; behavior_ticks = 0; } jump_height = behavior.at("jumpHeight").get<int>(); speed_x_max = behavior.value("horizontalSpeed", speed_x_max); keyboard_enemy.SetKeys(keys); Character::CharacterStep(map, keyboard_enemy); return; }
-  if (behavior_type == "flyPatrol" || behavior_type == "verticalPatrol" || behavior_type == "bossSequence") {
-    if (behavior_type == "bossSequence") { if (!behavior_started) { map->StartGameplaySequence(behavior.at("sequence").get<std::string>()); behavior_started = true; } }
-    else if (behavior_type == "flyPatrol") { const int phase = behavior.value("phaseTicks", std::max(1, static_cast<int>(behavior.at("distance").get<double>() / std::max(1.0f, std::max(speed_x_max, speed_y_max))))), sign = PatrolPhaseDirection(behavior_ticks, phase); const std::string axis = behavior.at("axis").get<std::string>(); if (axis != "vertical") pos_x += sign * speed_x_max; if (axis != "horizontal") pos_y += sign * speed_y_max; direction = sign > 0 ? CHAR_DIR_RIGHT : CHAR_DIR_LEFT; }
-    else if (behavior_type == "verticalPatrol") { const int distance = behavior.at("distance").get<int>(), phase = std::max(1, static_cast<int>(distance / std::max(1.0f, speed_y_max))), sign0 = behavior.value("initialDirection", "down") == "up" ? -1 : 1, sign = PatrolPhaseDirection(behavior_ticks, phase, sign0); pos_y += sign * speed_y_max; }
-    ++behavior_ticks; Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); return;
+  if (state == CHAR_STATE_DYING) {
+    Animation* animation = AnimationForState(CHAR_STATE_DYING);
+    if (behavior.value("deathMotion", std::string("arc")) == "stationary")
+      animation->AnimStepOnce();
+    else
+      Character::CharacterStep(map, keyboard_enemy);
+    if (animation->CompletedLastAnim()) state = CHAR_STATE_DEAD;
+    return;
   }
 
-  // Lethal hits have priority over the freeze pause. Objects are stepped
-  // before enemies, so a laser can set killed during this same world tick.
-  if (killed) {
+  // Combat can mark any behavior as killed during the previous world tick.
+  // Death must run before behavior-specific early returns (notably flyPatrol).
+  if (EnemyDeathHasPriority(killed)) {
     freezed = false;
     freeze_elapsed_ticks = 0;
     Character::CharacterStep(map, keyboard_enemy);
     return;
+  }
+
+  const std::string behavior_type = behavior.value("type", "");
+  if (behavior_type == "idle") { Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); return; }
+  if (behavior_type == "xyPatrol") {
+    const int steps = behavior.at("stepsPerTick").get<int>();
+    const int distance_x = behavior.at("distanceX").get<int>();
+    const int distance_y = behavior.at("distanceY").get<int>();
+    for (int step = 0; step < steps; ++step) {
+      int horizontal = direction == CHAR_DIR_LEFT ? -1 : 1;
+      StepPatrolAxis(pos_x, distance_x, patrol_anchor_x, horizontal);
+      direction = horizontal < 0 ? CHAR_DIR_LEFT : CHAR_DIR_RIGHT;
+      face = direction;
+      StepPatrolAxis(pos_y, distance_y, patrol_anchor_y, patrol_y_direction);
+      SetPosX(map, pos_x + horizontal);
+      SetPosY(map, pos_y + patrol_y_direction, false);
+    }
+    ++behavior_ticks;
+    Animation* animation = AnimationForState(state); if (animation) animation->AnimStep();
+    return;
+  }
+  if (behavior_type == "jumper") { ++behavior_ticks; int keys = direction == CHAR_DIR_LEFT ? KEY_LEFT : KEY_RIGHT; if (behavior_ticks >= behavior.at("intervalTicks").get<int>() && inFloor) { keys |= KEY_UP; behavior_ticks = 0; } jump_height = behavior.at("jumpHeight").get<int>(); speed_x_max = behavior.value("horizontalSpeed", speed_x_max); keyboard_enemy.SetKeys(keys); Character::CharacterStep(map, keyboard_enemy); return; }
+  if (behavior_type == "flyPatrol" || behavior_type == "verticalPatrol" || behavior_type == "bossSequence") {
+    if (behavior_type == "bossSequence") { if (!behavior_started) { map->StartGameplaySequence(behavior.at("sequence").get<std::string>()); behavior_started = true; } }
+    else if (behavior_type == "flyPatrol") { const int phase = behavior.value("phaseTicks", std::max(1, static_cast<int>(behavior.at("distance").get<double>() / std::max(1.0f, std::max(speed_x_max, speed_y_max))))), initial = behavior.value("initialDirection", "right") == "left" ? -1 : 1, sign = PatrolPhaseDirection(behavior_ticks, phase, initial); const std::string axis = behavior.at("axis").get<std::string>(); if (axis != "vertical") pos_x += sign * speed_x_max; if (axis != "horizontal") pos_y += sign * speed_y_max; direction = sign > 0 ? CHAR_DIR_RIGHT : CHAR_DIR_LEFT; face = direction; }
+    else if (behavior_type == "verticalPatrol") { const int distance = behavior.at("distance").get<int>(); const bool loop = behavior.value("loop", true); if (!loop && VerticalPatrolLimitReached(behavior_ticks, speed_y_max, distance)) { if (behavior.value("onLimit", "stop") == "die") SetKilled(); else { Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); } return; } const int phase = std::max(1, static_cast<int>(distance / std::max(1.0f, speed_y_max))), sign0 = behavior.value("initialDirection", "down") == "up" ? -1 : 1, sign = loop ? PatrolPhaseDirection(behavior_ticks, phase, sign0) : sign0; pos_y += sign * speed_y_max; }
+    ++behavior_ticks; Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); return;
   }
 
   if (!ShouldPauseFrozenEnemy(freezed, killed)) {

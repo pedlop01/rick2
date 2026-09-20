@@ -1,5 +1,5 @@
 export type CharacterControl = "left" | "right" | "up" | "down" | "action";
-export type CharacterSignal = "grounded" | "onStairs" | "canDescendStairs" | "canStand" | "ceilingBlocked";
+export type CharacterSignal = "grounded" | "onStairs" | "canDescendStairs" | "canStand" | "ceilingBlocked" | "descending";
 export type Comparison = "equal" | "notEqual" | "greater" | "greaterOrEqual" | "lower" | "lowerOrEqual";
 
 export type StateCondition =
@@ -73,6 +73,7 @@ export class CharacterStateMachine {
   reset(context?: Pick<CharacterStateContext, "x" | "y">, facing?: "left" | "right"): void { this.#state = this.#definition.initialState; this.#previousState = null; this.#ticksInState = 0; this.#originX = context?.x ?? 0; this.#originY = context?.y ?? 0; if (facing) this.#facing = facing; }
 
   enter(state: string, facing?: "left" | "right"): boolean { if (!this.#states.has(state)) throw new Error(`state does not exist: ${state}`); if (state === this.#state) { if (facing) this.#facing = facing; return false; } this.#previousState = this.#state; this.#state = state; this.#ticksInState = 0; if (facing) this.#facing = facing; return true; }
+  force(state: string, previousState: string): void { if (!this.#states.has(state) || !this.#states.has(previousState)) throw new Error("forced state does not exist"); this.#state = state; this.#previousState = previousState; this.#ticksInState = 0; }
   advanceTick(): void { this.#ticksInState += 1; }
 
   step(context: CharacterStateContext): CharacterStateStep {

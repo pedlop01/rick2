@@ -5,11 +5,13 @@ export interface PlayerControllerConfig {
   crouchingHeight: number;
   collisionOffsetX: number;
   runSpeed: number;
+  airControl: boolean;
   minimumVerticalSpeed: number;
   maximumVerticalSpeed: number;
   verticalAcceleration: number;
   climbSpeed: number;
   jumpHeight: number;
+  jumpDistanceX?: number;
   deathRise: number;
   deathSpeedMultiplier: number;
   deathRespawnTicks: number;
@@ -27,6 +29,7 @@ export interface PlayerCapabilities {
 
 export type PlayerGroundAction = "shooting" | "bombing" | "hitting";
 export interface PlayerActionBindings {
+  neutral: PlayerGroundAction | null;
   up: PlayerGroundAction | null;
   down: PlayerGroundAction | null;
   horizontal: PlayerGroundAction | null;
@@ -70,6 +73,7 @@ export const RICK_PLAYER_CONTROLLER: Readonly<PlayerControllerConfig> = Object.f
   crouchingHeight: 15,
   collisionOffsetX: 5,
   runSpeed: 2,
+  airControl: true,
   minimumVerticalSpeed: 1,
   maximumVerticalSpeed: 3,
   verticalAcceleration: 0.1,
@@ -91,6 +95,7 @@ export const RICK_PLAYER_CAPABILITIES: Readonly<PlayerCapabilities> = Object.fre
 });
 
 export const RICK_ACTION_BINDINGS: Readonly<PlayerActionBindings> = Object.freeze({
+  neutral: null,
   up: "shooting",
   down: "bombing",
   horizontal: "hitting",
@@ -131,11 +136,13 @@ export function playerControllerConfig(
   positive(config.crouchingHeight, "crouchingHeight");
   nonNegative(config.collisionOffsetX, "collisionOffsetX");
   nonNegative(config.runSpeed, "runSpeed");
+  if (typeof config.airControl !== "boolean") throw new Error("airControl must be a boolean");
   positive(config.minimumVerticalSpeed, "minimumVerticalSpeed");
   positive(config.maximumVerticalSpeed, "maximumVerticalSpeed");
   positive(config.verticalAcceleration, "verticalAcceleration");
   nonNegative(config.climbSpeed, "climbSpeed");
   nonNegative(config.jumpHeight, "jumpHeight");
+  if (config.jumpDistanceX !== undefined) nonNegative(config.jumpDistanceX, "jumpDistanceX");
   nonNegative(config.deathRise, "deathRise");
   positive(config.deathSpeedMultiplier, "deathSpeedMultiplier");
   positive(config.deathRespawnTicks, "deathRespawnTicks");
@@ -215,7 +222,7 @@ export function groundActionForInput(
   const action = input.up ? bindings.up
     : input.down ? bindings.down
     : input.left || input.right ? bindings.horizontal
-    : null;
+    : bindings.neutral;
   if (action === "shooting" && capabilities.shoot) return action;
   if (action === "bombing" && capabilities.bomb) return action;
   if (action === "hitting" && capabilities.hit) return action;

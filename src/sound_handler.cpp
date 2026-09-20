@@ -58,7 +58,7 @@ void SoundHandler::InitializeSounds() {
   }
 }
 
-void SoundHandler::PlayMusic(int id) {
+void SoundHandler::PlayMusic(int id, bool loop) {
   if (id < 0 || static_cast<std::size_t>(id) >= music_instance.size()) {
     throw DataLoadError("Invalid initial music index");
   }
@@ -66,6 +66,9 @@ void SoundHandler::PlayMusic(int id) {
       al_get_sample_instance_playing(music_instance[playing_music_id])) {
     al_stop_sample_instance(music_instance[playing_music_id]);
   }
+  al_set_sample_instance_playmode(music_instance[id],
+                                  loop ? ALLEGRO_PLAYMODE_LOOP
+                                       : ALLEGRO_PLAYMODE_ONCE);
   al_play_sample_instance(music_instance[id]);
   playing_music_id = id;
 }

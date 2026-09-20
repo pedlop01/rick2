@@ -93,6 +93,7 @@ class Object {
     int obj_id;
 
     bool visible;
+    float visual_scale = 1.0f;
     bool active;
 
     // State variables
@@ -207,6 +208,8 @@ class Object {
     int GetBBWidth()  { return (using_bb ? bb_width  : width);  };
     int GetBBHeight() { return (using_bb ? bb_height : height); };
     bool GetVisible() { return visible;                         };
+    float GetVisualScale() const { return visual_scale; }
+    void SetVisualScale(float value) { visual_scale = value; }
     bool GetActive()  { return active;                          };
 
     virtual int GetTypeId() = 0;

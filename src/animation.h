@@ -18,6 +18,8 @@ class Animation
     BitmapResource    source_bitmap;
     vector<sprite_ptr> sprites;
     unsigned int       frame_duration_ticks;
+    unsigned int       frame_duration_ms;
+    unsigned int       elapsed_frame_ms;
     int                current_anim;
     int                steps_in_anim;
 
@@ -26,7 +28,8 @@ class Animation
 	  ~Animation();   // class destructor
 
     Animation(const BitmapResource& _source_bitmap,
-              unsigned int _frame_duration_ticks);
+              unsigned int _frame_duration_ticks,
+              unsigned int _frame_duration_ms = 0);
 
     void AddSprite(const BitmapResource& _sprite_bitmap, int _x, int _y, int _width, int _height);
 

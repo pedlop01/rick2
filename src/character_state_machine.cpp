@@ -49,6 +49,12 @@ void CharacterStateMachine::Reset(double x, double y, const std::string& facing)
   snapshot_.state = definition_["initialState"].get<std::string>(); snapshot_.previous_state.clear(); snapshot_.ticks_in_state = 0; snapshot_.origin_x = x; snapshot_.origin_y = y; snapshot_.transitioned = false; snapshot_.requested_form.clear(); if (!facing.empty()) snapshot_.facing = facing;
 }
 
+void CharacterStateMachine::Force(const std::string& state, const std::string& previous_state) {
+  Require(states_.count(state) && states_.count(previous_state), "forced state does not exist");
+  snapshot_.state = state; snapshot_.previous_state = previous_state;
+  snapshot_.ticks_in_state = 0; snapshot_.transitioned = true; snapshot_.requested_form.clear();
+}
+
 CharacterStateSnapshot CharacterStateMachine::Step(const CharacterStateContext& context) { return Run(context, true); }
 CharacterStateSnapshot CharacterStateMachine::Evaluate(const CharacterStateContext& context) { return Run(context, false); }
 
@@ -87,7 +93,7 @@ bool CharacterStateMachine::Matches(const nlohmann::json& condition, const Chara
 void ValidateCharacterForms(const nlohmann::json& definition) {
   Require(definition.is_object() && definition.contains("forms") && definition["forms"].is_array() && !definition["forms"].empty(), "characterForms.forms cannot be empty");
   std::set<std::string> forms;
-  for (nlohmann::json::const_iterator form = definition["forms"].begin(); form != definition["forms"].end(); ++form) { const std::string id = form->value("id", ""); Require(!id.empty(), "form id cannot be empty"); Require(!forms.count(id), "duplicate form: " + id); forms.insert(id); CharacterStateMachine machine(form->at("stateMachine")); }
+  for (nlohmann::json::const_iterator form = definition["forms"].begin(); form != definition["forms"].end(); ++form) { const std::string id = form->value("id", ""); Require(!id.empty(), "form id cannot be empty"); Require(!forms.count(id), "duplicate form: " + id); Require(!form->contains("visualScale") || (form->at("visualScale").is_number() && form->at("visualScale").get<double>() > 0), "form visualScale must be positive"); forms.insert(id); CharacterStateMachine machine(form->at("stateMachine")); }
   const std::string initial = definition.value("initialForm", ""); Require(forms.count(initial), "initial form does not exist: " + initial);
   for (nlohmann::json::const_iterator form = definition["forms"].begin(); form != definition["forms"].end(); ++form) {
     for (nlohmann::json::const_iterator state = (*form)["stateMachine"]["states"].begin(); state != (*form)["stateMachine"]["states"].end(); ++state) {
@@ -108,6 +114,8 @@ CharacterForms::CharacterForms(const nlohmann::json& definition,
 }
 
 const nlohmann::json& CharacterForms::ActiveDefinition() const { return forms_.at(active_form_); }
+
+void CharacterForms::ForceState(const std::string& state, const std::string& previous_state) { machine_->Force(state, previous_state); }
 
 void CharacterForms::Activate(const std::string& id, const CharacterStateContext& context) {
   const std::string facing = machine_->Snapshot().facing; active_form_ = id;

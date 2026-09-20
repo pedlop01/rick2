@@ -6,10 +6,11 @@ import type { RuntimeBody } from "./preview-runtime";
 import type { ParallaxLayerDefinition, PresentationSnapshot } from "./presentation";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
+export type PreviewLayerName = MapLayerName | "backParallax" | "frontParallax";
 
 interface LevelDocument { map: TileMapDocument; }
 interface AnimationFrame { x: number; y: number; width: number; height: number; }
-interface RuntimeAnimation { bitmap: ImageBitmap; duration: number; frames: AnimationFrame[]; }
+interface RuntimeAnimation { bitmap: ImageBitmap; duration: number; durationMs?: number; frames: AnimationFrame[]; }
 export interface TilePointerHandlers {
   down(tile: PointerPosition): void;
   move(tile: PointerPosition): void;
@@ -23,7 +24,10 @@ export class WorkspacePreview {
   readonly #context: CanvasRenderingContext2D;
   readonly #observer: ResizeObserver;
   readonly #events = new AbortController();
-  readonly #visibleLayers: Record<MapLayerName, boolean> = { tiles: true, frontTiles: true, collisions: true };
+  readonly #visibleLayers: Record<PreviewLayerName, boolean> = {
+    tiles: true, frontTiles: true, collisions: true,
+    backParallax: false, frontParallax: false,
+  };
   #map: TileMapDocument | null = null;
   #tileset: ImageBitmap | null = null;
   #zoom = 1;
@@ -37,6 +41,7 @@ export class WorkspacePreview {
   #selection: TileRect | null = null;
   #editingPointer: number | null = null;
   #spacePressed = false;
+  #spacePanEnabled: () => boolean;
   #entities: Array<{ ref: EntityRef; box: EntityBox; label?: string }> = [];
   #selectedEntity: EntityRef | null = null;
   #gameplayLines: GameplayLine[] = [];
@@ -51,10 +56,11 @@ export class WorkspacePreview {
   #parallaxLayers: readonly ParallaxLayerDefinition[] = [];
   #parallaxImages = new Map<string, ImageBitmap>();
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, spacePanEnabled: () => boolean = () => true) {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas 2D is unavailable");
     this.#canvas = canvas;
+    this.#spacePanEnabled = spacePanEnabled;
     this.#context = context;
     this.#observer = new ResizeObserver(() => this.#resizeAndDraw());
   }
@@ -68,7 +74,7 @@ export class WorkspacePreview {
       this.zoomAt(event.deltaY < 0 ? 1.2 : 1 / 1.2, event.offsetX, event.offsetY);
     }, { passive: false, signal });
     this.#canvas.addEventListener("pointerdown", (event) => {
-      if (event.button === 0 && this.#spacePressed) {
+      if (event.button === 0 && this.#spacePressed && this.#spacePanEnabled()) {
         event.preventDefault(); this.#canvas.setPointerCapture(event.pointerId); this.#drag = { x: event.clientX, y: event.clientY, offsetX: this.#offsetX, offsetY: this.#offsetY }; this.#canvas.classList.add("is-panning"); return;
       }
       if (event.button === 0 && this.#editHandlers) {
@@ -106,7 +112,7 @@ export class WorkspacePreview {
     };
     this.#canvas.addEventListener("pointerup", stopDrag, { signal });
     this.#canvas.addEventListener("pointercancel", stopDrag, { signal });
-    window.addEventListener("keydown", (event) => { if (event.code === "Space" && (document.activeElement === this.#canvas || document.activeElement === document.body)) { event.preventDefault(); this.#spacePressed = true; this.#canvas.classList.add("is-pan-ready"); } }, { signal });
+    window.addEventListener("keydown", (event) => { if (event.code === "Space" && this.#spacePanEnabled() && (document.activeElement === this.#canvas || document.activeElement === document.body)) { event.preventDefault(); this.#spacePressed = true; this.#canvas.classList.add("is-pan-ready"); } }, { signal });
     window.addEventListener("keyup", (event) => { if (event.code === "Space") { this.#spacePressed = false; this.#canvas.classList.remove("is-pan-ready"); } }, { signal });
     window.addEventListener("blur", () => { this.#spacePressed = false; this.#canvas.classList.remove("is-pan-ready"); }, { signal });
     this.#resizeAndDraw();
@@ -125,7 +131,7 @@ export class WorkspacePreview {
     const levelPath = selectedLevel;
     const bytes = project.files.get(levelPath);
     if (!bytes) throw new Error(`${levelPath} was not found`);
-    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; sprites?: AnimationFrame[] } }> }>; presentation?: { parallaxLayers?: ParallaxLayerDefinition[] } };
+    const level = JSON.parse(new TextDecoder().decode(bytes)) as LevelDocument & { definitions?: Record<string, { states?: Array<{ name?: string; animation?: { bitmap?: string; frameDurationTicks?: number; frameDurationMs?: number; sprites?: AnimationFrame[] } }> }>; presentation?: { parallaxLayers?: ParallaxLayerDefinition[] } };
     const asset = getProjectAsset(project, levelPath, level.map.tileset.image);
     const extension = level.map.tileset.image.split(".").pop()?.toLowerCase();
     const mime = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
@@ -137,7 +143,7 @@ export class WorkspacePreview {
     const bitmapCache = new Map<string, ImageBitmap>();
     for (const [definitionId, definition] of Object.entries(level.definitions ?? {})) for (const state of definition.states ?? []) {
       const animation = state.animation, reference = animation?.bitmap; if (!state.name || !reference || !animation?.sprites?.length) continue;
-      try { let image = bitmapCache.get(reference); if (!image) { const imageBytes = getProjectAsset(project, levelPath, reference); image = await createImageBitmap(new Blob([imageBytes.slice().buffer])); bitmapCache.set(reference, image); } this.#runtimeAnimations.set(`${definitionId}:${state.name}`, { bitmap: image, duration: Math.max(1, animation.frameDurationTicks ?? 1), frames: animation.sprites }); } catch { /* Validation reports missing assets; the debug box remains visible. */ }
+      try { let image = bitmapCache.get(reference); if (!image) { const imageBytes = getProjectAsset(project, levelPath, reference); image = await createImageBitmap(new Blob([imageBytes.slice().buffer])); bitmapCache.set(reference, image); } this.#runtimeAnimations.set(`${definitionId}:${state.name}`, { bitmap: image, duration: Math.max(1, animation.frameDurationTicks ?? 1), durationMs: animation.frameDurationMs, frames: animation.sprites }); } catch { /* Validation reports missing assets; the debug box remains visible. */ }
     }
     this.#parallaxLayers = level.presentation?.parallaxLayers ?? [];
     for (const layer of this.#parallaxLayers) try { const imageBytes = getProjectAsset(project, levelPath, layer.image); this.#parallaxImages.set(layer.id, await createImageBitmap(new Blob([imageBytes.slice().buffer]))); } catch { /* Validation reports missing presentation assets. */ }
@@ -155,7 +161,7 @@ export class WorkspacePreview {
     this.#scheduleDraw();
   }
 
-  setLayerVisible(layer: MapLayerName, visible: boolean): void {
+  setLayerVisible(layer: PreviewLayerName, visible: boolean): void {
     this.#visibleLayers[layer] = visible;
     this.#scheduleDraw();
   }
@@ -262,11 +268,12 @@ export class WorkspacePreview {
     const map = this.#map;
     context.fillStyle = "#000";
     context.fillRect(0, 0, map.width * map.tileWidth, map.height * map.tileHeight);
-    this.#drawParallax("back");
+    if (this.#visibleLayers.backParallax) this.#drawParallax("back");
     if (this.#visibleLayers.tiles) this.#drawTileLayer(map.layers.tiles);
     if (this.#visibleLayers.frontTiles) this.#drawTileLayer(map.layers.frontTiles);
     if (this.#visibleLayers.collisions) this.#drawCollisionLayer(map.layers.collisions);
-    this.#drawGameplayGuides(); this.#drawEntities(); this.#drawRuntimeBodies(); this.#drawParallax("front");
+    this.#drawGameplayGuides(); this.#drawEntities(); this.#drawRuntimeBodies();
+    if (this.#visibleLayers.frontParallax) this.#drawParallax("front");
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
     if (this.#selection) this.#drawSelection(this.#selection);
     this.#drawPresentationOverlay();
@@ -302,6 +309,7 @@ export class WorkspacePreview {
     const colors: Record<number, string> = {
       [first]: "rgba(244, 63, 94, .48)", [first + 1]: "rgba(251, 191, 36, .48)",
       [first + 2]: "rgba(96, 165, 250, .48)", [first + 3]: "rgba(45, 212, 191, .48)",
+      [first + 4]: "rgba(192, 132, 252, .48)", [first + 5]: "rgba(244, 114, 182, .48)",
     };
     for (let y = bounds.top; y < bounds.bottom; ++y) for (let x = bounds.left; x < bounds.right; ++x) {
       const gid = layer[y * map.width + x] ?? 0;
@@ -369,7 +377,7 @@ export class WorkspacePreview {
     if (!this.#runtimeBodies.length) return; const context = this.#context;
     if (this.#runtimeSpritesVisible) for (const body of this.#runtimeBodies) {
       if (body.spriteVisible === false || !body.definition || !body.state) continue; const legacyState = body.state.startsWith("OBJ_STATE_") ? body.state.replace("OBJ_STATE_", "CHAR_STATE_") : body.state.startsWith("CHAR_STATE_") ? body.state.replace("CHAR_STATE_", "OBJ_STATE_") : body.state, animation = this.#runtimeAnimations.get(`${body.definition}:${body.state}`) ?? this.#runtimeAnimations.get(`${body.definition}:${legacyState}`); if (!animation) continue;
-      const elapsedFrame = Math.floor(body.frame / animation.duration), frameIndex = body.animationOnce ? Math.min(animation.frames.length - 1, elapsedFrame) : elapsedFrame % animation.frames.length, frame = animation.frames[frameIndex]!; const x = body.spriteX ?? body.x, y = body.spriteY ?? body.y, scale = body.spriteScale ?? 1, width = frame.width * scale, height = frame.height * scale;
+      const elapsedFrame = animation.durationMs ? Math.floor(body.frame * 20 / animation.durationMs) : Math.floor(body.frame / animation.duration), frameIndex = body.animationOnce ? Math.min(animation.frames.length - 1, elapsedFrame) : elapsedFrame % animation.frames.length, frame = animation.frames[frameIndex]!; const scale = body.spriteScale ?? 1, width = frame.width * scale, height = frame.height * scale, baseX = body.spriteX ?? body.x, baseY = body.spriteY ?? body.y, x = scale === 1 ? baseX : body.x + (body.width - width) / 2, y = scale === 1 ? baseY : body.y + body.height - height;
       if (body.face === "left") { context.save(); context.translate(x + width, y); context.scale(-1, 1); context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, 0, 0, width, height); context.restore(); }
       else context.drawImage(animation.bitmap, frame.x, frame.y, frame.width, frame.height, x, y, width, height);
     }

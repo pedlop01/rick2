@@ -20,6 +20,9 @@ test("primitive edits preserve their JSON types", () => {
   const model = modelWithItem(); const ref = { group: "items", index: 0 }; model.setPrimitive(ref, ["attributes", "width"], 12); model.setPrimitive(ref, ["attributes", "definition"], "objects/shoot");
   assert.equal(model.entity(ref).attributes.width, 12); assert.equal(model.entity(ref).attributes.definition, "objects/shoot");
 });
+test("optional primitive properties can be added and removed", () => {
+  const model = modelWithItem(), ref = { group: "items", index: 0 }; assert.equal(model.entity(ref).attributes.visualScale, undefined); assert.equal(model.setPrimitive(ref, ["attributes", "visualScale"], 4), true); assert.equal(model.entity(ref).attributes.visualScale, 4); assert.equal(model.deletePrimitive(ref, ["attributes", "visualScale"]), true); assert.equal(model.entity(ref).attributes.visualScale, undefined); assert.equal(model.deletePrimitive(ref, ["attributes", "visualScale"]), false);
+});
 test("camera geometry uses canonical corner fields", () => {
   const level = new LevelDocumentModel(createEmptyProject()); level.level.entities.cameraViews.push({ id: 0, left_up_x: 10, left_up_y: 20, right_down_x: 50, right_down_y: 70 });
   const model = new EntityDocumentModel(level); const ref = { group: "cameraViews", index: 0 };

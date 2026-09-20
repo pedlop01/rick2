@@ -5,6 +5,7 @@
 
 struct Probe {
   explicit Probe(int value) : id(value) {}
+  int GetTypeId() const { return id; }
   int id;
 };
 
@@ -40,6 +41,14 @@ int main() {
 
   if (erased_last != 1 || disposed != 4 || !probes.empty()) {
     std::cerr << "Final-element erase test failed" << std::endl;
+    return 1;
+  }
+
+  Probe first(7), second(0);
+  std::list<Probe*> authored_ids = {&first, &second};
+  if (FindByTypeId(authored_ids, 0) != &second ||
+      FindByTypeId(authored_ids, 9) != nullptr) {
+    std::cerr << "Authored entity ID lookup test failed" << std::endl;
     return 1;
   }
 

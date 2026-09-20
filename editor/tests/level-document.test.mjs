@@ -9,6 +9,8 @@ test("paint and flood fill stay inside map and validate layer GIDs", () => {
   assert.equal(model.setCell("tiles", -1, 0, 1), false);
   assert.equal(model.setCell("tiles", 0, 0, 2), false);
   assert.equal(model.setCell("collisions", 0, 0, 2), true);
+  assert.equal(model.setCell("collisions", 0, 0, 6), true);
+  assert.equal(model.setCell("collisions", 0, 0, 7), true);
   assert.equal(model.setCell("collisions", 0, 0, 8), false);
   assert.equal(model.floodFill("frontTiles", 0, 0, 1), true);
   assert.ok(model.map.layers.frontTiles.every((gid) => gid === 1));

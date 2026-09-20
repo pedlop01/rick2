@@ -82,7 +82,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
       if (Array.isArray(layer) && layer.length !== width * height) {
         add(`/map/layers/${name}`, `The layer contains ${layer.length} cells; ${width * height} were expected`);
       }
-      if (Array.isArray(layer)) { const tileCount = Number(object(map.tileset).tileCount); layer.forEach((gid, index) => { const valid = name === "collisions" ? gid === 0 || (Number.isInteger(gid) && gid >= tileCount + 1 && gid <= tileCount + 4) : Number.isInteger(gid) && gid >= 0 && gid <= tileCount; if (!valid) add(`/map/layers/${name}/${index}`, `GID outside the allowed range: ${String(gid)}`); }); }
+      if (Array.isArray(layer)) { const tileCount = Number(object(map.tileset).tileCount); layer.forEach((gid, index) => { const valid = name === "collisions" ? gid === 0 || (Number.isInteger(gid) && gid >= tileCount + 1 && gid <= tileCount + 6) : Number.isInteger(gid) && gid >= 0 && gid <= tileCount; if (!valid) add(`/map/layers/${name}/${index}`, `GID outside the allowed range: ${String(gid)}`); }); }
     }
   }
 
@@ -139,6 +139,7 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   const validatePresentationAction = (action: GameplayAction, path: string): void => { if (action.type === "showMessage" && !messageIds.has(action.message)) add(path, `Message not found: ${action.message}`); if (action.type === "playEffect" && !effectIds.has(action.effect)) add(path, `Visual effect not found: ${action.effect}`); };
   const validatePresentationStep = (step: unknown, path: string): void => { const value = object(step); if (value.type === "action") validatePresentationAction(value.action as GameplayAction, `${path}/action`); else if (Array.isArray(value.steps)) value.steps.forEach((child, index) => validatePresentationStep(child, `${path}/steps/${index}`)); };
   const gameplaySequences = object(level.gameplay).sequences; if (Array.isArray(gameplaySequences)) gameplaySequences.forEach((sequence, sequenceIndex) => { const steps = object(sequence).steps; if (Array.isArray(steps)) steps.forEach((step, stepIndex) => validatePresentationStep(step, `/gameplay/sequences/${sequenceIndex}/steps/${stepIndex}`)); });
+  const collectibleItems = object(level.entities).items; if (Array.isArray(collectibleItems)) collectibleItems.forEach((rawItem, itemIndex) => { const actions = object(rawItem).onCollect; if (!Array.isArray(actions)) return; try { validateGameplayTrigger((level.gameplay ?? {}) as GameplayProgramDefinition, [], actions as GameplayAction[]); } catch (error: unknown) { add(`/entities/items/${itemIndex}/onCollect`, error instanceof Error ? error.message : String(error)); } actions.forEach((action, actionIndex) => validatePresentationAction(action as GameplayAction, `/entities/items/${itemIndex}/onCollect/${actionIndex}`)); });
   const sequenceIds = new Set(Array.isArray(gameplaySequences) ? gameplaySequences.map((sequence) => object(sequence).id) : []); const enemies = object(level.entities).enemies; if (Array.isArray(enemies)) enemies.forEach((rawEnemy, index) => { const behavior = object(object(rawEnemy).behavior); if (behavior.type === "bossSequence" && !sequenceIds.has(behavior.sequence)) add(`/entities/enemies/${index}/behavior/sequence`, `Gameplay sequence not found: ${String(behavior.sequence)}`); });
   if (profile.characterForms !== undefined) {
     try { validateCharacterForms(profile.characterForms as CharacterFormsDefinition); }
@@ -206,6 +207,14 @@ function semanticLevelDiagnostics(project: Rick2Project, file: string, value: un
   };
   const triggers = entities.triggers;
   if (Array.isArray(triggers)) triggers.forEach((rawTrigger, triggerIndex) => {
+    const triggerAttributes = object(object(rawTrigger).attributes), triggerGameplay = object(object(rawTrigger).gameplay);
+    const continuousTargets = object(object(rawTrigger).targets).target;
+    if (triggerAttributes.activation === "continuousPoint" && (triggerGameplay.sequence !== undefined || (Array.isArray(continuousTargets) ? continuousTargets.length > 0 : continuousTargets !== undefined))) add(`/entities/triggers/${triggerIndex}`, "Continuous point trigger cannot have a sequence or targets");
+    const forcedActions = Array.isArray(triggerGameplay.actions) ? triggerGameplay.actions.map(object).filter((action) => action.type === "forcePlayerState") : [];
+    for (const action of forcedActions) {
+      const forms = object(object(level.runtimeProfile).characterForms).forms;
+      if (!Array.isArray(forms) || !forms.length || forms.some((form) => { const states = object(object(form).stateMachine).states; const ids = new Set(Array.isArray(states) ? states.map((state) => object(state).id) : []); return !ids.has(action.state) || !ids.has(action.previousState); })) add(`/entities/triggers/${triggerIndex}/gameplay/actions`, "Forced player state is missing from a character form");
+    }
     const rawTargets = object(object(rawTrigger).targets).target;
     const targets = Array.isArray(rawTargets) ? rawTargets : [rawTargets];
     targets.forEach((rawTarget, targetIndex) => {

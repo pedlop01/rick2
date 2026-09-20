@@ -1,6 +1,8 @@
 #include "camera.h"
+#include "sprite_anchor_rules.h"
 #include "death_rules.h"
 #include "enemy.h"
+#include "player.h"
 #include "game_time.h"
 #include "resource_cache.h"
 #include <cmath>
@@ -245,17 +247,23 @@ void Camera::DrawBackObjects(World* world, Character* player, ALLEGRO_FONT *font
   list<Object*>* back_objects = world->GetBackObjects();
   for (list<Object*>::iterator it = back_objects->begin() ; it != back_objects->end(); ++it) {
     Object* object = *it;    
-    if (object->GetState() != OBJ_STATE_DEAD) {
+    if (object->GetVisible() && object->GetState() != OBJ_STATE_DEAD) {
       // Only draw object in camera
       if (CoordsWithinCamera(object->GetX(),                      object->GetY()) ||
           CoordsWithinCamera(object->GetX() + object->GetWidth(), object->GetY()) ||
           CoordsWithinCamera(object->GetX(),                      object->GetY() + object->GetHeight()) ||
           CoordsWithinCamera(object->GetX() + object->GetWidth(), object->GetY() + object->GetHeight())) {
         ALLEGRO_BITMAP* object_sprite = object->GetCurrentAnimationBitmap();
-        al_draw_bitmap(object_sprite,
-                       object->GetX() - GetPosX(),
-                       object->GetY() - GetPosY(),
-                       object->GetCurrentAnimationBitmapAttributes());
+        const float scale = object->GetVisualScale();
+        const int sprite_width = al_get_bitmap_width(object_sprite), sprite_height = al_get_bitmap_height(object_sprite);
+        const SpriteDrawPosition draw = AnchoredSpritePosition(
+            object->GetX(), object->GetY(), object->GetWidth(), object->GetHeight(),
+            sprite_width, sprite_height, scale);
+        al_draw_scaled_bitmap(object_sprite, 0, 0,
+                              sprite_width, sprite_height,
+                              draw.x - GetPosX(), draw.y - GetPosY(),
+                              sprite_width * scale, sprite_height * scale,
+                              object->GetCurrentAnimationBitmapAttributes());
         if (debug_overlays) {
         char buffer[30];
         sprintf(buffer, "%d", object->GetId());
@@ -283,10 +291,17 @@ void Camera::DrawFrontObjects(World* world, Character* player, ALLEGRO_FONT *fon
           CoordsWithinCamera(object->GetX(),                      object->GetY() + object->GetHeight()) ||
           CoordsWithinCamera(object->GetX() + object->GetWidth(), object->GetY() + object->GetHeight())) {
         ALLEGRO_BITMAP* object_sprite = object->GetCurrentAnimationBitmap();
-        al_draw_bitmap(object_sprite,
-                       object->GetX() - GetPosX(),
-                       object->GetY() - GetPosY(),
-                       object->GetCurrentAnimationBitmapAttributes());
+        const float scale = object->GetVisualScale();
+        const int sprite_width = al_get_bitmap_width(object_sprite), sprite_height = al_get_bitmap_height(object_sprite);
+        const SpriteDrawPosition draw = AnchoredSpritePosition(
+            object->GetX(), object->GetY(), object->GetWidth(), object->GetHeight(),
+            sprite_width, sprite_height, scale);
+        al_draw_scaled_bitmap(object_sprite, 0, 0,
+                              sprite_width, sprite_height,
+                              draw.x - GetPosX(), draw.y - GetPosY(),
+                              sprite_width * scale,
+                              sprite_height * scale,
+                              object->GetCurrentAnimationBitmapAttributes());
         if (debug_overlays) {
         char buffer[30];
         sprintf(buffer, "%d", object->GetTypeId());
@@ -313,15 +328,24 @@ void Camera::DrawFrontObjects(World* world, Character* player, ALLEGRO_FONT *fon
 }
 
 void Camera::DrawPlayer(World* world, Character* player, ALLEGRO_FONT *font) {
+  const Player* scene_player = dynamic_cast<const Player*>(player);
+  if (scene_player && !scene_player->SceneVisible()) return;
   // DYING animation requires an special function to scale the sprite
   if ((player->GetState() == CHAR_STATE_DEAD) || (player->GetState() == CHAR_STATE_DYING))
     return;
 
   ALLEGRO_BITMAP* player_bitmap = player->GetCurrentAnimationBitmap();
-  al_draw_bitmap(player_bitmap,
-                 player->GetPosX() - GetPosX(),
-                 player->GetPosY() - GetPosY(),
-                 player->GetCurrentAnimationBitmapAttributes());
+  const float scale = player->GetCurrentAnimationScalingFactor();
+  const float draw_x = player->GetPosX() + (player->GetWidth() - player->GetCurrentAnimationWidth() * scale) / 2.0f - GetPosX();
+  const float draw_y = player->GetPosY() + player->GetHeight() - player->GetCurrentAnimationHeight() * scale - GetPosY();
+  al_draw_scaled_bitmap(player_bitmap, 0, 0,
+                        player->GetCurrentAnimationWidth(),
+                        player->GetCurrentAnimationHeight(),
+                        draw_x,
+                        draw_y,
+                        player->GetCurrentAnimationWidth() * scale,
+                        player->GetCurrentAnimationHeight() * scale,
+                        player->GetCurrentAnimationBitmapAttributes());
   if (debug_overlays) {
   // Draw the player in front of back tiles
   al_draw_rectangle(player->GetPosX() - GetPosX() + 1,
@@ -342,6 +366,12 @@ void Camera::DrawPlayer(World* world, Character* player, ALLEGRO_FONT *font) {
                     player->GetPosY() + player->GetBBY() + player->GetBBHeight() - 1 - GetPosY() + 1,
                     al_map_rgb(0xAF, 0xAF, 0xAF), 1.0);
   DrawCombatOverlay(player, GetPosX(), GetPosY());
+  char player_debug[128];
+  snprintf(player_debug, sizeof(player_debug), "%s  x=%d y=%d",
+           player->GetCombatStateName().c_str(), player->GetPosX(),
+           player->GetPosY());
+  al_draw_text(font, al_map_rgb(255, 255, 0), 6, 6,
+               ALLEGRO_ALIGN_LEFT, player_debug);
   }
 }
 
@@ -451,16 +481,27 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
       if(!enemy->GetFreezed() ||
          ((enemy->GetFreezeElapsedTicks() %
            GameTime::ENEMY_FREEZE_FLASH_PERIOD_TICKS) == 0)) {
-        al_draw_bitmap(enemy_bitmap,                       
-                       enemy->GetPosX() - GetPosX(),
-                       enemy->GetPosY() - GetPosY(),
-                       enemy->GetCurrentAnimationBitmapAttributes());
-      } else {
-        al_draw_tinted_bitmap(enemy_bitmap,
-                              al_map_rgba_f(1, 0, 0, 1),
+        const float scale = enemy->GetCurrentAnimationScalingFactor();
+        al_draw_scaled_bitmap(enemy_bitmap, 0, 0,
+                              enemy->GetCurrentAnimationWidth(),
+                              enemy->GetCurrentAnimationHeight(),
                               enemy->GetPosX() - GetPosX(),
                               enemy->GetPosY() - GetPosY(),
+                              enemy->GetCurrentAnimationWidth() * scale,
+                              enemy->GetCurrentAnimationHeight() * scale,
                               enemy->GetCurrentAnimationBitmapAttributes());
+      } else {
+        const float scale = enemy->GetCurrentAnimationScalingFactor();
+        al_draw_tinted_scaled_bitmap(enemy_bitmap,
+                                     al_map_rgba_f(1, 0, 0, 1),
+                                     0, 0,
+                                     enemy->GetCurrentAnimationWidth(),
+                                     enemy->GetCurrentAnimationHeight(),
+                                     enemy->GetPosX() - GetPosX(),
+                                     enemy->GetPosY() - GetPosY(),
+                                     enemy->GetCurrentAnimationWidth() * scale,
+                                     enemy->GetCurrentAnimationHeight() * scale,
+                                     enemy->GetCurrentAnimationBitmapAttributes());
       }
       if (debug_overlays) {
       // Draw the enemy in front of back tiles

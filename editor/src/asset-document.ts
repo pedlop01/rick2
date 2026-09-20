@@ -2,7 +2,7 @@ import { normalizeProjectPath, resolveProjectReference, type Rick2Project } from
 import type { EditableLevel, LevelDocumentModel } from "./level-document";
 
 export interface SpriteRect { x: number; y: number; width: number; height: number; }
-export interface AnimationState { name: string; id: number; animation: { bitmap: string; frameDurationTicks: number; sprites: SpriteRect[] }; }
+export interface AnimationState { name: string; id: number; animation: { bitmap: string; frameDurationTicks: number; frameDurationMs?: number; sprites: SpriteRect[] }; }
 export interface AnimationDefinition { kind: "object" | "character"; name: string; states: AnimationState[]; }
 export interface AudioConfiguration { initialMusic: number; playback: { initialLoop: boolean; followUpMusic: number | null; followUpLoop: boolean }; music: string[]; effects: string[]; }
 

@@ -51,6 +51,7 @@ class Trigger {
     int action_face;
 
     bool recursive;
+    bool continuous_point = false;
 
     // Associated delays for target
     vector<TriggerTarget*> targets;
@@ -77,6 +78,7 @@ class Trigger {
 
     void AddTarget(Object* _object, int _delay, bool _trigger, bool _trigger_cond);
     void ConfigureGameplay(GameplayProgram* program, const nlohmann::json& definition);
+    void SetContinuousPoint(bool enabled) { continuous_point = enabled; }
 
     // Read methods
     int GetId()     { return id;     }

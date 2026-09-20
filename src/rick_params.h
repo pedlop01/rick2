@@ -2,6 +2,8 @@
 #define TILE_COL_DOWN   309
 #define TILE_STAIRS     310
 #define TILE_STAIRS_TOP 311
+#define TILE_SLOPE_LEFT 312
+#define TILE_SLOPE_RIGHT 313
 
 #define CHAR_STATE_STOP      0
 #define CHAR_STATE_JUMPING   1

@@ -194,6 +194,7 @@ int main(int argc, char *argv[]) {
 
   al_register_event_source(event_queue.get(), al_get_keyboard_event_source());
 
+  bool test_invulnerable = false;
   const auto load_level = [&](const std::string& next_level) {
     player.reset();
     world.reset();
@@ -214,12 +215,14 @@ int main(int argc, char *argv[]) {
                       world.get(), bitmap.get());
     camera.SetDebugOverlays(options.debug);
     player.reset(new Player(GetPlayerDefinition().c_str()));
+    player->SetTestInvulnerable(test_invulnerable);
+    player->SpawnAtCheckpoint(world.get());
     player->RegisterCamera(&camera);
     player->RegisterSoundHandler(&sound_handler);
 
     // Initialize sounds and start playing music for level 1 (the only implemented at this moment)
     sound_handler.InitializeSounds();
-    sound_handler.PlayMusic(GetInitialMusic());
+    sound_handler.PlayMusic(GetInitialMusic(), GetInitialMusicLoop());
   };
 
   // Game initializations
@@ -261,6 +264,15 @@ int main(int argc, char *argv[]) {
     const int keys = keyboard.GetKeys();
     const int pressed = keys & ~previous_keys;
     previous_keys = keys;
+
+    const bool next_test_invulnerable = ToggleTestInvulnerability(
+        test_invulnerable, (pressed & KEY_K) != 0,
+        game_shell->Screen() == SHELL_PLAYING);
+    if (next_test_invulnerable != test_invulnerable) {
+      test_invulnerable = next_test_invulnerable;
+      player->SetTestInvulnerable(test_invulnerable);
+      al_set_window_title(display.get(), test_invulnerable ? "rick2 · invulnerable" : "rick2");
+    }
     
     if (options.debug) {
       ALLEGRO_MOUSE_STATE mouse_state;
@@ -305,7 +317,7 @@ int main(int argc, char *argv[]) {
       // briefly delayed, process a bounded number of ticks to catch up.
       if (game_shell->Screen() == SHELL_PLAYING && !(world->IsLevelCompleted() && world->FreezeOnComplete())) {
         world->WorldStep(player.get());
-        player->CharacterStep(world.get(), keyboard);
+        if (player->SceneControllable()) player->CharacterStep(world.get(), keyboard);
       }
       if (game_shell->Screen() == SHELL_PLAYING && game_shell->HasCampaign() && world->IsLevelCompleted()) {
         try {

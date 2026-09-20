@@ -3,6 +3,7 @@
   "forms": [
     {
       "id": "warrior",
+      "visualScale": 4,
       "definition": "characters/warrior",
       "controller": { "standingHeight": 40, "runSpeed": 2 },
       "stateMachine": {

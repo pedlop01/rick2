@@ -20,6 +20,9 @@ test("bundle contains the offline shell and visible startup failure", async () =
   const bundle = await readFile(new URL("../dist/app.js", import.meta.url), "utf8");
   assert.match(bundle, /Rick2 Engine/);
   assert.match(bundle, /Rick2 Engine could not start/);
+  assert.match(bundle, /Visual scale/);
+  assert.match(bundle, /Background parallax/);
+  assert.match(bundle, /Foreground parallax/);
 });
 
 test("schemas and validator are bundled for fully offline checks", async () => {

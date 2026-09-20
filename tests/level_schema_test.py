@@ -62,6 +62,14 @@ class LevelSchemaTest(unittest.TestCase):
         configured["objective"]["width"] = 0
         self.assertTrue(list(self.validator.iter_errors(configured)))
 
+    def test_character_form_visual_scale_is_positive(self):
+        configured = copy.deepcopy(self.level)
+        configured["runtimeProfile"] = {"characterForms": json.loads(
+            (ROOT / "tests/fixtures/character_forms.json").read_text())}
+        self.assertEqual(list(self.validator.iter_errors(configured)), [])
+        configured["runtimeProfile"]["characterForms"]["forms"][0]["visualScale"] = 0
+        self.assertTrue(list(self.validator.iter_errors(configured)))
+
     def test_gameplay_program_and_gameplay_only_trigger_are_typed(self):
         configured = copy.deepcopy(self.level)
         configured["gameplay"] = {

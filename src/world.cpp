@@ -4,6 +4,7 @@
 #include "trigger.h"
 #include "enemy.h"
 #include "player.h"
+#include "collision_gid_rules.h"
 #include "container_utils.h"
 
 // class constructor
@@ -81,7 +82,7 @@ World::World(const char *file, SoundHandler* sound_handler, bool tileExtractedOp
     const int collision_gid = collision_tiles[index].get<int>();
     int tile_id       = tile_gid != 0 ? tile_gid - 1 : 0;
     int tile_front_id = front_gid != 0 ? front_gid - 1 : 0;
-    int tile_prop     = collision_gid != 0 ? collision_gid - 1 : 0;
+    int tile_prop = CollisionTypeForGid(collision_gid, tileset_count);
     // Save the id of the tile aswell as the coordinates in the tileset bitmap
     // Preserve the TMX GID as the presence marker: 0 means empty while GID 1
     // is the first (zero-based index 0) tile in the tileset.
@@ -430,6 +431,9 @@ void World::InitializeItems(const char* file, SoundHandler* sound_handler) {
                      0.1, 3.0, 1.0,
                      0.1, 3.0, 1.0);
     world_item->RegisterSoundHandler(sound_handler);
+    world_item->SetAffectedByGravity(item_attrs.value("physics", "falling") != "fixed");
+    world_item->SetVisualScale(item_attrs.value("visualScale", 1.0f));
+    world_item->ConfigureCollection(gameplay, item->value("onCollect", nlohmann::json::array()));
 
     objects.push_back(world_item);
   }  
@@ -477,6 +481,10 @@ void World::InitializeDynamicBackObjects(const char* file) {
                         dyn_obj_ini_x, dyn_obj_ini_y,
                         dyn_obj_width, dyn_obj_height,
                         dyn_obj_skip_num_anims);
+    const bool visible = dyn_obj_attrs.value("visible", 1) != 0;
+    world_dyn_obj->SetVisible(visible);
+    world_dyn_obj->SetActive(visible);
+    world_dyn_obj->SetVisualScale(dyn_obj_attrs.value("visualScale", 1.0f));
 
     back_objects.push_back(world_dyn_obj);
   }  
@@ -540,6 +548,9 @@ void World::InitializeCheckpoints(const char* file) {
   int pl_x;
   int pl_y;
   int pl_face;
+  bool preserve_pl_face;
+  bool activate_by_top_left;
+  bool checkpoint_activation_enabled;
   vector<vector<int> > nxt_chks;
 
   printf("------------------------------------\n");
@@ -565,7 +576,8 @@ void World::InitializeCheckpoints(const char* file) {
     pl_x       = chk->at("pl_x").get<int>();
     pl_y       = chk->at("pl_y").get<int>();
     const std::string player_face = chk->at("pl_face").get<std::string>();
-    if (player_face == "right") {
+    preserve_pl_face = player_face == "preserve";
+    if (player_face == "right" || preserve_pl_face) {
       pl_face = CHAR_DIR_RIGHT;
     } else if (player_face == "left") {
       pl_face = CHAR_DIR_LEFT;
@@ -574,6 +586,11 @@ void World::InitializeCheckpoints(const char* file) {
                           "': incorrect player direction for checkpoint " +
                           std::to_string(chk_id));
     }
+    const std::string activation = chk->value("activation", std::string("overlap"));
+    if (activation != "overlap" && activation != "topLeft" && activation != "disabled")
+      throw DataLoadError(std::string("Invalid '") + file + "': incorrect activation for checkpoint " + std::to_string(chk_id));
+    activate_by_top_left = activation == "topLeft";
+    checkpoint_activation_enabled = activation != "disabled";
 
     vector<int> nxt_chks_int =
         chk->at("nxt_chks").get<vector<int> >();
@@ -593,7 +610,9 @@ void World::InitializeCheckpoints(const char* file) {
     printf("\n");
 
     // Create checkpoint
-    Checkpoint* world_chk = new Checkpoint(chk_id, chk_x, chk_y, chk_width, chk_height, pl_x, pl_y, pl_face);
+    Checkpoint* world_chk = new Checkpoint(chk_id, chk_x, chk_y, chk_width, chk_height, pl_x, pl_y, pl_face,
+                                           preserve_pl_face, activate_by_top_left,
+                                           checkpoint_activation_enabled);
     checkpoints.push_back(world_chk);
   }  
 
@@ -708,11 +727,27 @@ void World::InitializeTriggers(const char* file) {
                                          trig_action,
                                          trig_face,
                                          trig_recursive);
+    world_trigger->SetContinuousPoint(trig_attrs.value("activation", std::string()) == "continuousPoint");
     if (trig->contains("gameplay")) {
       const nlohmann::json& trigger_gameplay = trig->at("gameplay");
+      if (trig_attrs.value("activation", std::string()) == "continuousPoint" &&
+          (trigger_gameplay.contains("sequence") || (trig->contains("targets") && !trig->at("targets").at("target").empty())))
+        throw DataLoadError("Continuous point trigger cannot have a sequence or targets");
       const nlohmann::json actions = trigger_gameplay.value("actions", nlohmann::json::array());
       for (nlohmann::json::const_iterator action = actions.begin(); action != actions.end(); ++action) {
         const std::string type = action->value("type", "");
+        if (type == "forcePlayerState") {
+          const nlohmann::json& profile = GetRuntimeProfile();
+          if (!profile.contains("characterForms")) throw DataLoadError("Forced player state requires character forms");
+          for (const auto& form : profile.at("characterForms").at("forms")) {
+            bool current_found = false, previous_found = false;
+            for (const auto& state : form.at("stateMachine").at("states")) {
+              current_found |= state.at("id") == action->at("state");
+              previous_found |= state.at("id") == action->at("previousState");
+            }
+            if (!current_found || !previous_found) throw DataLoadError("Forced player state is missing from a character form");
+          }
+        }
         if (type == "setCamera" || type == "showMessage" || type == "hideMessage" || type == "playEffect") presentation->ValidateAction(*action);
       }
       world_trigger->ConfigureGameplay(gameplay, trigger_gameplay);
@@ -923,9 +958,16 @@ void World::InitializeEnemies(const char* file) {
     enemy_ia_random = enemy->value("ia_random", 0) != 0;
     enemy_ia_randomness = enemy->value("ia_randomness", 15);
     enemy_ia_block_steps = enemy->value("ia_block_steps", 1);
-    enemy_ia_orig_x = enemy->value("ia_orig_x", enemy_x);
+    const double patrol_distance = behavior.value("type", "") == "patrol"
+                                       ? behavior.value("distance", 0.0)
+                                       : 0.0;
+    enemy_ia_orig_x = enemy->value("ia_orig_x", patrol_distance > 0 && enemy_direction == CHAR_DIR_LEFT
+                                                    ? enemy_x - static_cast<int>(patrol_distance)
+                                                    : enemy_x);
     enemy_ia_orig_y = enemy->value("ia_orig_y", enemy_y);
-    enemy_ia_limit_x = enemy->value("ia_limit_x", behavior.value("detectionWidth", 0));
+    enemy_ia_limit_x = enemy->value("ia_limit_x", patrol_distance > 0
+                                                    ? static_cast<int>(patrol_distance)
+                                                    : behavior.value("detectionWidth", 0));
     enemy_ia_limit_y = enemy->value("ia_limit_y", behavior.value("detectionHeight", 0));
 
     const std::string definition_file = enemy->at("definition").get<std::string>();
@@ -957,6 +999,7 @@ void World::InitializeEnemies(const char* file) {
                                    enemy_ia_type, enemy_ia_random, enemy_ia_randomness, enemy_ia_block_steps,
                                    enemy_ia_orig_x, enemy_ia_orig_y, enemy_ia_limit_x, enemy_ia_limit_y,
                                    behavior, enemy->value("combatProfile", ""));
+    world_enemy->SetVisualScale(enemy->value("visualScale", 1.0f));
     enemies.push_back(world_enemy);
   }  
 
@@ -1099,8 +1142,8 @@ void World::WorldStep(Character* player) {
   if (gameplay) {
     gameplay->BeginTick();
     Player* world_player = dynamic_cast<Player*>(player);
-    gameplay->SetEventSink(world_player ? std::function<void(const std::string&)>([world_player](const std::string& event) { world_player->DispatchGameplayEvent(event); }) : std::function<void(const std::string&)>());
-    if (presentation) { presentation->Step(); gameplay->SetActionSink([this, player](const nlohmann::json& action) { const double follow_x = player->GetCorrectedPosX() - GetCameraConfig().width / 2.0, follow_y = player->GetCorrectedPosY() - GetCameraConfig().height / 2.0; presentation->Execute(action, presentation->CameraX(follow_x), presentation->CameraY(follow_y)); }); }
+    gameplay->SetEventSink(world_player ? std::function<void(const std::string&)>([this, world_player](const std::string& event) { if (event == "killed") world_player->SetKilled(this); else world_player->DispatchGameplayEvent(event); }) : std::function<void(const std::string&)>());
+    if (presentation) { presentation->Step(); gameplay->SetActionSink([this, player](const nlohmann::json& action) { if (action.value("type", "") == "keepPlayerMoving") { Player* scene_player = dynamic_cast<Player*>(player); if (scene_player) scene_player->KeepMoving(); return; } if (action.value("type", "") == "forcePlayerState") { Player* scene_player = dynamic_cast<Player*>(player); if (scene_player) scene_player->ForceState(action.at("state").get<std::string>(), action.at("previousState").get<std::string>()); return; } if (action.value("type", "") == "setPlayerMode") { Player* scene_player = dynamic_cast<Player*>(player); if (scene_player) scene_player->SetSceneMode(action.at("visible").get<bool>(), action.at("controllable").get<bool>()); return; } if (action.value("type", "") == "setEntityVisible") { const int id = action.at("id").get<int>(); Object* object = FindByTypeId(back_objects, id); if (!object) throw DataLoadError("Background object does not exist: " + std::to_string(id)); object->SetVisible(action.at("visible").get<bool>()); object->SetActive(action.at("visible").get<bool>()); if (action.value("restartAnimation", false)) static_cast<StaticObject*>(object)->RestartAnimation(); return; } const double follow_x = player->GetCorrectedPosX() - GetCameraConfig().width / 2.0, follow_y = player->GetCorrectedPosY() - GetCameraConfig().height / 2.0; presentation->Execute(action, presentation->CameraX(follow_x), presentation->CameraY(follow_y)); }); }
     gameplay->StepSequences();
   }
 
@@ -1208,16 +1251,12 @@ void World::WorldStep(Character* player) {
   // Handle checkpoints
   //printf("[WorldStep] Handling checkpoints...\n");
   if (player->GetState() != CHAR_STATE_DYING) {
-    for (vector<Checkpoint*>::iterator it = target_checkpoints->begin(); it != target_checkpoints->end(); it++) {
-      Checkpoint* checkpoint = *it;
-      if (checkpoint->InCheckpoint(player->GetPosX(), player->GetPosY(),
-                                   player->GetWidth(), player->GetHeight())) {
-        // player is in a target checkpoint. Move the current_checkpoint.
-        current_checkpoint = checkpoint;
-        // re-compute target_checkpoints
-        target_checkpoints = current_checkpoint->GetNextCheckpoints();
-        break;
-      }
+    Checkpoint* next = AdvanceCheckpoint(current_checkpoint,
+                                         player->GetPosX(), player->GetPosY(),
+                                         player->GetWidth(), player->GetHeight());
+    if (next != current_checkpoint) {
+      current_checkpoint = next;
+      target_checkpoints = current_checkpoint->GetNextCheckpoints();
     }
   }
 
@@ -1236,10 +1275,10 @@ void World::WorldStep(Character* player) {
     enemy->CharacterStep(this, player);
   }
 
-  if (player->GetCombatState()) {
+  if (player->GetCombatState() && (!dynamic_cast<Player*>(player) || static_cast<Player*>(player)->SceneVisible())) {
     CombatantState* player_combat = player->GetCombatState(); player_combat->Step(); const std::string player_state = player->GetCombatStateName(); pair<string, int>& player_activation = combat_activations[player]; if (player_activation.first != player_state) { player_activation.first = player_state; ++player_activation.second; }
     CombatPose player_pose = { static_cast<double>(player->GetPosX()), static_cast<double>(player->GetPosY()), static_cast<double>(player->GetWidth()), player->GetFace() == CHAR_DIR_LEFT, player_state, player->GetCombatFrame(), player_activation.second };
-    for (vector<Character*>::iterator it = enemies.begin(); it != enemies.end(); ++it) { Enemy* enemy = static_cast<Enemy*>(*it); CombatantState* enemy_combat = enemy->GetCombatState(); if (!enemy_combat || enemy->GetState() == CHAR_STATE_DYING || enemy->GetState() == CHAR_STATE_DEAD) continue; enemy_combat->Step(); const std::string enemy_state = enemy->GetCombatStateName(); pair<string, int>& enemy_activation = combat_activations[enemy]; if (enemy_activation.first != enemy_state) { enemy_activation.first = enemy_state; ++enemy_activation.second; } CombatPose enemy_pose = { static_cast<double>(enemy->GetPosX()), static_cast<double>(enemy->GetPosY()), static_cast<double>(enemy->GetWidth()), enemy->GetFace() == CHAR_DIR_LEFT, enemy_state, enemy->GetCombatFrame(), enemy_activation.second }; CombatHit hit; if (ResolveCombat(*player_combat, player_pose, *enemy_combat, enemy_pose, &hit) && hit.applied) { enemy->SetPosX(this, enemy->GetPosX() + static_cast<int>(hit.knockback_x)); enemy->SetPosY(this, enemy->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!enemy_combat->Alive()) enemy->SetKilled(); } if (GetRuntimeSessionRules().damage_enabled && ResolveCombat(*enemy_combat, enemy_pose, *player_combat, player_pose, &hit) && hit.applied) { player->SetPosX(this, player->GetPosX() + static_cast<int>(hit.knockback_x)); player->SetPosY(this, player->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!player_combat->Alive()) player->SetKilled(this); } }
+    for (vector<Character*>::iterator it = enemies.begin(); it != enemies.end(); ++it) { Enemy* enemy = static_cast<Enemy*>(*it); CombatantState* enemy_combat = enemy->GetCombatState(); if (!enemy_combat || enemy->GetState() == CHAR_STATE_DYING || enemy->GetState() == CHAR_STATE_DEAD) continue; enemy_combat->Step(); const std::string enemy_state = enemy->GetCombatStateName(); pair<string, int>& enemy_activation = combat_activations[enemy]; if (enemy_activation.first != enemy_state) { enemy_activation.first = enemy_state; ++enemy_activation.second; } CombatPose enemy_pose = { static_cast<double>(enemy->GetPosX()), static_cast<double>(enemy->GetPosY()), static_cast<double>(enemy->GetWidth()), enemy->GetFace() == CHAR_DIR_LEFT, enemy_state, enemy->GetCombatFrame(), enemy_activation.second }; CombatHit hit; if (ResolveCombat(*player_combat, player_pose, *enemy_combat, enemy_pose, &hit) && hit.applied) { enemy->SetPosX(this, enemy->GetPosX() + static_cast<int>(hit.knockback_x)); enemy->SetPosY(this, enemy->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!enemy_combat->Alive()) enemy->SetKilled(); } if (player->IsDamageEnabled() && ResolveCombat(*enemy_combat, enemy_pose, *player_combat, player_pose, &hit) && hit.applied) { player->SetPosX(this, player->GetPosX() + static_cast<int>(hit.knockback_x)); player->SetPosY(this, player->GetPosY() + static_cast<int>(hit.knockback_y), true); if (!player_combat->Alive()) player->SetKilled(this); } }
   }
 
   // Check if player has been killed in this step

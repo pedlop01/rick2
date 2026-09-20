@@ -35,6 +35,7 @@ class CharacterStateMachine {
   CharacterStateSnapshot Step(const CharacterStateContext& context);
   CharacterStateSnapshot Evaluate(const CharacterStateContext& context);
   void Reset(double x = 0, double y = 0, const std::string& facing = "");
+  void Force(const std::string& state, const std::string& previous_state);
   const CharacterStateSnapshot& Snapshot() const { return snapshot_; }
 
  private:
@@ -55,6 +56,7 @@ class CharacterForms {
   CharacterStateSnapshot Step(const CharacterStateContext& context);
   CharacterStateSnapshot Evaluate(const CharacterStateContext& context);
   void Reset(double x = 0, double y = 0, const std::string& facing = "");
+  void ForceState(const std::string& state, const std::string& previous_state);
   const std::string& ActiveForm() const { return active_form_; }
   const nlohmann::json& ActiveDefinition() const;
   const CharacterStateSnapshot& Snapshot() const { return machine_->Snapshot(); }

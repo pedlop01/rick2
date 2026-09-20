@@ -83,6 +83,19 @@ void Trigger::TriggerStep(int _x, int _y, int _width, int _height,
   if ((_state == CHAR_STATE_DYING) || (_state == CHAR_STATE_DEAD))
     return;
 
+  if (continuous_point) {
+    if (PointInInclusiveZone(_x, _y, x, y, width, height) &&
+        DoesTriggerFaceMatch(action_face, _face) && gameplay_program) {
+      bool matches = true;
+      if (gameplay_definition.contains("conditions"))
+        for (const auto& condition : gameplay_definition.at("conditions"))
+          if (!gameplay_program->Matches(condition)) matches = false;
+      if (matches && gameplay_definition.contains("actions"))
+        for (const auto& action : gameplay_definition.at("actions")) gameplay_program->Execute(action);
+    }
+    return;
+  }
+
   if (!trigger_targets) {
     //printf("[Trigger %d] No trigger target. In analysis!\n", id);
 

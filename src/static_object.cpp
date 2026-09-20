@@ -27,3 +27,5 @@ void StaticObject::StaticObjectStep() {
       AnimationForState(state)->AnimStep();
   }
 }
+
+void StaticObject::RestartAnimation() { AnimationForState(state)->ResetAnim(); }

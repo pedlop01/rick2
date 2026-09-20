@@ -15,6 +15,7 @@ int main() {
   const PlayerControllerConfig default_controller =
       GetRuntimePlayerControllerConfig();
   assert(default_controller.run_speed == 2.0f);
+  assert(default_controller.air_control);
   assert(default_controller.collision_width == 13);
   const nlohmann::json& map = GetLevelMap();
   assert(map.at("width").get<int>() == 160);
@@ -28,6 +29,7 @@ int main() {
   assert(GetDisplayConfig().width == 1280);
   assert(GetCameraConfig().height == 200);
   assert(GetInitialMusic() == 0);
+  assert(!GetInitialMusicLoop());
 
   nlohmann::json reordered;
   {
@@ -37,6 +39,10 @@ int main() {
   nlohmann::json& player_states =
       reordered["definitions"]["characters/rick"]["states"];
   std::reverse(player_states.begin(), player_states.end());
+  const int tile_count = reordered["map"]["tileset"]["tileCount"].get<int>();
+  reordered["map"]["layers"]["collisions"][0] = tile_count + 5;
+  reordered["map"]["layers"]["collisions"][1] = tile_count + 6;
+  reordered["audio"]["playback"]["initialLoop"] = true;
   const char* reordered_file = "/tmp/rick2-reordered-states.json";
   {
     std::ofstream output(reordered_file);
@@ -44,9 +50,25 @@ int main() {
   }
   LoadLevelPackage(reordered_file);
   assert(GetAnimationDefinition("characters/rick").at("states").front().at("id") == 8);
+  assert(GetInitialMusicLoop());
+
+  nlohmann::json invalid_collision = reordered;
+  invalid_collision["map"]["layers"]["collisions"][0] = tile_count + 7;
+  const char* invalid_collision_file = "/tmp/rick2-invalid-collision.json";
+  {
+    std::ofstream output(invalid_collision_file);
+    output << invalid_collision;
+  }
+  bool invalid_collision_failed = false;
+  try { LoadLevelPackage(invalid_collision_file); }
+  catch (const DataLoadError& error) {
+    invalid_collision_failed = std::string(error.what()).find("GID outside range") !=
+                               std::string::npos;
+  }
+  assert(invalid_collision_failed);
 
   reordered["runtimeProfile"] = {
-      {"controller", {{"runSpeed", 4}, {"collisionWidth", 9},
+      {"controller", {{"runSpeed", 4}, {"airControl", false}, {"collisionWidth", 9},
                       {"jumpHeight", 48}, {"climbSpeed", 1.5}}},
       {"capabilities", {{"bomb", false}}},
       {"actionBindings", {{"up", "hitting"}, {"down", nullptr}}},
@@ -83,6 +105,7 @@ int main() {
   const PlayerControllerConfig custom_controller =
       GetRuntimePlayerControllerConfig();
   assert(custom_controller.run_speed == 4.0f);
+  assert(!custom_controller.air_control);
   assert(custom_controller.collision_width == 9);
   assert(custom_controller.jump_height == 48);
   assert(custom_controller.climb_speed == 1.5f);
@@ -141,6 +164,7 @@ int main() {
   std::remove(reordered_file);
   std::remove(duplicate_file);
   std::remove(incompatible_units_file);
+  std::remove(invalid_collision_file);
 
   LoadLevelPackage("levels/level1/level.json");
   bool failed = false;

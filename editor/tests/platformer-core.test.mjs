@@ -6,18 +6,21 @@ test("the default controller preserves the level-1 Rick profile", () => {
   const config = playerControllerConfig();
   assert.deepEqual(config, RICK_PLAYER_CONTROLLER);
   assert.equal(config.runSpeed, 2);
+  assert.equal(config.airControl, true);
   assert.equal(config.standingHeight, 21);
   assert.equal(config.crouchingHeight, 15);
 });
 
 test("controller profiles are immutable, merge partial overrides and reject invalid geometry", () => {
-  const config = playerControllerConfig({ runSpeed: 4, collisionWidth: 8 });
+  const config = playerControllerConfig({ runSpeed: 4, airControl: false, collisionWidth: 8 });
   assert.equal(config.runSpeed, 4);
   assert.equal(config.collisionWidth, 8);
+  assert.equal(config.airControl, false);
   assert.equal(config.jumpHeight, RICK_PLAYER_CONTROLLER.jumpHeight);
   assert.equal(Object.isFrozen(config), true);
   assert.throws(() => playerControllerConfig({ crouchingHeight: 22 }), /crouchingHeight/);
   assert.throws(() => playerControllerConfig({ maximumVerticalSpeed: 0 }), /maximumVerticalSpeed/);
+  assert.throws(() => playerControllerConfig({ airControl: "no" }), /airControl/);
 });
 
 test("optional capabilities gate actions and bindings can remap their chord", () => {
@@ -25,6 +28,7 @@ test("optional capabilities gate actions and bindings can remap their chord", ()
   assert.equal(groundActionForInput(input, playerCapabilities(), playerActionBindings()), "shooting");
   assert.equal(groundActionForInput(input, playerCapabilities({ shoot: false }), playerActionBindings()), null);
   assert.equal(groundActionForInput(input, playerCapabilities(), playerActionBindings({ up: "hitting" })), "hitting");
+  assert.equal(groundActionForInput({ ...input, up: false }, playerCapabilities(), playerActionBindings({ neutral: "hitting" })), "hitting");
   assert.equal(groundActionForInput({ ...input, action: false }, playerCapabilities(), playerActionBindings()), null);
 });
 

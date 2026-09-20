@@ -3,6 +3,7 @@ import { playerActionBindings, playerCapabilities, playerControllerConfig, type 
 
 export interface CharacterFormDefinition {
   id: string;
+  visualScale?: number;
   definition?: string;
   combatProfile?: string;
   controller?: Partial<PlayerControllerConfig>;
@@ -13,6 +14,7 @@ export interface CharacterFormDefinition {
 export interface CharacterFormsDefinition { initialForm: string; forms: CharacterFormDefinition[]; }
 export interface ActiveCharacterForm {
   id: string;
+  visualScale: number;
   definition?: string;
   combatProfile?: string;
   controller: Readonly<PlayerControllerConfig>;
@@ -58,19 +60,22 @@ const nonEmpty = (value: string, path: string): void => { if (!value.trim()) thr
 export function validateCharacterForms(definition: CharacterFormsDefinition): void {
   nonEmpty(definition.initialForm, "initialForm"); if (!definition.forms.length) throw new Error("forms cannot be empty");
   const ids = new Set<string>();
-  for (const [index, form] of definition.forms.entries()) { nonEmpty(form.id, `forms[${index}].id`); if (ids.has(form.id)) throw new Error(`duplicate form: ${form.id}`); ids.add(form.id); validateCharacterStateMachine(form.stateMachine); playerControllerConfig(form.controller); playerCapabilities(form.capabilities); playerActionBindings(form.actionBindings); }
+  for (const [index, form] of definition.forms.entries()) { nonEmpty(form.id, `forms[${index}].id`); if (ids.has(form.id)) throw new Error(`duplicate form: ${form.id}`); if (form.visualScale !== undefined && (!Number.isFinite(form.visualScale) || form.visualScale <= 0)) throw new Error(`forms[${index}].visualScale must be positive`); ids.add(form.id); validateCharacterStateMachine(form.stateMachine); playerControllerConfig(form.controller); playerCapabilities(form.capabilities); playerActionBindings(form.actionBindings); }
   if (!ids.has(definition.initialForm)) throw new Error(`initial form does not exist: ${definition.initialForm}`);
   for (const form of definition.forms) for (const state of form.stateMachine.states) for (const transition of state.transitions) for (const action of transition.actions ?? []) if (action.type === "setForm" && !ids.has(action.form)) throw new Error(`form transition target does not exist: ${action.form}`);
 }
 
 export class CharacterForms {
-  readonly #forms: ReadonlyMap<string, CharacterFormDefinition>; #active: CharacterFormDefinition; #machine: CharacterStateMachine;
-  constructor(definition: CharacterFormsDefinition, facing: "left" | "right" = "right") { validateCharacterForms(definition); const clone = structuredClone(definition); this.#forms = new Map(clone.forms.map((form) => [form.id, form])); this.#active = this.#forms.get(clone.initialForm)!; this.#machine = new CharacterStateMachine(this.#active.stateMachine, facing); }
-  get active(): ActiveCharacterForm { return { id: this.#active.id, definition: this.#active.definition, combatProfile: this.#active.combatProfile, controller: playerControllerConfig(this.#active.controller), capabilities: playerCapabilities(this.#active.capabilities), actionBindings: playerActionBindings(this.#active.actionBindings) }; }
+  readonly #forms: ReadonlyMap<string, CharacterFormDefinition>; readonly #initialForm: string; #active: CharacterFormDefinition; #machine: CharacterStateMachine;
+  readonly #defaults: { controller: Partial<PlayerControllerConfig>; capabilities: Partial<PlayerCapabilities>; actionBindings: Partial<PlayerActionBindings> };
+  constructor(definition: CharacterFormsDefinition, facing: "left" | "right" = "right", defaults: { controller?: Partial<PlayerControllerConfig>; capabilities?: Partial<PlayerCapabilities>; actionBindings?: Partial<PlayerActionBindings> } = {}) { validateCharacterForms(definition); const clone = structuredClone(definition); this.#forms = new Map(clone.forms.map((form) => [form.id, form])); this.#initialForm = clone.initialForm; this.#active = this.#forms.get(this.#initialForm)!; this.#machine = new CharacterStateMachine(this.#active.stateMachine, facing); this.#defaults = { controller: defaults.controller ?? {}, capabilities: defaults.capabilities ?? {}, actionBindings: defaults.actionBindings ?? {} }; }
+  get active(): ActiveCharacterForm { return { id: this.#active.id, visualScale: this.#active.visualScale ?? 1, definition: this.#active.definition, combatProfile: this.#active.combatProfile, controller: playerControllerConfig({ ...this.#defaults.controller, ...this.#active.controller }), capabilities: playerCapabilities({ ...this.#defaults.capabilities, ...this.#active.capabilities }), actionBindings: playerActionBindings({ ...this.#defaults.actionBindings, ...this.#active.actionBindings }) }; }
   get state(): CharacterStateMachine["snapshot"] { return this.#machine.snapshot; }
   get activeState(): Readonly<import("./character-state-machine").CharacterStateDefinition> { return this.#machine.activeDefinition; }
   activate(id: string, context: Pick<CharacterStateContext, "x" | "y">): ActiveCharacterForm { const next = this.#forms.get(id); if (!next) throw new Error(`form does not exist: ${id}`); const facing = this.#machine.snapshot.facing; this.#active = next; this.#machine = new CharacterStateMachine(next.stateMachine, facing); this.#machine.reset(context); return this.active; }
+  reset(context: Pick<CharacterStateContext, "x" | "y">, facing: "left" | "right" = this.#machine.snapshot.facing): void { this.#active = this.#forms.get(this.#initialForm)!; this.#machine = new CharacterStateMachine(this.#active.stateMachine, facing); this.#machine.reset(context, facing); }
   resetState(context: Pick<CharacterStateContext, "x" | "y">, facing?: "left" | "right"): void { this.#machine.reset(context, facing); }
+  forceState(state: string, previousState: string): void { this.#machine.force(state, previousState); }
   advanceStateTick(): void { this.#machine.advanceTick(); }
   evaluate(context: CharacterStateContext): CharacterStateStep { const result = this.#machine.evaluate(context); if (result.requestedForm) this.activate(result.requestedForm, context); return result; }
   step(context: CharacterStateContext): CharacterStateStep { const result = this.#machine.step(context); if (result.requestedForm) this.activate(result.requestedForm, context); return result; }

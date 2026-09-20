@@ -102,4 +102,9 @@ export class EntityDocumentModel {
     for (const key of path.slice(0, -1)) { const next = target[key as keyof typeof target]; if (!next || typeof next !== "object") return false; target = next as Record<string, unknown> | unknown[]; }
     const last = path.at(-1)!; if (Array.isArray(target)) target[Number(last)] = value; else target[last] = value; return true;
   }
+  deletePrimitive(ref: EntityRef, path: readonly string[]): boolean {
+    const entity = this.entity(ref); if (!entity || !path.length) return false; let target: Record<string, unknown> | unknown[] = entity;
+    for (const key of path.slice(0, -1)) { const next = target[key as keyof typeof target]; if (!next || typeof next !== "object") return false; target = next as Record<string, unknown> | unknown[]; }
+    const last = path.at(-1)!; if (Array.isArray(target) || !(last in target)) return false; delete target[last]; return true;
+  }
 }

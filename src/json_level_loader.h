@@ -17,6 +17,7 @@ struct PlayerControllerConfig {
   int crouching_height;
   int collision_offset_x;
   float run_speed;
+  bool air_control;
   float minimum_vertical_speed;
   float maximum_vertical_speed;
   float vertical_acceleration;
@@ -34,6 +35,7 @@ struct PlayerGameplayConfig {
   bool shoot;
   bool bomb;
   bool hit;
+  int action_neutral;
   int action_up;
   int action_down;
   int action_horizontal;
@@ -89,4 +91,5 @@ const std::vector<std::string>& GetLevelEffectFiles();
 const ViewportConfig& GetDisplayConfig();
 const ViewportConfig& GetCameraConfig();
 int GetInitialMusic();
+bool GetInitialMusicLoop();
 #endif

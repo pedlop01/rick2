@@ -3,6 +3,10 @@
 #include <cassert>
 
 int main() {
+  assert(PointInInclusiveZone(719, 751, 719, 751, 336, 16));
+  assert(PointInInclusiveZone(1055, 767, 719, 751, 336, 16));
+  assert(!PointInInclusiveZone(718, 751, 719, 751, 336, 16));
+  assert(!PointInInclusiveZone(719, 768, 719, 751, 336, 16));
   assert(RectanglesOverlap(10, 10, 20, 20, 15, 15, 5, 5));
   assert(RectanglesOverlap(10, 10, 20, 20, 0, 15, 40, 5));
   assert(RectanglesOverlap(0, 15, 40, 5, 10, 10, 20, 20));

@@ -211,7 +211,7 @@ void Object::Init(const char* file,
                           "' referenced by '" + file + "'");
     }
     Animation* obj_anim = new Animation(
-        obj_bitmap, animation.at("frameDurationTicks").get<unsigned int>());
+        obj_bitmap, animation.at("frameDurationTicks").get<unsigned int>(), animation.value("frameDurationMs", 0u));
     int num_sprites = 0;
     // Traverse all sprites in the animation
     for (nlohmann::json::const_iterator sprite = animation.at("sprites").begin();

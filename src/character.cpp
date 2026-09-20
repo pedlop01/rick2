@@ -6,6 +6,9 @@
 #include "death_rules.h"
 #include "camera.h"
 #include "game_time.h"
+#include "player_spawn_rules.h"
+#include "tile_edge_collision_rules.h"
+#include "slope_collision_rules.h"
 
 // class constructor
 Character::Character() {
@@ -46,6 +49,7 @@ Character::Character() {
   can_jump = true;
   can_crouch = true;
   can_climb = true;
+  action_neutral_state = -1;
   action_up_state = CHAR_STATE_SHOOTING;
   action_down_state = CHAR_STATE_BOMBING;
   action_horizontal_state = CHAR_STATE_HITTING;
@@ -68,6 +72,7 @@ Character::Character() {
   initial_state = state;
 
   animation_scaling_factor = 1.0;
+  visual_scale = 1.0;
 
   killed = false;
 
@@ -110,6 +115,7 @@ Character::Character(const char* file) {
   can_jump = true;
   can_crouch = true;
   can_climb = true;
+  action_neutral_state = -1;
   action_up_state = CHAR_STATE_SHOOTING;
   action_down_state = CHAR_STATE_BOMBING;
   action_horizontal_state = CHAR_STATE_HITTING;
@@ -127,6 +133,7 @@ Character::Character(const char* file) {
   initial_speed_y = speed_y;
   initial_state = state;
   animation_scaling_factor = 1.0;
+  visual_scale = 1.0;
   killed = false;
   stop_move_block_col = false;
   camera = nullptr;
@@ -154,7 +161,7 @@ Character::Character(const char* file) {
                           "' referenced by '" + file + "'");
     }
     Animation* player_anim = new Animation(
-        anim_bitmap, animation.at("frameDurationTicks").get<unsigned int>());
+        anim_bitmap, animation.at("frameDurationTicks").get<unsigned int>(), animation.value("frameDurationMs", 0u));
     int num_sprites = 0;
     // Traverse all sprites in the animation
     for (nlohmann::json::const_iterator sprite = animation.at("sprites").begin();
@@ -231,11 +238,11 @@ void Character::Reset() {
 }
 
 void Character::SetKilled(World* map) {
-  if (type == CHARACTER_PLAYER && !damage_enabled) return;
+  if (type == CHARACTER_PLAYER && !IsDamageEnabled()) return;
   killed = true;
   initial_x         = map->GetCurrentCheckpoint()->GetPlayerX();
   initial_y         = map->GetCurrentCheckpoint()->GetPlayerY();
-  initial_direction = map->GetCurrentCheckpoint()->GetPlayerFace();
+  initial_direction = RespawnPlayerFace(*map->GetCurrentCheckpoint(), face);
 }
 
 int Character::GetCorrectedPosX() {
@@ -269,13 +276,16 @@ void Character::SetPosX(World* map, int x) {
 
   // Compute x and y corrections to draw world
   int tile_col_x;
-  int tile_col_left_y  = (pos_y + bb_y) / tile_height;
-  int tile_col_right_y = (pos_y + bb_y + character_height) / tile_height;
+  int tile_col_top_y = (pos_y + bb_y) / tile_height;
+  int tile_col_bottom_y = (pos_y + bb_y + character_height) / tile_height;
+  auto edgeBlocked = [&](int column) {
+    return IsTileEdgeBlocked(tile_col_top_y, tile_col_bottom_y,
+                             [&](int row) { return map->IsTileCollisionable(column, row); });
+  };
   if ( x > pos_x) {
     // Collision moving right
     tile_col_x = (pos_x + bb_x + desp_x + character_width)  / tile_width;
-    if ((!map->IsTileCollisionable(tile_col_x, tile_col_left_y)) &&
-        (!map->IsTileCollisionable(tile_col_x, tile_col_right_y))) {
+    if (!edgeBlocked(tile_col_x)) {
       // No collision
       pos_x = pos_x + desp_x;
     } else {
@@ -286,8 +296,7 @@ void Character::SetPosX(World* map, int x) {
   } else if ((x > 0) && (x < pos_x)) {
     // Collision moving left    
     tile_col_x = (pos_x + bb_x - desp_x) / tile_width;
-    if ((!map->IsTileCollisionable(tile_col_x, tile_col_left_y)) &&
-        (!map->IsTileCollisionable(tile_col_x, tile_col_right_y))) {
+    if (!edgeBlocked(tile_col_x)) {
       // No collision
       pos_x = pos_x - desp_x;
     } else {
@@ -311,16 +320,24 @@ void Character::SetPosY(World* map, int y, bool all) {
 
   // Compute x and y corrections to draw world
   int tile_col_y;
-  int tile_col_up_x   = (pos_x + bb_x) / tile_width;
-  int tile_col_down_x = (pos_x + bb_x +character_width) / tile_width;
+  int tile_col_left_x = (pos_x + bb_x) / tile_width;
+  int tile_col_right_x = (pos_x + bb_x + character_width) / tile_width;
+  auto edgeBlocked = [&](int row) {
+    return IsTileEdgeBlocked(tile_col_left_x, tile_col_right_x,
+                             [&](int column) { return all ? map->IsTileCollisionableDown(column, row)
+                                                           : map->IsTileCollisionable(column, row); });
+  };
   if (y > pos_y) {
+    int slope_y = pos_y;
+    if (all && SlopeStandingY(map, pos_x, y, desp_y + 1, &slope_y) &&
+        slope_y >= pos_y && slope_y <= y) {
+      pos_y = slope_y;
+      return;
+    }
     // Collision moving down
     tile_col_y = (pos_y + bb_y + desp_y + character_height)  / tile_height;
     // REVISIT: improve coding for "all"
-    if (((!all && (!map->IsTileCollisionable(tile_col_up_x, tile_col_y))) ||
-         ( all && (!map->IsTileCollisionableDown(tile_col_up_x, tile_col_y)))) &&
-        ((!all && (!map->IsTileCollisionable(tile_col_down_x, tile_col_y))) ||
-         ( all && !(map->IsTileCollisionableDown(tile_col_down_x, tile_col_y))))) {
+    if (!edgeBlocked(tile_col_y)) {
       // No collision
       pos_y = pos_y + desp_y;
     } else {      
@@ -332,10 +349,7 @@ void Character::SetPosY(World* map, int y, bool all) {
     // Collision moving up    
     tile_col_y = (pos_y + bb_y - desp_y) / tile_height;
     // REVISIT: improve coding for "all"
-    if (((!all && (!map->IsTileCollisionable(tile_col_up_x, tile_col_y))) ||
-         ( all && (!map->IsTileCollisionableDown(tile_col_up_x, tile_col_y)))) &&
-        ((!all && (!map->IsTileCollisionable(tile_col_down_x, tile_col_y))) ||
-         ( all && (!map->IsTileCollisionableDown(tile_col_down_x, tile_col_y))))) {
+    if (!edgeBlocked(tile_col_y)) {
       // No collision
       pos_y = pos_y - desp_y;
     } else {
@@ -447,6 +461,48 @@ void Character::GetCollisionsInternalWeightBoxExt(World* map, Colbox &mask_col) 
                               pos_y + bb_y + bb_height - 1);
 }
 
+bool Character::SlopeStandingY(World* map, int at_x, int at_y, int tolerance,
+                               int* standing_y) const {
+  const int tile_width = map->GetTilesetTileWidth();
+  const int tile_height = map->GetTilesetTileHeight();
+  if (tile_width <= 1 || tile_height <= 0 || bb_width <= 0 || bb_height <= 0)
+    return false;
+  const int feet_x[] = {at_x + bb_x, at_x + bb_x + bb_width - 1};
+  const int bottom = at_y + bb_y + bb_height;
+  bool found = false;
+  int closest = 0;
+  for (int side = 0; side < 2; ++side) {
+    const int column = feet_x[side] / tile_width;
+    const int rows[] = {bottom / tile_height, (bottom - 1) / tile_height,
+                        (bottom + tolerance) / tile_height};
+    for (unsigned int index = 0; index < sizeof(rows) / sizeof(rows[0]); ++index) {
+      if (column < 0 || column >= map->GetMapWidth() || rows[index] < 0 ||
+          rows[index] >= map->GetMapHeight()) continue;
+      const int tile = map->GetTile(column, rows[index])->GetType();
+      if ((side == 0 && tile != TILE_SLOPE_LEFT) ||
+          (side == 1 && tile != TILE_SLOPE_RIGHT)) continue;
+      int candidate = at_y;
+      if (!SlopeStandingPositionY(tile, column * tile_width,
+                                  rows[index] * tile_height,
+                                  tile_width, tile_height, feet_x[side], at_y,
+                                  bb_y, bb_height, tolerance, &candidate)) continue;
+      if (!found || abs(candidate - at_y) < abs(closest - at_y)) {
+        closest = candidate;
+        found = true;
+      }
+    }
+  }
+  if (found && standing_y) *standing_y = closest;
+  return found;
+}
+
+bool Character::SnapToSlope(World* map, int tolerance) {
+  int standing_y = pos_y;
+  if (!SlopeStandingY(map, pos_x, pos_y, tolerance, &standing_y)) return false;
+  pos_y = standing_y;
+  return true;
+}
+
 void Character::ComputeCollisions(World* map) {
   int down_left_x;
   int down_right_x;
@@ -495,13 +551,20 @@ void Character::ComputeCollisions(World* map) {
   overStairs = (heightColExt.GetLeftDownCol() == TILE_STAIRS_TOP) &&
                (heightColExt.GetRightDownCol() == TILE_STAIRS_TOP);
 
-  inFloor = inPlatform ||
-            (heightColExt.GetLeftDownCol() == TILE_COL) ||
-            (heightColExt.GetRightDownCol() == TILE_COL);
+  int slope_y = pos_y;
+  const bool on_slope = SlopeStandingY(map, pos_x, pos_y, 1, &slope_y);
+  const int support_row = (pos_y + bb_y + bb_height) /
+                          map->GetTilesetTileHeight();
+  const int support_first_column = (pos_x + bb_x) /
+                                   map->GetTilesetTileWidth();
+  const int support_last_column = (pos_x + bb_x + bb_width - 1) /
+                                  map->GetTilesetTileWidth();
+  const bool supported_by_tile = IsTileEdgeBlocked(
+      support_first_column, support_last_column,
+      [&](int column) { return map->IsTileCollisionableDown(column, support_row); });
+  inFloor = inPlatform || on_slope || supported_by_tile;
 
-  inAir = !inPlatform &&
-          IsBodyUnsupported(heightColExt.GetLeftDownCol(),
-                            heightColExt.GetRightDownCol());
+  inAir = !inPlatform && !on_slope && !supported_by_tile;
 
   inAirInt = ((heightColInt.GetLeftDownCol() == 0) &&
               (heightColInt.GetRightDownCol() == 0));
@@ -542,7 +605,7 @@ int Character::GroundActionState(Keyboard& keyboard) const {
   if (keyboard.PressedDown()) return action_down_state;
   if (keyboard.PressedLeft() || keyboard.PressedRight())
     return action_horizontal_state;
-  return -1;
+  return action_neutral_state;
 }
 
 bool Character::IsActionStatePressed(int action_state,
@@ -551,7 +614,10 @@ bool Character::IsActionStatePressed(int action_state,
   return (action_up_state == action_state && keyboard.PressedUp()) ||
          (action_down_state == action_state && keyboard.PressedDown()) ||
          (action_horizontal_state == action_state &&
-          (keyboard.PressedLeft() || keyboard.PressedRight()));
+          (keyboard.PressedLeft() || keyboard.PressedRight())) ||
+         (action_neutral_state == action_state && !keyboard.PressedUp() &&
+          !keyboard.PressedDown() && !keyboard.PressedLeft() &&
+          !keyboard.PressedRight());
 }
 
 bool Character::AlignToStairs(World* map) {
@@ -914,8 +980,10 @@ void Character::ComputeNextPosition(World* map) {
     case CHAR_STATE_CROUCHING:
       if (direction & CHAR_DIR_RIGHT) {
         SetPosX(map, GetPosX() + speed_x);
+        SnapToSlope(map, static_cast<int>(speed_x) + 1);
       } else if (direction & CHAR_DIR_LEFT) {
         SetPosX(map, GetPosX() - speed_x);
+        SnapToSlope(map, static_cast<int>(speed_x) + 1);
       }
       break;
     case CHAR_STATE_JUMPING:
@@ -1111,11 +1179,13 @@ void Character::CharacterStep(World* map, Keyboard& keyboard) {
       animation->ResetAnim();
     } else {
       animation->AnimStep();
+      if (animation->GetCurrentAnim() == 0 && animation->GetStepsInAnim() == 0)
+        OnAnimationCycleComplete();
     }
   }
 
   // Animation scaling factor is only used when dying
-  if (state == CHAR_STATE_DYING)
+  if (state == CHAR_STATE_DYING && scale_during_death)
     animation_scaling_factor += 0.1;
   else if (state == CHAR_STATE_DEAD)
     animation_scaling_factor = 1.0;
@@ -1156,7 +1226,7 @@ Animation* Character::AnimationForState(int state_id) const {
 }
 
 float Character::GetCurrentAnimationScalingFactor() {
-  return animation_scaling_factor;
+  return animation_scaling_factor * visual_scale;
 }
 
 std::string Character::GetCombatStateName() const {

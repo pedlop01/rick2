@@ -24,6 +24,10 @@ class Enemy : public Character {
     int behavior_ticks;
     bool behavior_started;
     float behavior_vertical_speed;
+    int respawn_ticks;
+    int patrol_anchor_x;
+    int patrol_anchor_y;
+    int patrol_y_direction;
 
   private:
     bool BoxWithinBox(int a_x, int a_y, int a_width, int a_height,
@@ -48,6 +52,7 @@ class Enemy : public Character {
     bool CheckCollisionPlayer(World* map, Character* player);
 
     void CharacterStep(World* map, Character* player);
+    void Reset() override;
 
     Colbox* GetWeightColExt();
     Colbox* GetHeightColExt();

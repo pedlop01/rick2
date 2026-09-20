@@ -37,3 +37,13 @@ test("semantic action conditions do not depend on physical input chords", () => 
   const machine = new CharacterStateMachine({ initialState: "idle", states: [{ id: "idle", transitions: [{ to: "attack", conditions: [{ type: "action", action: "melee", active: true }] }] }, { id: "attack", transitions: [] }] });
   assert.equal(machine.step({ ...context(), actions: new Set(["melee"]) }).state, "attack");
 });
+
+test("a historical no-key transition requires every control to be released", () => {
+  const controls = ["left", "right", "up", "down", "action"];
+  const machine = new CharacterStateMachine({ initialState: "walking", states: [
+    { id: "walking", transitions: [{ to: "idle", conditions: controls.map((control) => ({ type: "control", control, pressed: false })) }] },
+    { id: "idle", transitions: [] },
+  ] });
+  machine.step(context({ ...idleInput, down: true })); assert.equal(machine.snapshot.state, "walking");
+  machine.step(context()); assert.equal(machine.snapshot.state, "idle");
+});

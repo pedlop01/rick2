@@ -1,4 +1,4 @@
-import { WorkspacePreview, type MapLayerName, type PointerPosition, type ViewState } from "./workspace-preview";
+import { WorkspacePreview, type MapLayerName, type PointerPosition, type PreviewLayerName, type ViewState } from "./workspace-preview";
 import {
   createEmptyProject,
   createPlatformerDemoProject,
@@ -29,9 +29,11 @@ import { GameplayEditor } from "./gameplay-editor";
 import { createLevel, duplicateLevel, levelId, moveLevel, removeLevel, renameLevel, resizeLevelMap, setInitialLevel } from "./project-levels";
 
 const LAYERS = [
-  ["tiles", "Tiles"],
-  ["frontTiles", "Front tiles"],
-  ["collisions", "Collisions"],
+  ["tiles", "Tiles", true],
+  ["frontTiles", "Front tiles", true],
+  ["collisions", "Collisions", true],
+  ["backParallax", "Background parallax", false],
+  ["frontParallax", "Foreground parallax", false],
 ] as const;
 type EditTool = "pencil" | "eraser" | "fill" | "select" | "entity" | "asset" | "profile" | "states" | "gameplay";
 type ResizeCorner = "nw" | "ne" | "sw" | "se";
@@ -138,8 +140,8 @@ export function createEditorShell(host: HTMLElement): void {
   let recoveryWrite = Promise.resolve();
   const persistRecovery = (): void => { if (session.project) recoveryWrite = recoveryWrite.then(() => saveRecovery(session.project!)).catch(() => undefined); };
   const discardRecovery = (): void => { recoveryWrite = recoveryWrite.then(() => clearRecovery()).catch(() => undefined); };
-  const layerCheckboxes = new Map<MapLayerName, HTMLInputElement>();
-  const layerRows = new Map<MapLayerName, HTMLElement>();
+  const layerCheckboxes = new Map<PreviewLayerName, HTMLInputElement>();
+  const layerRows = new Map<PreviewLayerName, HTMLElement>();
   let activeLayer: MapLayerName = "tiles";
   let activeTool: EditTool = "pencil";
   let levelModel: LevelDocumentModel | null = null;
@@ -303,9 +305,9 @@ export function createEditorShell(host: HTMLElement): void {
     const entity = selectedEntity && entityModel?.entity(selectedEntity); if (!entity || !selectedEntity) return;
     inspector.innerHTML = ""; inspector.classList.remove("empty-inspector");
     const title = document.createElement("h3"); title.textContent = `${selectedEntity.group} · ${String(entity.id ?? selectedEntity.index)}`; inspector.append(title);
-    for (const field of primitiveFields(entity)) {
+    for (const field of primitiveFields(entity).filter((field) => field.path.join(".") !== "attributes.visualScale")) {
       const label = document.createElement("label"); label.className = "property-field"; label.title = field.path.join("."); const caption = document.createElement("span"); caption.textContent = readableDataPath(field.path);
-      const enumValues: Record<string, string[]> = { ini_state: ["stop", "moving"], pl_face: ["left", "right"], action: ["enters", "stays", "exits", "hits"], face: ["any", "left", "right"], ia_type: ["walker", "chaser"] };
+      const enumValues: Record<string, string[]> = { ini_state: ["stop", "moving"], pl_face: ["left", "right", "preserve"], activation: ["overlap", "topLeft", "disabled"], action: ["enters", "stays", "exits", "hits"], face: ["any", "left", "right"], ia_type: ["walker", "chaser"] };
       const key = field.path.at(-1)!; let choices = enumValues[key];
       if (key === "type") choices = field.path.includes("targets") ? ["platform", "laser", "hazard"] : ["horizontal", "vertical", "diagonal"];
       if (key === "direction") choices = field.path.includes("actions") ? ["stop", "left", "right", "up", "down", ...(selectedEntity.group === "hazards" ? ["deactivate"] : [])] : ["left", "right"];
@@ -320,6 +322,7 @@ export function createEditorShell(host: HTMLElement): void {
       });
       label.append(caption, input); inspector.append(label);
     }
+    if (selectedEntity.group === "items" || selectedEntity.group === "backgroundObjects") { const attributes = entity.attributes && typeof entity.attributes === "object" && !Array.isArray(entity.attributes) ? entity.attributes as EntityRecord : {}; const label = document.createElement("label"); label.className = "property-field"; label.title = "attributes.visualScale"; label.append(Object.assign(document.createElement("span"), { textContent: "Visual scale" })); const control = document.createElement("input"); control.type = "number"; control.min = "0"; control.step = "any"; control.placeholder = "1 (implicit)"; control.value = typeof attributes.visualScale === "number" ? String(attributes.visualScale) : ""; control.onchange = () => { const raw = control.value.trim(); if (!raw) entityModel!.deletePrimitive(selectedEntity!, ["attributes", "visualScale"]); else { const value = Number(raw); if (!Number.isFinite(value) || value <= 0) { control.setCustomValidity("Visual scale must be greater than zero"); control.reportValidity(); return; } control.setCustomValidity(""); entityModel!.setPrimitive(selectedEntity!, ["attributes", "visualScale"], value); } commitEntityChange("Entity visual scale changed"); renderEntityInspector(); }; label.append(control); inspector.append(label); }
   }
 
   type ProfileValue = string | number | boolean | null;
@@ -617,13 +620,13 @@ export function createEditorShell(host: HTMLElement): void {
   toolbar.addEventListener("keydown", (event) => { if (event.key === "Escape") { for (const menu of toolbar.querySelectorAll<HTMLDetailsElement>("details[open]")) menu.open = false; (event.target as HTMLElement).blur(); } });
   setTool("pencil");
 
-  for (const [id, label] of LAYERS) {
+  for (const [id, label, editable] of LAYERS) {
     const row = document.createElement("div");
     row.className = "layer-row";
     layerRows.set(id, row);
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = true;
+    checkbox.checked = editable;
     checkbox.disabled = true;
     checkbox.dataset.layer = id;
     checkbox.setAttribute("aria-label", `Show ${label} layer`);
@@ -632,8 +635,10 @@ export function createEditorShell(host: HTMLElement): void {
     const name = document.createElement("button");
     name.type = "button";
     name.textContent = label;
+    name.disabled = !editable;
     name.setAttribute("aria-pressed", String(id === activeLayer));
     name.addEventListener("click", () => {
+      if (!editable) return;
       activeLayer = id;
       for (const [layer, layerRow] of layerRows) layerRow.classList.toggle("active", layer === id);
       for (const [layer, layerRow] of layerRows) layerRow.querySelector("button")?.setAttribute("aria-pressed", String(layer === id));
@@ -644,7 +649,7 @@ export function createEditorShell(host: HTMLElement): void {
     layerList.append(row);
   }
 
-  const preview = new WorkspacePreview(canvas);
+  const preview = new WorkspacePreview(canvas, () => !runtimePreviewActive);
   const palette = new TilePalette(paletteHost);
   const assetEditor = new AssetEditor(assetControls, inspector);
   const stateEditor = new CharacterStateEditor(stateControls, inspector, stateGraph);
