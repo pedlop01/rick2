@@ -19,8 +19,8 @@ interface RuntimeTarget { key: string; delay: number; trigger: boolean; triggerC
 interface RuntimeTrigger { key: string; x: number; y: number; width: number; height: number; action: string; face: string; activation?: "continuousPoint"; recursive: boolean; wasIn: boolean; alreadyTriggered: boolean; firing: boolean; steps: number; previousAction: boolean; targets: RuntimeTarget[]; conditions: GameplayCondition[]; gameplayActions: GameplayAction[]; sequence?: string; }
 interface RuntimeCameraView { id: number; left: number; top: number; right: number; bottom: number; }
 interface TransientBody extends RuntimeBody { kind: "shoot" | "bomb"; vx: number; vy: number; age: number; fuse: number; explosion: number; exploding: boolean; bbX: number; bbY: number; bbWidth: number; bbHeight: number; contactBlockKey?: string; }
-type EnemyAIKind = "idle" | "patrol" | "chase" | "flyPatrol" | "verticalPatrol" | "xyPatrol" | "jumper" | "bossSequence";
-interface EnemyBody extends RuntimeBody { kind: "enemy"; spriteX: number; spriteY: number; bbX: number; bbY: number; direction: -1 | 1; speedX: number; speedY: number; verticalSpeed: number; deathSpeed: number; deathOriginY: number; deathAscending: boolean; iaType: EnemyAIKind; behavior: Record<string, unknown>; behaviorTicks: number; behaviorStarted: boolean; respawnTicks: number; startX: number; startY: number; startDirection: -1 | 1; patrolAnchorX: number; patrolAnchorY: number; patrolYDirection: -1 | 1; originX: number; originY: number; limitX: number; limitY: number; blockSteps: number; decisionLock: number; randomDecisions: boolean; randomness: number; randomState: number; climbing: boolean; animationState: "running" | "climbing" | "dying"; frozenTicks: number; dyingTicks: number; alive: boolean; combat?: CombatantState; combatActivation: number; combatState: string; }
+type EnemyAIKind = "idle" | "patrol" | "chase" | "flyPatrol" | "verticalPatrol" | "xyPatrol" | "jumper" | "proximityAttack" | "bossSequence";
+interface EnemyBody extends RuntimeBody { kind: "enemy"; spriteX: number; spriteY: number; bbX: number; bbY: number; direction: -1 | 1; speedX: number; speedY: number; verticalSpeed: number; deathSpeed: number; deathOriginY: number; deathAscending: boolean; iaType: EnemyAIKind; behavior: Record<string, unknown>; behaviorTicks: number; behaviorStarted: boolean; respawnTicks: number; startX: number; startY: number; startDirection: -1 | 1; patrolAnchorX: number; patrolAnchorY: number; patrolYDirection: -1 | 1; originX: number; originY: number; limitX: number; limitY: number; blockSteps: number; decisionLock: number; randomDecisions: boolean; randomness: number; randomState: number; climbing: boolean; animationState: "stop" | "running" | "climbing" | "dying"; frozenTicks: number; dyingTicks: number; alive: boolean; combat?: CombatantState; combatActivation: number; combatState: string; }
 interface EnemyStepContext { enemy: EnemyBody; player: PlayerSnapshot; spriteX: number; spriteY: number; insideChaseZone: boolean; decisionsBlocked: boolean; movementConsumed: boolean; }
 function record(value: unknown): Record<string, unknown> { return value && typeof value === "object" ? value as Record<string, unknown> : {}; }
 function number(value: unknown, fallback = 0): number { return typeof value === "number" ? value : fallback; }
@@ -70,6 +70,7 @@ export class PreviewRuntime {
       .register("verticalPatrol", (context) => this.#stepVerticalPatrol(context))
       .register("xyPatrol", (context) => this.#stepXYPatrol(context))
       .register("jumper", (context) => this.#stepJumper(context))
+      .register("proximityAttack", (context) => this.#stepProximityAttack(context))
       .register("bossSequence", (context) => this.#stepBossSequence(context));
     this.reset();
   }
@@ -300,6 +301,7 @@ export class PreviewRuntime {
     if (enemy.verticalSpeed !== 0 || !this.#enemyGrounded(enemy)) { const nextY = enemy.y + enemy.verticalSpeed, landing = this.#enemyLandingY(enemy, nextY); if (landing !== null && enemy.verticalSpeed >= 0) { enemy.y = landing; enemy.verticalSpeed = 0; } else { enemy.y = nextY; enemy.verticalSpeed += .4; } enemy.x += enemy.direction * horizontal; }
     enemy.spriteX = enemy.x - enemy.bbX; enemy.spriteY = enemy.y - enemy.bbY; enemy.frame += 1;
   }
+  #stepProximityAttack(context: EnemyStepContext): void { const { enemy, player } = context; context.movementConsumed = true; if (player.x <= enemy.spriteX - number(enemy.behavior.activationDistance)) { enemy.behaviorTicks = 0; enemy.behaviorStarted = false; enemy.animationState = "stop"; } else if (!enemy.behaviorStarted && enemy.behaviorTicks++ >= number(enemy.behavior.delayTicks)) { enemy.behaviorTicks = 0; enemy.behaviorStarted = true; enemy.animationState = "running"; this.startGameplaySequence(String(enemy.behavior.sequence)); } else if (enemy.behaviorStarted && ++enemy.behaviorTicks >= number(enemy.behavior.durationTicks)) { enemy.behaviorTicks = 0; enemy.behaviorStarted = false; enemy.animationState = "stop"; } enemy.frame += 1; }
   #stepBossSequence(context: EnemyStepContext): void { const { enemy } = context; context.movementConsumed = true; if (!enemy.behaviorStarted) { this.startGameplaySequence(String(enemy.behavior.sequence)); enemy.behaviorStarted = true; } enemy.frame += 1; }
   #stepEnemyRandomDecision({ enemy, decisionsBlocked }: EnemyStepContext): void {
     if (enemy.randomDecisions && !decisionsBlocked && this.#randomEnemyDecision(enemy)) { enemy.direction = enemy.direction > 0 ? -1 : 1; enemy.decisionLock = enemy.blockSteps; }
@@ -445,7 +447,7 @@ export class PreviewRuntime {
     if (facingEnemy) { enemy.frozenTicks = 100; return false; }
     return true;
   }
-  #enemyDisplayedState(enemy: EnemyBody): string { return enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : this.#bindings.enemyStates.running; }
+  #enemyDisplayedState(enemy: EnemyBody): string { return enemy.dyingTicks > 0 ? this.#bindings.enemyStates.dying : enemy.climbing ? this.#bindings.enemyStates.climbing : enemy.iaType === "proximityAttack" ? String(enemy.behaviorStarted ? enemy.behavior.attackAnimation : enemy.behavior.idleAnimation) : this.#bindings.enemyStates.running; }
   #visualFrame(definitionId: string, stateName: string, elapsedTicks: number): number {
     const definition = record(record(this.#source.definitions)[definitionId]), state = list(definition.states).map(record).find((candidate) => candidate.name === stateName), animation = record(state?.animation), durationMs = number(animation.frameDurationMs), duration = Math.max(1, number(animation.frameDurationTicks, 1)), count = list(animation.sprites).length;
     return count ? Math.floor(durationMs > 0 ? elapsedTicks * 20 / durationMs : elapsedTicks / duration) % count : 0;

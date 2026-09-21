@@ -91,8 +91,10 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                     self.assertEqual(controller["maximumVerticalSpeed"], 4)
                     self.assertEqual(controller["verticalAcceleration"], 0.1)
                     self.assertEqual(controller["climbSpeed"], 8)
+                    self.assertEqual(controller["ceilingEndsAscent"], False)
                 self.assertEqual(primary_controller["jumpHeight"], 184)
                 self.assertEqual(primary_controller["jumpDistanceX"], 184)
+                self.assertEqual(primary_controller["jumpAscentTicks"], 46)
                 self.assertEqual(level["runtimeProfile"]["actionBindings"],
                                  {"neutral": "hitting", "up": None,
                                   "down": None, "horizontal": None})
@@ -135,6 +137,7 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                 self.assertEqual(frog_walk["animation"]["frameDurationMs"], 85)
                 self.assertEqual(alternate_controller["jumpHeight"], 192)
                 self.assertEqual(alternate_controller["jumpDistanceX"], 192)
+                self.assertEqual(alternate_controller["jumpAscentTicks"], 48)
                 self.assertEqual(primary_controller["crouchingHeight"], primary_controller["standingHeight"])
                 self.assertEqual(alternate_controller["crouchingHeight"], alternate_controller["standingHeight"])
                 self.assertEqual(

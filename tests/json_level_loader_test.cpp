@@ -16,6 +16,8 @@ int main() {
       GetRuntimePlayerControllerConfig();
   assert(default_controller.run_speed == 2.0f);
   assert(default_controller.air_control);
+  assert(default_controller.ceiling_ends_ascent);
+  assert(default_controller.jump_ascent_ticks == -1);
   assert(default_controller.collision_width == 13);
   const nlohmann::json& map = GetLevelMap();
   assert(map.at("width").get<int>() == 160);
@@ -68,7 +70,7 @@ int main() {
   assert(invalid_collision_failed);
 
   reordered["runtimeProfile"] = {
-      {"controller", {{"runSpeed", 4}, {"airControl", false}, {"collisionWidth", 9},
+      {"controller", {{"runSpeed", 4}, {"airControl", false}, {"ceilingEndsAscent", false}, {"jumpAscentTicks", 46}, {"collisionWidth", 9},
                       {"jumpHeight", 48}, {"climbSpeed", 1.5}}},
       {"capabilities", {{"bomb", false}}},
       {"actionBindings", {{"up", "hitting"}, {"down", nullptr}}},
@@ -106,6 +108,8 @@ int main() {
       GetRuntimePlayerControllerConfig();
   assert(custom_controller.run_speed == 4.0f);
   assert(!custom_controller.air_control);
+  assert(!custom_controller.ceiling_ends_ascent);
+  assert(custom_controller.jump_ascent_ticks == 46);
   assert(custom_controller.collision_width == 9);
   assert(custom_controller.jump_height == 48);
   assert(custom_controller.climb_speed == 1.5f);

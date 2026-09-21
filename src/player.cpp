@@ -53,6 +53,8 @@ void Player::ApplyRuntimeControllerProfile() {
   speed_y_step = config.vertical_acceleration;
   climb_speed = config.climb_speed;
   jump_height = config.jump_height;
+  jump_ascent_ticks = config.jump_ascent_ticks;
+  ceiling_ends_ascent = config.ceiling_ends_ascent;
   jump_distance_x = GetRuntimeProfile().value("controller", nlohmann::json::object()).value("jumpDistanceX", -1);
   death_rise = config.death_rise;
   death_speed_multiplier = config.death_speed_multiplier;
@@ -86,7 +88,7 @@ void Player::ApplyFormProfile(const nlohmann::json& form) {
   speed_x_max = controller.value("runSpeed", speed_x_max); speed_x_min = speed_x_max; speed_x_step = 0;
   air_control = controller.value("airControl", air_control);
   speed_y_min = controller.value("minimumVerticalSpeed", speed_y_min); speed_y_max = controller.value("maximumVerticalSpeed", speed_y_max); speed_y_step = controller.value("verticalAcceleration", speed_y_step);
-  climb_speed = controller.value("climbSpeed", climb_speed); jump_height = controller.value("jumpHeight", jump_height); jump_distance_x = controller.value("jumpDistanceX", -1); death_rise = controller.value("deathRise", death_rise); death_speed_multiplier = controller.value("deathSpeedMultiplier", death_speed_multiplier); crouching_height = controller.value("crouchingHeight", crouching_height); hit_hold_ticks = controller.value("hitHoldTicks", hit_hold_ticks);
+  climb_speed = controller.value("climbSpeed", climb_speed); jump_height = controller.value("jumpHeight", jump_height); jump_distance_x = controller.value("jumpDistanceX", -1); jump_ascent_ticks = controller.value("jumpAscentTicks", -1); ceiling_ends_ascent = controller.value("ceilingEndsAscent", ceiling_ends_ascent); death_rise = controller.value("deathRise", death_rise); death_speed_multiplier = controller.value("deathSpeedMultiplier", death_speed_multiplier); crouching_height = controller.value("crouchingHeight", crouching_height); hit_hold_ticks = controller.value("hitHoldTicks", hit_hold_ticks);
   const nlohmann::json capabilities = form.value("capabilities", nlohmann::json::object());
   can_jump = capabilities.value("jump", can_jump); can_crouch = capabilities.value("crouch", can_crouch); can_climb = capabilities.value("climb", can_climb);
   const bool can_shoot = capabilities.value("shoot", true), can_bomb = capabilities.value("bomb", true), can_hit = capabilities.value("hit", true);
@@ -251,7 +253,7 @@ void Player::ComputeNextState(World* map, Keyboard& keyboard) {
   if (state == CHAR_STATE_RUNNING) direction = effective_keyboard.PressedLeft() ? CHAR_DIR_LEFT : effective_keyboard.PressedRight() ? CHAR_DIR_RIGHT : CHAR_DIR_STOP;
   else if (state == CHAR_STATE_STOP || state == CHAR_STATE_CROUCHING) { direction = CHAR_DIR_STOP; FixHorizontalDirection(effective_keyboard); }
   else if (state == CHAR_STATE_CLIMBING) direction = effective_keyboard.PressedUp() ? CHAR_DIR_UP : effective_keyboard.PressedDown() ? CHAR_DIR_DOWN : CHAR_DIR_STOP;
-  else if (state == CHAR_STATE_JUMPING) { if (old_state != CHAR_STATE_JUMPING) { direction = InitialJumpDirection(context.signals["grounded"], air_control, face); pos_x_chk = pos_x; pos_y_chk = pos_y; } else if ((direction & CHAR_DIR_UP) && (collisionHead || abs(pos_y_chk - pos_y) >= jump_height || (jump_distance_x >= 0 && abs(pos_x_chk - pos_x) > jump_distance_x))) direction = StartJumpFall(direction); if (air_control) FixHorizontalDirection(effective_keyboard); }
+  else if (state == CHAR_STATE_JUMPING) { if (old_state != CHAR_STATE_JUMPING) { direction = InitialJumpDirection(context.signals["grounded"], air_control, face); pos_x_chk = pos_x; pos_y_chk = pos_y; jump_ascent_elapsed = 0; } else if (direction & CHAR_DIR_UP) { ++jump_ascent_elapsed; if ((ceiling_ends_ascent && collisionHead) || abs(pos_y_chk - pos_y) >= jump_height || (jump_distance_x >= 0 && abs(pos_x_chk - pos_x) > jump_distance_x) || (jump_ascent_ticks >= 0 && jump_ascent_elapsed >= jump_ascent_ticks)) direction = StartJumpFall(direction); } if (air_control) FixHorizontalDirection(effective_keyboard); }
   else if (state == CHAR_STATE_SHOOTING) { direction = face; const bool created = map->CreateNewShoot(face == CHAR_DIR_RIGHT ? pos_x + 23 : pos_x - 10, pos_y + 8, face == CHAR_DIR_RIGHT ? OBJ_DIR_RIGHT : OBJ_DIR_LEFT); if (created && GetRuntimeAudioBindings().shot >= 0) sound_handler->PlaySound(GetRuntimeAudioBindings().shot, false); }
   else if (state == CHAR_STATE_BOMBING) { direction = effective_keyboard.PressedLeft() ? CHAR_DIR_LEFT : effective_keyboard.PressedRight() ? CHAR_DIR_RIGHT : CHAR_DIR_STOP; const bool created = map->CreateNewBomb(pos_x, pos_y, direction == CHAR_DIR_LEFT ? OBJ_DIR_LEFT : direction == CHAR_DIR_RIGHT ? OBJ_DIR_RIGHT : OBJ_DIR_STOP); if (created && GetRuntimeAudioBindings().bomb >= 0) sound_handler->PlaySound(GetRuntimeAudioBindings().bomb, false); }
   else if (state == CHAR_STATE_HITTING) direction = effective_keyboard.PressedLeft() ? CHAR_DIR_LEFT : effective_keyboard.PressedRight() ? CHAR_DIR_RIGHT : face;

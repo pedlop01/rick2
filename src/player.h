@@ -20,6 +20,9 @@ class Player : public Character {
     int form_animation_state = CHAR_STATE_STOP;
     bool air_control = true;
     int jump_distance_x = -1;
+    int jump_ascent_ticks = -1;
+    int jump_ascent_elapsed = 0;
+    bool ceiling_ends_ascent = true;
     bool scene_visible = true;
     bool scene_controllable = true;
     bool forced_state_pending = false;

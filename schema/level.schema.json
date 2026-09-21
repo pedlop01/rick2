@@ -151,6 +151,7 @@
       { "type": "object", "additionalProperties": false, "required": ["type", "distance"], "properties": { "type": { "const": "verticalPatrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "distance": { "type": "number", "exclusiveMinimum": 0 }, "initialDirection": { "enum": ["up", "down"] }, "loop": { "type": "boolean" }, "onLimit": { "enum": ["stop", "die"] }, "respawnDelayTicks": { "$ref": "#/$defs/positiveInteger" } } },
       { "type": "object", "additionalProperties": false, "required": ["type", "distanceX", "distanceY", "stepsPerTick", "initialDirectionX", "initialDirectionY"], "properties": { "type": { "const": "xyPatrol" }, "deathMotion": { "enum": ["arc", "stationary"] }, "distanceX": { "$ref": "#/$defs/positiveInteger" }, "distanceY": { "$ref": "#/$defs/positiveInteger" }, "stepsPerTick": { "$ref": "#/$defs/positiveInteger" }, "initialDirectionX": { "enum": ["left", "right"] }, "initialDirectionY": { "enum": ["up", "down"] }, "respawnDelayTicks": { "$ref": "#/$defs/positiveInteger" } } },
       { "type": "object", "additionalProperties": false, "required": ["type", "intervalTicks", "jumpHeight"], "properties": { "type": { "const": "jumper" }, "deathMotion": { "enum": ["arc", "stationary"] }, "intervalTicks": { "$ref": "#/$defs/positiveInteger" }, "jumpHeight": { "type": "number", "exclusiveMinimum": 0 }, "horizontalSpeed": { "type": "number", "minimum": 0 } } },
+      { "type": "object", "additionalProperties": false, "required": ["type", "activationDistance", "delayTicks", "durationTicks", "sequence", "idleAnimation", "attackAnimation"], "properties": { "type": { "const": "proximityAttack" }, "deathMotion": { "enum": ["arc", "stationary"] }, "activationDistance": { "type": "number", "exclusiveMinimum": 0 }, "delayTicks": { "$ref": "#/$defs/nonNegativeInteger" }, "durationTicks": { "$ref": "#/$defs/positiveInteger" }, "sequence": { "$ref": "#/$defs/nonEmptyString" }, "idleAnimation": { "$ref": "#/$defs/nonEmptyString" }, "attackAnimation": { "$ref": "#/$defs/nonEmptyString" } } },
       { "type": "object", "additionalProperties": false, "required": ["type", "sequence"], "properties": { "type": { "const": "bossSequence" }, "deathMotion": { "enum": ["arc", "stationary"] }, "sequence": { "$ref": "#/$defs/nonEmptyString" }, "repeat": { "type": "boolean" } } }
     ] },
     "runtimeProfile": {
@@ -174,6 +175,8 @@
             "climbSpeed": { "type": "number", "minimum": 0 },
             "jumpHeight": { "type": "number", "minimum": 0 },
             "jumpDistanceX": { "type": "number", "minimum": 0 },
+            "jumpAscentTicks": { "$ref": "#/$defs/positiveInteger" },
+            "ceilingEndsAscent": { "type": "boolean" },
             "deathRise": { "type": "number", "minimum": 0 },
             "deathSpeedMultiplier": { "type": "number", "exclusiveMinimum": 0 },
             "deathRespawnTicks": { "$ref": "#/$defs/positiveInteger" },

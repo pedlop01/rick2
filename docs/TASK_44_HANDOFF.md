@@ -1028,7 +1028,7 @@ regenerated archive SHA-256 is
 The frog correction was manually verified. The user also approved committing
 the complete phase-1 migration block before beginning phase 2.
 
-## Phase 2 complete conversion (implemented, awaiting final review)
+## Phase 2 complete conversion (accepted and committed)
 
 `tools/convert_camelot.py` now packages phases 1 and 2 as one deterministic
 campaign. Phase 2 preserves the historical 92x48 map, 453-tile aquatic
@@ -1066,3 +1066,49 @@ both schemas, campaign order, map dimensions and collision vocabulary,
 parallax, alternate form, checkpoints, complete enemy inventory, objects,
 sequence timing and objective. The combined loss report inventories every
 phase-2 source and retains only the existing historical state-transition loss.
+
+The user completed the native level and accepted its movement, map, enemies,
+pickup, delivery and exit flow. Commit `cc622c6` closes this block.
+
+## Phase 3 complete conversion (implemented, awaiting runtime review)
+
+The combined converter now appends phase 3 to the campaign. It preserves the
+236x24 cave map, its 22-column tileset and 735 solid cells. Its 81 legacy
+collision-3 cells only set the unused `stairs_right` signal in the historical
+runtime, so the converter keeps those foreground fence tiles traversable. The
+earlier physical-slope mapping caused the character to climb invisible stairs
+and was removed after native review. The masked cave background and foreground
+stalactites retain their back/front planes and historical scroll factors;
+`progre.wav` loops for the level.
+
+The level starts in the declared `primary` form with combat capabilities enabled and
+contains the complete six-checkpoint chain, both camera regions, all 16 enemy
+records and both Coca-Cola objects. The visible bottle is a fixed pickup; the
+second object is shown during the 50-tick delivery scene. The final objective
+requires that delivery to finish, and the two unconditional historical death
+zones emit the normal `killed` event as soon as the player enters them. This
+makes the water lethal on first contact. The stationary plant retains its sword
+immunity while remaining dangerous on contact.
+
+Camelot forms set the generic controller option `ceilingEndsAscent` to false.
+Their upward motion can therefore remain blocked against a ceiling while the
+fixed horizontal jump continues. `jumpAscentTicks` bounds this phase to 46
+ticks for the warrior and 48 for the frog, so a wall or enemy cannot leave the
+character suspended. Rick and projects without the options retain the existing behavior.
+Both native and web runtimes implement the same rule.
+
+`tests/camelot_phase3_conversion_test.py` checks deterministic bytes, schemas,
+campaign order, map geometry and exact collision counts, parallax planes,
+player form, checkpoints, enemies, objects, delivery timing and gated exit.
+The dragon remains fixed. Its historical composed animation is converted into
+five independently positioned fire segments: after the 250-tick proximity
+delay they grow over six frames and are hidden after the attack. This avoids
+misreading the internal flame components as dragon frames and moving the
+dragon itself. The delivery trigger and conditioned objective use the
+one-pixel strip immediately above the final floor (`y=703`), so the character
+must land before offering the bottle or completing the level.
+The loss report inventories every phase-3 input and explicitly records the
+remaining paired enemy activation/reset zones for enemies 7 and 16.
+
+The current regenerated archive SHA-256 is
+`31b3ed320e3663f557657c3596cbe892aad354cefb6c96dd97113dc19578f332`.

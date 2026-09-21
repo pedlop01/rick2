@@ -15,7 +15,7 @@ class CamelotPhase2ConversionTest(unittest.TestCase):
     manifest=json.loads(z.read('project.json')); level=json.loads(z.read('levels/phase-2/level.json'))
     jsonschema.Draft202012Validator(json.loads((ROOT/'schema/project.schema.json').read_text())).validate(manifest)
     jsonschema.Draft202012Validator(json.loads((ROOT/'schema/level.schema.json').read_text())).validate(level)
-    self.assertEqual(manifest['levels'],['levels/phase-1/level.json','levels/phase-2/level.json']); self.assertEqual(manifest['campaign']['order'],manifest['levels'])
+    self.assertEqual(manifest['levels'],['levels/phase-1/level.json','levels/phase-2/level.json','levels/phase-3/level.json']); self.assertEqual(manifest['campaign']['order'],manifest['levels'])
     self.assertEqual((level['map']['width'],level['map']['height']),(92,48)); self.assertEqual(set(level['map']['layers']['collisions']),{0,454})
     self.assertTrue(all(len(layer)==92*48 for layer in level['map']['layers'].values()))
     self.assertEqual(level['runtimeProfile']['characterForms']['initialForm'],'alternate'); self.assertFalse(level['runtimeProfile']['capabilities']['hit'])

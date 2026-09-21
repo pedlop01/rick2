@@ -15,7 +15,7 @@ export class WebPlayer {
   readonly #map: TileMapDocument; readonly #checkpoints: Checkpoint[]; readonly #forms: CharacterForms; #config: Readonly<PlayerControllerConfig>; #capabilities: Readonly<PlayerCapabilities>; #bindings: Readonly<PlayerActionBindings>;
   #spawn: { x: number; y: number; face: "left" | "right" | "preserve" }; #activeCheckpoint = -1;
   #x = 0; #y = 0; #face: "left" | "right" = "right";
-  #height = 0; #vy = 0; #ascending = false; #jumpOrigin = 0; #jumpOriginX = 0; #jumpDx = 0; #deadTicks = 0; #deathOriginY = 0; #forcedStatePending = false;
+  #height = 0; #vy = 0; #ascending = false; #jumpOrigin = 0; #jumpOriginX = 0; #jumpDx = 0; #jumpAscentTicks = 0; #deadTicks = 0; #deathOriginY = 0; #forcedStatePending = false;
   #keepMoving = false;
   constructor(level: EditableLevel, config: Partial<PlayerControllerConfig> = {}, capabilities: Partial<PlayerCapabilities> = {}, bindings: Partial<PlayerActionBindings> = {}, forms?: CharacterFormsDefinition) {
     this.#map = level.map;
@@ -71,7 +71,7 @@ export class WebPlayer {
     if (previousState !== "crouching" && this.#state === "crouching") { this.#height = config.crouchingHeight; this.#y += config.standingHeight - this.#height; }
     else if (previousState === "crouching" && this.#state !== "crouching") { this.#y -= config.standingHeight - this.#height; this.#height = config.standingHeight; }
     if (previousState !== "climbing" && this.#state === "climbing") { this.#ascending = false; this.#vy = 0; }
-    if (previousState !== "jumping" && this.#state === "jumping") { this.#ascending = groundedForState; this.#jumpOrigin = this.#y; this.#jumpOriginX = this.#x; this.#vy = this.#ascending ? config.maximumVerticalSpeed : config.minimumVerticalSpeed; this.#jumpDx = config.airControl ? input.right ? config.runSpeed : input.left ? -config.runSpeed : 0 : groundedForState ? this.#face === "right" ? config.runSpeed : -config.runSpeed : 0; }
+    if (previousState !== "jumping" && this.#state === "jumping") { this.#ascending = groundedForState; this.#jumpOrigin = this.#y; this.#jumpOriginX = this.#x; this.#jumpAscentTicks = 0; this.#vy = this.#ascending ? config.maximumVerticalSpeed : config.minimumVerticalSpeed; this.#jumpDx = config.airControl ? input.right ? config.runSpeed : input.left ? -config.runSpeed : 0 : groundedForState ? this.#face === "right" ? config.runSpeed : -config.runSpeed : 0; }
     if (this.#state === "crouching") {
       const dx = input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { this.#face = dx > 0 ? "right" : "left"; this.#moveX(dx, obstacles); } this.#activateCheckpoint(); return;
     }
@@ -85,7 +85,12 @@ export class WebPlayer {
     } else {
       const dx = this.#state === "jumping" && !config.airControl ? this.#jumpDx : input.right ? config.runSpeed : input.left ? -config.runSpeed : 0; if (dx) { if (config.airControl || this.#state !== "jumping") this.#face = dx > 0 ? "right" : "left"; const moved = this.#moveX(dx, obstacles); if (moved && this.#state !== "jumping") this.#snapToSlope(Math.abs(dx) + 1); }
       if (this.#state === "jumping") {
-        if (this.#ascending && (this.#jumpOrigin - this.#y >= config.jumpHeight || (config.jumpDistanceX !== undefined && Math.abs(this.#x - this.#jumpOriginX) > config.jumpDistanceX) || !this.#moveY(-this.#vy, platforms, obstacles))) this.#ascending = false;
+        if (this.#ascending) {
+          this.#jumpAscentTicks += 1;
+          const reachedLimit = this.#jumpOrigin - this.#y >= config.jumpHeight || (config.jumpDistanceX !== undefined && Math.abs(this.#x - this.#jumpOriginX) > config.jumpDistanceX) || (config.jumpAscentTicks !== undefined && this.#jumpAscentTicks >= config.jumpAscentTicks);
+          const movedUp = reachedLimit ? true : this.#moveY(-this.#vy, platforms, obstacles);
+          if (reachedLimit || (!movedUp && config.ceilingEndsAscent)) this.#ascending = false;
+        }
         if (!this.#ascending && !this.#moveY(this.#vy, platforms, obstacles) && this.declaredState !== "falling") this.#dispatchStateEvent("landed", input, platforms, obstacles);
         this.#vy = this.#ascending ? Math.max(config.minimumVerticalSpeed, this.#vy - config.verticalAcceleration) : Math.min(config.maximumVerticalSpeed, this.#vy + config.verticalAcceleration);
       }

@@ -23,6 +23,8 @@ struct PlayerControllerConfig {
   float vertical_acceleration;
   float climb_speed;
   int jump_height;
+  int jump_ascent_ticks;
+  bool ceiling_ends_ascent;
   int death_rise;
   float death_speed_multiplier;
   int death_respawn_ticks;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Convert the historical Camelot phases 1 and 2 into one deterministic project."""
-import argparse, copy, hashlib, json, math, re, tempfile
+import argparse, copy, hashlib, json, math, re, struct, tempfile, zlib
 from pathlib import Path, PurePosixPath
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 import jsonschema
@@ -8,6 +8,7 @@ import convert_camelot_phase1 as p1
 
 ROOT=p1.ROOT; DEFAULT_LEGACY_ROOT=p1.DEFAULT_LEGACY_ROOT; FIXED_DATE=p1.FIXED_DATE
 PHASE2_PATH='levels/phase-2/level.json'
+PHASE3_PATH='levels/phase-3/level.json'
 
 def phase_values(root, number):
     out={}
@@ -44,6 +45,30 @@ def parse_objects(path):
         records.append({'id':i,'direction':int(row[0]),'x':int(row[1]),'y':int(row[2]),'visible':bool(int(row[3])),'name':row[4],'definition':row[5]})
     if len(records)!=count: raise ValueError('Object count mismatch')
     return records
+
+def parse_enemy_records_dynamic(path):
+    lines=[x.split() for x in path.read_text().splitlines() if x.strip()]
+    if len(lines[0]) != 2 or lines[0][0].lower() not in ('numenemigos','num_enemies'):
+        raise ValueError('Invalid historical enemy header')
+    records=[]
+    for row in lines[1:]:
+        if len(row) != 11: raise ValueError('Invalid historical enemy record')
+        values=list(map(int,row[:10]))
+        records.append(dict(zip(('id','type','state','direction','verticalDirection','x','y','distanceX','distanceY','speed'),values),definition=row[10]))
+    if len(records) != int(lines[0][1]): raise ValueError('Enemy count mismatch')
+    return records
+
+def archive_masked_flipped_crop(files, source, destination, x, y, width, height):
+    data=source.read_bytes(); offset=struct.unpack_from('<I',data,10)[0]; image_width,image_height=struct.unpack_from('<ii',data,18); stride=(image_width*3+3)&~3
+    rows=[]
+    for output_y in range(height):
+        row=bytearray([0])
+        for output_x in range(width):
+            source_x=x+width-1-output_x; source_y=abs(image_height)-1-(y+output_y) if image_height>0 else y+output_y; start=offset+source_y*stride+source_x*3; blue,green,red=data[start:start+3]; alpha=0 if (red,green,blue)==(255,0,255) else 255; row.extend((red,green,blue,alpha))
+        rows.append(bytes(row))
+    def chunk(kind,payload): return struct.pack('>I',len(payload))+kind+payload+struct.pack('>I',zlib.crc32(kind+payload)&0xffffffff)
+    png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),9))+chunk(b'IEND',b'')
+    files[destination]=png; return '../../'+destination
 
 def build_phase2(root, files, phase1):
     phase=phase_values(root,2); world_path=p1.legacy_path(root,phase['world_description']); world,scrolls,triples,width,height=world_dynamic(world_path)
@@ -90,14 +115,74 @@ def build_phase2(root, files, phase1):
     level['objective']={'type':'reachZone','x':2390,'y':1100,'width':292,'height':400,'onComplete':'freeze','conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':True}]}
     return level
 
+def build_phase3(root, files, phase1):
+    phase=phase_values(root,3); world_path=p1.legacy_path(root,phase['world_description']); world,scrolls,triples,width,height=world_dynamic(world_path)
+    level=copy.deepcopy(phase1); level['id']='phase-3'; tile_count=453
+    tileset=p1.archive_asset(files,world_path.parent/world['file'],'assets/maps/phase-3-tileset.bmp')
+    # Legacy collision 3 only set `stairs_right`; the historical transition
+    # graph never consumed that signal, so these foreground fence cells were
+    # decorative and traversable rather than physical right-rising slopes.
+    level['map']={'width':width,'height':height,'tileWidth':32,'tileHeight':32,'tileset':{'image':tileset,'tileCount':tile_count,'columns':int(world['screen_tiles_x'])//32,'imageWidth':int(world['screen_tiles_x']),'imageHeight':int(world['screen_tiles_y'])},'layers':{'tiles':[0 if f else g for g,_,f in triples],'frontTiles':[g if f else 0 for g,_,f in triples],'collisions':[0 if c==3 else p1.collision_gid(c,tile_count) for _,c,_ in triples]}}
+    parallax=[]
+    for i,s in enumerate(scrolls):
+        image=p1.archive_masked_bmp(files,world_path.parent/s['source'],f'assets/maps/phase-3-parallax-{i}.png'); vx=s.get('vel_x',1); vy=s.get('vel_y',1)
+        parallax.append({'id':f'phase-3-layer-{i}','image':image,'plane':s['plane'],'factorX':1/vx if s['plane']=='back' else vx,'factorY':0 if s['plane']=='back' else vy,'repeatX':True,'repeatY':s['plane']=='front'})
+    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'cocacola-message','text':'A bottle was collected.','durationTicks':50}],'effects':[]}
+    music=p1.archive_asset(files,p1.legacy_path(root,phase['song']),'assets/music/phase-3.wav'); level['audio']['music']=[music]; level['audio']['initialMusic']=0; level['audio']['playback']['initialLoop']=True
+    level['runtimeProfile']['characterForms']['initialForm']='primary'; level['runtimeProfile']['capabilities']={'shoot':True,'bomb':True,'hit':True}
+    level['entities']={k:[] for k in ['platforms','items','backgroundObjects','blocks','hazards','lasers','triggers','enemies']}
+    level['entities']['checkpoints']=p1.parse_checkpoints(p1.legacy_path(root,phase['checkpoint_description']),'left')
+    level['entities']['cameraViews']=zones_dynamic(p1.legacy_path(root,phase['scrolls']))
+    definitions={'characters/player':level['definitions']['characters/player']}; enemies=[]; enemy_defs={}
+    for rec in parse_enemy_records_dynamic(p1.legacy_path(root,phase['enemies_description'])):
+        name=Path(rec['definition']).stem; key=f'enemies/{name}'
+        if key not in enemy_defs:
+            bitmap=p1.archive_asset(files,root/'data/characters'/f'{name}.bmp',f'assets/enemies/{name}.bmp'); enemy_defs[key],frame=p1.enemy_definition(root/'data/characters'/rec['definition'],bitmap,1); enemy_defs[key]['frameSize']=frame
+        frame=enemy_defs[key]['frameSize']; direction='left' if rec['direction']==1 else 'right'; speed=rec['speed']*4
+        if rec['type']==6: behavior={'type':'xyPatrol','distanceX':abs(rec['distanceX']),'distanceY':abs(rec['distanceY']),'stepsPerTick':speed,'initialDirectionX':direction,'initialDirectionY':'up' if rec['state']==2 else 'down','respawnDelayTicks':251}
+        elif rec['type']==7: behavior={'type':'verticalPatrol','distance':abs(rec['distanceY']),'initialDirection':'up' if rec['state']==2 else 'down','loop':False,'onLimit':'die','respawnDelayTicks':251}
+        elif rec['type']==8: behavior={'type':'proximityAttack','activationDistance':1024,'delayTicks':250,'durationTicks':90,'sequence':'dragon-fire','idleAnimation':'CHAR_STATE_STOP','attackAnimation':'CHAR_STATE_RUNNING'}
+        elif rec['type']==4 or rec['distanceX']==0: behavior={'type':'idle'}
+        else: behavior={'type':'flyPatrol','axis':'horizontal','distance':abs(rec['distanceX']),'phaseTicks':max(1,math.ceil(abs(rec['distanceX'])/speed)),'initialDirection':direction}
+        behavior['deathMotion']='stationary'
+        enemies.append({'id':rec['id'],'x':rec['x'],'y':rec['y'],'bb_x':0,'bb_y':0,'bb_width':frame['width']*4,'bb_height':frame['height']*4,'direction':direction,'speed_x':speed,'speed_y':speed if rec['type'] in (6,7) else 0,'definition':key,'visualScale':4,'combatProfile':f'phase3-enemy-{rec["id"]}','behavior':behavior})
+    for d in enemy_defs.values(): d.pop('frameSize',None)
+    dragon_bitmap=enemy_defs['enemies/dragon']['states'][0]['animation']['bitmap']; closed={'x':1,'y':1,'width':88,'height':56}; opened={'x':90,'y':1,'width':88,'height':56}
+    for state in enemy_defs['enemies/dragon']['states']:
+        state['animation']={'bitmap':dragon_bitmap,'frameDurationTicks':15,'sprites':[closed if state['name']=='CHAR_STATE_STOP' else opened]}
+    definitions.update(enemy_defs); level['entities']['enemies']=enemies
+    bitmap=p1.archive_asset(files,root/'data/objects/cocacola.bmp','assets/objects/cocacola.bmp'); objdef=p1.object_definition(root/'data/objects/cocacola.txt',bitmap); definitions['objects/cocacola']=objdef; sprite=objdef['states'][0]['animation']['sprites'][0]
+    for obj in parse_objects(p1.legacy_path(root,phase['objects'])):
+        attrs={'ini_x':obj['x'],'ini_y':obj['y'],'width':sprite['width']*4,'height':sprite['height']*4,'definition':'objects/cocacola','visualScale':4}
+        if obj['visible']: level['entities']['items'].append({'id':obj['id'],'attributes':{**attrs,'physics':'fixed'},'onCollect':[{'type':'setFlag','flag':'carrying-object','value':True},{'type':'setFlag','flag':'cocacola-picked','value':True},{'type':'showMessage','message':'cocacola-message'}]})
+        else: level['entities']['backgroundObjects'].append({'id':obj['id'],'attributes':{**attrs,'skip_num_anims':0,'visible':0}})
+    fire_bitmap=archive_masked_flipped_crop(files,root/'data/characters/dragon.bmp','assets/enemies/dragon-fire.png',179,1,24,56)
+    blank={'x':0,'y':0,'width':1,'height':1}; flame={'x':0,'y':0,'width':24,'height':56}
+    for segment in range(1,6):
+        key=f'objects/dragon-fire-{segment}'; sprites=[blank if frame<segment else flame for frame in range(6)]; animation={'bitmap':fire_bitmap,'frameDurationTicks':15,'sprites':sprites}
+        definitions[key]={'kind':'object','name':f'dragon-fire-{segment}','states':[{'id':0,'name':'OBJ_STATE_STOP','animation':animation},{'id':1,'name':'OBJ_STATE_MOVING','animation':animation},{'id':2,'name':'OBJ_STATE_DYING','animation':animation}]}
+        level['entities']['backgroundObjects'].append({'id':99+segment,'attributes':{'ini_x':7175-segment*96,'ini_y':512,'width':96,'height':224,'definition':key,'visualScale':4,'skip_num_anims':0,'visible':0}})
+    offer={'x':7014,'y':703,'width':123,'height':1,'recursive':0,'onehot':1,'action':'enters','face':'any'}
+    level['entities']['triggers']=[
+      {'id':1,'attributes':offer,'gameplay':{'conditions':[{'type':'flag','flag':'carrying-object','comparison':'equal','value':True},{'type':'flag','flag':'cocacola-picked','comparison':'equal','value':True},{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'sequence':'offer-cocacola'}},
+      {'id':2,'attributes':{'x':7250,'y':479,'width':299,'height':279,'recursive':1,'onehot':0,'action':'enters','face':'any'},'gameplay':{'conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'actions':[{'type':'emitEvent','event':'killed'}]}},
+      {'id':3,'attributes':{'x':4168,'y':581,'width':152,'height':153,'recursive':1,'onehot':0,'action':'enters','face':'any'},'gameplay':{'actions':[{'type':'emitEvent','event':'killed'}]}},
+    ]
+    level['definitions']=definitions
+    level['combat']['profiles']=[p for p in level['combat']['profiles'] if p['id'].startswith('player-')]+[{'id':f'phase3-enemy-{e["id"]}','faction':'enemies','maxHealth':1,'hurtboxes':[{'id':'body','x':0,'y':0,'width':e['bb_width'],'height':e['bb_height']}],'attacks':[{'id':'contact','states':['CHAR_STATE_RUNNING','CHAR_STATE_STOP'],'x':0,'y':0,'width':e['bb_width'],'height':e['bb_height'],'damageType':'contact','damage':1,'hitOnce':False}],**({'guards':[{'id':'sword-immunity','states':['CHAR_STATE_RUNNING','CHAR_STATE_STOP'],'x':0,'y':0,'width':e['bb_width'],'height':e['bb_height'],'damageTypes':['contact'],'facingOnly':False}]} if e['definition']=='enemies/planta' else {})} for e in enemies]
+    fire_steps=[{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':id,'visible':True,'restartAnimation':True}} for id in range(100,105)]+[{'type':'wait','ticks':90}]+[{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':id,'visible':False}} for id in range(100,105)]
+    level['gameplay']={'flags':[{'id':'carrying-object','type':'boolean','initial':False},{'id':'cocacola-picked','type':'boolean','initial':False},{'id':'offered-object','type':'boolean','initial':False}],'events':[],'sequences':[{'id':'offer-cocacola','steps':[{'type':'action','action':{'type':'setPlayerMode','visible':True,'controllable':False}},{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':1,'visible':True,'restartAnimation':True}},{'type':'wait','ticks':50},{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':1,'visible':False}},{'type':'action','action':{'type':'setFlag','flag':'carrying-object','value':False}},{'type':'action','action':{'type':'setFlag','flag':'offered-object','value':True}},{'type':'action','action':{'type':'setPlayerMode','visible':True,'controllable':True}}]},{'id':'dragon-fire','steps':fire_steps}]}
+    level['objective']={'type':'reachZone','x':7014,'y':703,'width':123,'height':1,'onComplete':'freeze','conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':True}]}
+    return level
+
 def convert(legacy_root, output):
     legacy_root=legacy_root.resolve()
     with tempfile.TemporaryDirectory() as td:
         phase1_archive=Path(td)/'phase1.rick2-project'; p1.convert(legacy_root,phase1_archive)
         with ZipFile(phase1_archive) as z: files={n:z.read(n) for n in z.namelist()}; phase1=json.loads(files[p1.LEVEL_PATH]); report=json.loads(files['loss-report.json'])
-    phase2=build_phase2(legacy_root,files,phase1)
-    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':[p1.LEVEL_PATH,PHASE2_PATH],'campaign':{'order':[p1.LEVEL_PATH,PHASE2_PATH],'unlockRules':[{'level':p1.LEVEL_PATH,'requiresCompleted':[]},{'level':PHASE2_PATH,'requiresCompleted':[p1.LEVEL_PATH]}]}}
-    files['project.json']=p1.json_bytes(manifest); files['game.json']=p1.json_bytes({'formatVersion':1,'kind':'rick2.game','initialLevel':p1.LEVEL_PATH}); files[PHASE2_PATH]=p1.json_bytes(phase2)
+    phase2=build_phase2(legacy_root,files,phase1); phase3=build_phase3(legacy_root,files,phase1)
+    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH],'campaign':{'order':[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH],'unlockRules':[{'level':p1.LEVEL_PATH,'requiresCompleted':[]},{'level':PHASE2_PATH,'requiresCompleted':[p1.LEVEL_PATH]},{'level':PHASE3_PATH,'requiresCompleted':[PHASE2_PATH]}]}}
+    files['project.json']=p1.json_bytes(manifest); files['game.json']=p1.json_bytes({'formatVersion':1,'kind':'rick2.game','initialLevel':p1.LEVEL_PATH}); files[PHASE2_PATH]=p1.json_bytes(phase2); files[PHASE3_PATH]=p1.json_bytes(phase3)
     phase2_sources=[
       'data/levels/phase2.txt','data/maps/world2_transparencia.txt','data/maps/world2_transparencia.bmp',
       'data/maps/fondo_agua.bmp','data/maps/fondo_agua2.bmp','data/characters/enemies_phase2.txt',
@@ -106,16 +191,19 @@ def convert(legacy_root, output):
       'data/levels/scroll_zones_phase2.txt','data/music/roki.wav',
     ]
     phase2_sources += [f'data/characters/{name}.{ext}' for name in ['bombolles2','pez_azul','caballito_mar','medusa','erizo_mar','pez_rosa','pez_amarillo','pez_verde'] for ext in ['txt','bmp']]
+    phase2_sources += ['data/levels/phase3.txt','data/maps/world3_transparencia.txt','data/maps/world3_transparencia.bmp','data/maps/cueva.bmp','data/maps/estalactitas.bmp','data/characters/enemies_phase3.txt','data/checkpoints/checkpoints_fase3.txt','data/scripts/phase3.txt','data/objects/objects_phase3.txt','data/objects/cocacola.txt','data/objects/cocacola.bmp','data/machinimia/phase3.txt','data/levels/scroll_zones_phase3.txt','data/music/progre.wav']
+    phase2_sources += [f'data/characters/{name}.{ext}' for name in ['planta','hipopotamo','bolita','bombolla','buho','arana','fuego','estrellita','dragon'] for ext in ['txt','bmp']]
     known={entry['path'] for entry in report['inputs']}
     report['inputs'] += [{'path':name,'sha256':hashlib.sha256((legacy_root/name).read_bytes()).hexdigest()} for name in phase2_sources if name not in known]
     report['inputs'].sort(key=lambda entry:entry['path'])
+    report['losses'].append({'code':'PHASE3_ENEMY_RESET_SCRIPT_DEFERRED','detail':'Phase 3 zones that reset and toggle enemies 7 and 16 remain deferred; the dragon delayed proximity advance is preserved.'})
     report['losses']=sorted(report['losses'],key=lambda x:x['code']); files['loss-report.json']=p1.json_bytes(report)
-    p1.validate(manifest,phase1,files); p1.validate(manifest,phase2,files)
+    p1.validate(manifest,phase1,files); p1.validate(manifest,phase2,files); p1.validate(manifest,phase3,files)
     output.parent.mkdir(parents=True,exist_ok=True)
     with ZipFile(output,'w') as z:
         for name,data in sorted(files.items()): info=ZipInfo(name,FIXED_DATE); info.compress_type=ZIP_DEFLATED; info.external_attr=0o100644<<16; z.writestr(info,data)
     return report
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--legacy-root',type=Path,default=DEFAULT_LEGACY_ROOT); ap.add_argument('--output',type=Path,default=ROOT/'build/camelot.rick2-project'); args=ap.parse_args(); report=convert(args.legacy_root,args.output); print(f'Created {args.output} with phases 1-2 and {len(report["losses"])} reported losses')
+    ap=argparse.ArgumentParser(); ap.add_argument('--legacy-root',type=Path,default=DEFAULT_LEGACY_ROOT); ap.add_argument('--output',type=Path,default=ROOT/'build/camelot.rick2-project'); args=ap.parse_args(); report=convert(args.legacy_root,args.output); print(f'Created {args.output} with phases 1-3 and {len(report["losses"])} reported losses')
 if __name__=='__main__': main()

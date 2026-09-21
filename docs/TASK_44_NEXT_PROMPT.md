@@ -1,3 +1,4 @@
+<!-- Replaced by the current phase-3 handoff below. -->
 Continúa la tarea 44 de `DEVELOPMENT_PLAN.md` en `/home/plopez/proj/rick2`,
 por un único bloque revisable. Lee `docs/TASK_44_HANDOFF.md`,
 `docs/TASK_44_PHASE1_CONVERSION.md` y `docs/CAMELOT_VALIDATION.md`.
@@ -47,3 +48,28 @@ Trabaja en un bloque revisable y no hagas un commit adicional sin autorización.
 
 
 La fase 2 se convierte ya mediante `tools/convert_camelot.py` como segundo nivel de una campaña conjunta. Antes de ampliar la fase 3, revisa `docs/TASK_44_HANDOFF.md` y `tests/camelot_phase2_conversion_test.py`; conserva el flujo de televisor, los 18 enemigos acuáticos, los cuatro checkpoints y los dos planos de agua. El bloque está implementado sin commit y espera la revisión global acordada.
+
+## Estado actual de fase 3
+
+Las fases 1 y 2 están aceptadas y comprometidas en `cc622c6`. La fase 3 está
+implementada en el árbol de trabajo y espera revisión nativa. Regenera el
+proyecto combinado con `python3 tools/convert_camelot.py --output
+/tmp/camelot.rick2-project`.
+
+La fase 3 contiene el mapa 236x24, 81 marcas históricas `stairs_right`, dos planos de
+parallax, seis checkpoints, dos cámaras, 16 enemigos y el flujo completo de
+recogida y entrega de Coca-Cola. Conserva la inmunidad a espada de la planta.
+La pérdida `PHASE3_ENEMY_RESET_SCRIPT_DEFERRED` cubre las zonas de
+reinicio/activación de los enemigos 7 y 16. El dragón queda fijo y su fuego se
+compone con cinco objetos animados tras la espera histórica de 250 ticks. La
+entrega y el objetivo requieren tocar la franja de suelo en `y=703`.
+Las marcas `stairs_right` se emiten sin colisión porque el grafo original no
+consume esa señal; convertirlas en rampas generaba escaleras invisibles.
+Las zonas de agua/muerte disparan `killed` al entrar. Las dos formas de Camelot
+usan `ceilingEndsAscent: false`: un techo bloquea el desplazamiento vertical,
+pero el salto conserva el ascenso hasta `jumpAscentTicks` (46 para el guerrero,
+48 para la rana), aunque tampoco pueda avanzar horizontalmente. Rick conserva
+el comportamiento previo por defecto.
+El archivo regenerado tiene SHA-256
+`31b3ed320e3663f557657c3596cbe892aad354cefb6c96dd97113dc19578f332`.
+No hagas commit sin autorización.

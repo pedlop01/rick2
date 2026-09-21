@@ -323,6 +323,8 @@ def definition_and_forms(animations):
             "climbSpeed": LEGACY_MOVEMENT_PER_TICK,
             "jumpHeight": 184 if form_id == "primary" else 192,
             "jumpDistanceX": 184 if form_id == "primary" else 192,
+            "jumpAscentTicks": 46 if form_id == "primary" else 48,
+            "ceilingEndsAscent": False,
         }, "capabilities": {"climb": form_id == "primary", "hit": form_id == "primary"},
             "combatProfile": "player-primary" if form_id == "primary" else "player-alternate",
             "stateMachine": {"initialState": "walking", "states": list(entries.values())}})

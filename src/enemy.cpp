@@ -138,6 +138,12 @@ void Enemy::CharacterStep(World* map, Character* player) {
     return;
   }
   if (behavior_type == "jumper") { ++behavior_ticks; int keys = direction == CHAR_DIR_LEFT ? KEY_LEFT : KEY_RIGHT; if (behavior_ticks >= behavior.at("intervalTicks").get<int>() && inFloor) { keys |= KEY_UP; behavior_ticks = 0; } jump_height = behavior.at("jumpHeight").get<int>(); speed_x_max = behavior.value("horizontalSpeed", speed_x_max); keyboard_enemy.SetKeys(keys); Character::CharacterStep(map, keyboard_enemy); return; }
+  if (behavior_type == "proximityAttack") {
+    if (player->GetPosX() <= pos_x - behavior.at("activationDistance").get<int>()) { behavior_ticks = 0; behavior_started = false; state = CHAR_STATE_STOP; }
+    else if (!behavior_started && behavior_ticks++ >= behavior.at("delayTicks").get<int>()) { behavior_ticks = 0; behavior_started = true; state = CHAR_STATE_RUNNING; map->StartGameplaySequence(behavior.at("sequence").get<std::string>()); }
+    else if (behavior_started && ++behavior_ticks >= behavior.at("durationTicks").get<int>()) { behavior_ticks = 0; behavior_started = false; state = CHAR_STATE_STOP; }
+    Animation* animation = AnimationForState(state); if (animation) animation->AnimStep(); return;
+  }
   if (behavior_type == "flyPatrol" || behavior_type == "verticalPatrol" || behavior_type == "bossSequence") {
     if (behavior_type == "bossSequence") { if (!behavior_started) { map->StartGameplaySequence(behavior.at("sequence").get<std::string>()); behavior_started = true; } }
     else if (behavior_type == "flyPatrol") { const int phase = behavior.value("phaseTicks", std::max(1, static_cast<int>(behavior.at("distance").get<double>() / std::max(1.0f, std::max(speed_x_max, speed_y_max))))), initial = behavior.value("initialDirection", "right") == "left" ? -1 : 1, sign = PatrolPhaseDirection(behavior_ticks, phase, initial); const std::string axis = behavior.at("axis").get<std::string>(); if (axis != "vertical") pos_x += sign * speed_x_max; if (axis != "horizontal") pos_y += sign * speed_y_max; direction = sign > 0 ? CHAR_DIR_RIGHT : CHAR_DIR_LEFT; face = direction; }

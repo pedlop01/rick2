@@ -12,6 +12,8 @@ export interface PlayerControllerConfig {
   climbSpeed: number;
   jumpHeight: number;
   jumpDistanceX?: number;
+  jumpAscentTicks?: number;
+  ceilingEndsAscent: boolean;
   deathRise: number;
   deathSpeedMultiplier: number;
   deathRespawnTicks: number;
@@ -79,6 +81,7 @@ export const RICK_PLAYER_CONTROLLER: Readonly<PlayerControllerConfig> = Object.f
   verticalAcceleration: 0.1,
   climbSpeed: 2,
   jumpHeight: 40,
+  ceilingEndsAscent: true,
   deathRise: 80,
   deathSpeedMultiplier: 2,
   deathRespawnTicks: 70,
@@ -143,6 +146,8 @@ export function playerControllerConfig(
   nonNegative(config.climbSpeed, "climbSpeed");
   nonNegative(config.jumpHeight, "jumpHeight");
   if (config.jumpDistanceX !== undefined) nonNegative(config.jumpDistanceX, "jumpDistanceX");
+  if (config.jumpAscentTicks !== undefined) positive(config.jumpAscentTicks, "jumpAscentTicks");
+  if (typeof config.ceilingEndsAscent !== "boolean") throw new Error("ceilingEndsAscent must be a boolean");
   nonNegative(config.deathRise, "deathRise");
   positive(config.deathSpeedMultiplier, "deathSpeedMultiplier");
   positive(config.deathRespawnTicks, "deathRespawnTicks");

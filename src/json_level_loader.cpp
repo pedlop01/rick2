@@ -319,7 +319,7 @@ const nlohmann::json& GetPlayerConfig() { return package_data.at("player"); }
 const CombatCatalog& GetCombatCatalog() { static const CombatCatalog empty; return combat_catalog ? *combat_catalog : empty; }
 PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   PlayerControllerConfig config = {23, 13, 21, 15, 5, 2.0f, true, 1.0f, 3.0f,
-                                   0.1f, 2.0f, 40, 80, 2.0f, 70, 20};
+                                   0.1f, 2.0f, 40, -1, true, 80, 2.0f, 70, 20};
   if (runtime_profile.empty() || !runtime_profile.contains("controller"))
     return config;
   const json& value = runtime_profile.at("controller");
@@ -335,6 +335,8 @@ PlayerControllerConfig GetRuntimePlayerControllerConfig() {
   config.vertical_acceleration = value.value("verticalAcceleration", config.vertical_acceleration);
   config.climb_speed = value.value("climbSpeed", config.climb_speed);
   config.jump_height = value.value("jumpHeight", config.jump_height);
+  config.jump_ascent_ticks = value.value("jumpAscentTicks", config.jump_ascent_ticks);
+  config.ceiling_ends_ascent = value.value("ceilingEndsAscent", config.ceiling_ends_ascent);
   config.death_rise = value.value("deathRise", config.death_rise);
   config.death_speed_multiplier = value.value("deathSpeedMultiplier", config.death_speed_multiplier);
   config.death_respawn_ticks = value.value("deathRespawnTicks", config.death_respawn_ticks);
@@ -346,7 +348,7 @@ PlayerControllerConfig GetRuntimePlayerControllerConfig() {
       config.minimum_vertical_speed <= 0 || config.maximum_vertical_speed <= 0 ||
       config.minimum_vertical_speed > config.maximum_vertical_speed ||
       config.vertical_acceleration <= 0 || config.climb_speed < 0 ||
-      config.jump_height < 0 || config.death_rise < 0 ||
+      config.jump_height < 0 || config.jump_ascent_ticks == 0 || config.jump_ascent_ticks < -1 || config.death_rise < 0 ||
       config.death_speed_multiplier <= 0 || config.death_respawn_ticks <= 0 ||
       config.hit_hold_ticks < 0)
     throw DataLoadError("Invalid runtime player controller profile");
