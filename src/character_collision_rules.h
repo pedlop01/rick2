@@ -36,4 +36,8 @@ inline bool ShouldExitStairsHorizontally(bool in_floor,
   return in_floor && (pressed_left || pressed_right);
 }
 
+inline bool ShouldStopDescendingStairs(bool in_floor, bool over_stairs) {
+  return in_floor && !over_stairs;
+}
+
 #endif // CHARACTER_COLLISION_RULES_H

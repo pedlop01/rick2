@@ -549,9 +549,6 @@ void Character::ComputeCollisions(World* map) {
                             heightColInt.GetLeftDownCol(),
                             heightColInt.GetRightDownCol());
 
-  overStairs = (heightColExt.GetLeftDownCol() == TILE_STAIRS_TOP) &&
-               (heightColExt.GetRightDownCol() == TILE_STAIRS_TOP);
-
   int slope_y = pos_y;
   const bool on_slope = SlopeStandingY(map, pos_x, pos_y, 1, &slope_y);
   const int support_row = (pos_y + bb_y + bb_height) /
@@ -560,6 +557,11 @@ void Character::ComputeCollisions(World* map) {
                                    map->GetTilesetTileWidth();
   const int support_last_column = (pos_x + bb_x + bb_width - 1) /
                                   map->GetTilesetTileWidth();
+  overStairs = IsTileEdgeBlocked(
+      support_first_column, support_last_column,
+      [&](int column) {
+        return map->GetTile(column, support_row)->GetType() == TILE_STAIRS_TOP;
+      });
   const bool supported_by_tile = IsTileEdgeBlocked(
       support_first_column, support_last_column,
       [&](int column) { return map->IsTileCollisionableDown(column, support_row); });
@@ -827,7 +829,7 @@ void Character::ComputeNextState(World* map, Keyboard& keyboard) {
             direction = CHAR_DIR_UP;
           }
         } else if (keyboard.PressedDown()) {
-          if (inFloor) {
+          if (ShouldStopDescendingStairs(inFloor, overStairs)) {
           // No in stairs, stop player because it was previously in stairs
             state = CHAR_STATE_STOP;
             direction = CHAR_DIR_STOP;
@@ -1012,12 +1014,12 @@ void Character::ComputeNextPosition(World* map) {
       break;
     case CHAR_STATE_CLIMBING:
       if (direction & CHAR_DIR_UP) {
-        // A partially aligned character can hit the ceiling beside the ladder.
-        // Recenter its collision box inside the complete ladder span first.
-        if (collisionHead) AlignToStairs(map);
-
+        // Enter the complete ladder span before vertical collision checks. A
+        // partially aligned box otherwise catches the wall beside the shaft.
+        AlignToStairs(map);
         SetPosY(map, GetPosY() - speed_y, false);
       } else if (direction & CHAR_DIR_DOWN) {
+        AlignToStairs(map);
         SetPosY(map, GetPosY() + speed_y, false);
       }
       if (direction & CHAR_DIR_RIGHT) {

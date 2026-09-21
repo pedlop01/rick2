@@ -24,10 +24,20 @@ int main() {
   // When the box is wider than a one-tile ladder, center it deterministically.
   assert(StairAlignmentTargetX(40, 10, 8, 5, 5) == 39);
 
+  // Rick level 1: the follower overlaps the two-column shaft by one pixel and
+  // must move fully inside it before attempting vertical movement.
+  assert(StairAlignmentTargetX(615, 10, 8, 77, 78) == 616);
+
   // Horizontal input exits CLIMBING only after reaching real floor.
   assert(ShouldExitStairsHorizontally(true, true, false));
   assert(ShouldExitStairsHorizontally(true, false, true));
   assert(!ShouldExitStairsHorizontally(true, false, false));
   assert(!ShouldExitStairsHorizontally(false, true, false));
+
+  // The ladder top remains floor support for landing, but must not eject a
+  // character that is actively descending through it.
+  assert(!ShouldStopDescendingStairs(true, true));
+  assert(ShouldStopDescendingStairs(true, false));
+  assert(!ShouldStopDescendingStairs(false, false));
   return 0;
 }

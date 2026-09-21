@@ -109,11 +109,12 @@ void Enemy::CharacterStep(World* map, Character* player) {
 
   if (state == CHAR_STATE_DYING) {
     Animation* animation = AnimationForState(CHAR_STATE_DYING);
-    if (behavior.value("deathMotion", std::string("arc")) == "stationary")
+    if (behavior.value("deathMotion", std::string("arc")) == "stationary") {
       animation->AnimStepOnce();
-    else
+      if (animation->CompletedLastAnim()) state = CHAR_STATE_DEAD;
+    } else {
       Character::CharacterStep(map, keyboard_enemy);
-    if (animation->CompletedLastAnim()) state = CHAR_STATE_DEAD;
+    }
     return;
   }
 

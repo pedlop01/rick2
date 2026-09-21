@@ -240,7 +240,19 @@ export class PreviewRuntime {
   #stepEnemy(enemy: EnemyBody): void {
     if (enemy.active === false) return;
     if (!enemy.alive) { const delay = number(enemy.behavior.respawnDelayTicks); if (delay > 0 && ++enemy.respawnTicks >= delay) this.#resetEnemyCycle(enemy); return; }
-    if (enemy.dyingTicks > 0) { if (enemy.behavior.deathMotion !== "stationary") { enemy.x += Math.max(1, enemy.speedX); if (enemy.deathAscending) { enemy.y -= enemy.deathSpeed; enemy.deathSpeed = Math.max(1, enemy.deathSpeed - .2); if (enemy.deathOriginY - enemy.y >= 40) enemy.deathAscending = false; } else { enemy.y += enemy.deathSpeed; enemy.deathSpeed = Math.min(Math.max(1, enemy.speedY) * 2, enemy.deathSpeed + .2); } enemy.spriteX = enemy.x - enemy.bbX; enemy.spriteY = enemy.y - enemy.bbY; } enemy.frame += 1; enemy.dyingTicks -= 1; if (enemy.dyingTicks === 0) { enemy.alive = false; enemy.respawnTicks = 0; } return; }
+    if (enemy.dyingTicks > 0) {
+      if (enemy.behavior.deathMotion === "stationary") {
+        enemy.frame += 1; enemy.dyingTicks -= 1;
+        if (enemy.dyingTicks === 0) { enemy.alive = false; enemy.respawnTicks = 0; }
+      } else {
+        enemy.x += Math.max(1, enemy.speedX);
+        if (enemy.deathAscending) { enemy.y -= enemy.deathSpeed; enemy.deathSpeed = Math.max(1, enemy.deathSpeed - .2); if (enemy.deathOriginY - enemy.y >= 40) enemy.deathAscending = false; }
+        else { enemy.y += enemy.deathSpeed; enemy.deathSpeed = Math.min(Math.max(1, enemy.speedY) * 2, enemy.deathSpeed + .2); }
+        enemy.spriteX = enemy.x - enemy.bbX; enemy.spriteY = enemy.y - enemy.bbY; enemy.frame += 1;
+        if (!enemy.deathAscending && enemy.y >= this.#cameraFrame.y + this.#cameraFrame.height) { enemy.dyingTicks = 0; enemy.alive = false; enemy.respawnTicks = 0; }
+      }
+      return;
+    }
     if (enemy.frozenTicks > 0) { enemy.frozenTicks -= 1; return; }
     const player = this.#player.snapshot, spriteX = enemy.x - enemy.bbX, spriteY = enemy.y - enemy.bbY;
     const insideChaseZone = enemy.limitX > 0 && enemy.limitY > 0 && player.x >= enemy.originX && player.x < enemy.originX + enemy.limitX && player.y >= enemy.originY && player.y < enemy.originY + enemy.limitY;
@@ -484,7 +496,7 @@ export class PreviewRuntime {
   #restingBlockAt(x: number, y: number, width: number, height: number): MovingBody | undefined { return this.#bodies.find((body) => body.visible && body.state === this.#bindings.objectStates.stop && body.traits.solid && x < body.x + body.width && x + width > body.x && y < body.y + body.height && y + height > body.y); }
   #applyExplosion(bomb: TransientBody): void { const x = bomb.x + bomb.bbX, y = bomb.y + bomb.bbY; for (const body of this.#bodies) if (body.visible && body.traits.destructible && ((body.traits.solid && body.key === bomb.contactBlockKey) || (x < body.x + body.width && x + bomb.bbWidth > body.x && y < body.y + body.height && y + bomb.bbHeight > body.y))) this.#destroyBody(body); const enemy = this.#enemyAt(x, y, bomb.bbWidth, bomb.bbHeight); if (enemy) this.#killEnemy(enemy); }
   #destroyBody(body: MovingBody): void { if (body.state !== this.#bindings.objectStates.stop || !body.traits.destructible) return; if (body.destructionMode === "escape") { body.state = this.#bindings.objectStates.moving; body.frame = 0; body.active = false; body.escapeRemaining = Math.max(1, number(record(this.#source.camera).width, 256)); return; } const duration = this.#animationDuration(String(body.definition ?? ""), this.#bindings.objectStates.dying, 1); if (body.destructionMode === "instant" || duration <= 1) { body.visible = false; return; } body.state = this.#bindings.objectStates.dying; body.frame = 0; body.active = false; body.wait = duration; }
-  #killEnemy(enemy: EnemyBody): void { enemy.animationState = "dying"; enemy.frame = 0; enemy.deathAscending = true; enemy.deathOriginY = enemy.y; enemy.deathSpeed = Math.max(1, enemy.speedY) * 2; enemy.dyingTicks = this.#animationDuration(String(enemy.definition ?? ""), this.#bindings.enemyStates.dying, 1); if (enemy.dyingTicks <= 1) enemy.alive = false; }
+  #killEnemy(enemy: EnemyBody): void { enemy.animationState = "dying"; enemy.frame = 0; enemy.deathAscending = true; enemy.deathOriginY = enemy.y; enemy.deathSpeed = Math.max(1, enemy.speedY) * 2; enemy.dyingTicks = enemy.behavior.deathMotion === "stationary" ? this.#animationDuration(String(enemy.definition ?? ""), this.#bindings.enemyStates.dying, 1) : 1; }
   #resetEnemyCycle(enemy: EnemyBody): void { enemy.x = enemy.startX + enemy.bbX; enemy.y = enemy.startY + enemy.bbY; enemy.spriteX = enemy.startX; enemy.spriteY = enemy.startY; enemy.direction = enemy.startDirection; enemy.patrolAnchorX = enemy.x; enemy.patrolAnchorY = enemy.y; enemy.patrolYDirection = enemy.behavior.initialDirectionY === "up" ? -1 : 1; enemy.frame = 0; enemy.behaviorTicks = 0; enemy.behaviorStarted = false; enemy.dyingTicks = 0; enemy.deathSpeed = 0; enemy.deathAscending = true; enemy.respawnTicks = 0; enemy.animationState = "running"; enemy.alive = true; enemy.combat?.reset(); enemy.combatState = ""; }
   #collectItems(): void { const player = this.#player.snapshot; if (player.state === "dead") return; const x = player.collisionX, y = player.collisionY; for (const body of this.#bodies) if (body.visible && body.state !== this.#bindings.objectStates.dying && body.traits.collectible && x < body.x + body.width && x + player.collisionWidth > body.x && y < body.y + body.height && y + player.collisionHeight > body.y) { const pickup = body.pickup ?? { mode: "instant", audioSlot: this.#bindings.audio.itemPickup, durationTicks: 0, riseSpeed: 0 }; this.#emitAudio(pickup.audioSlot); for (const action of body.onCollect ?? []) gameplayStates.get(this)!.state.execute(action); if (pickup.mode === "rise") { body.state = this.#bindings.objectStates.dying; body.frame = 0; body.active = false; body.wait = pickup.durationTicks; } else body.visible = false; } }
 }
