@@ -9,6 +9,7 @@ import convert_camelot_phase1 as p1
 ROOT=p1.ROOT; DEFAULT_LEGACY_ROOT=p1.DEFAULT_LEGACY_ROOT; FIXED_DATE=p1.FIXED_DATE
 PHASE2_PATH='levels/phase-2/level.json'
 PHASE3_PATH='levels/phase-3/level.json'
+PHASE4_PATH='levels/phase-4/level.json'
 
 def phase_values(root, number):
     out={}
@@ -31,7 +32,7 @@ def world_dynamic(path):
     rows=[re.findall(r'(\d+)\s+(\d+)\s+(\d+)',line) for line in body.splitlines() if line.strip()]
     if not rows or len({len(row) for row in rows})!=1: raise ValueError('Historical map is not rectangular')
     triples=[tuple(map(int,cell)) for row in rows for cell in row]
-    if any(c not in (0,1,2,3) or f not in (0,1) for _,c,f in triples): raise ValueError('Unsupported historical map cell')
+    if any(c not in (0,1,2,3) or f not in (0,1,2) for _,c,f in triples): raise ValueError('Unsupported historical map cell')
     return values,scrolls,triples,len(rows[0]),len(rows)
 
 def zones_dynamic(path):
@@ -175,14 +176,57 @@ def build_phase3(root, files, phase1):
     level['objective']={'type':'reachZone','x':7014,'y':703,'width':123,'height':1,'onComplete':'freeze','conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':True}]}
     return level
 
+def build_phase4(root, files, phase1):
+    phase=phase_values(root,4); world_path=p1.legacy_path(root,phase['world_description']); world,scrolls,triples,width,height=world_dynamic(world_path)
+    level=copy.deepcopy(phase1); level['id']='phase-4'; tile_count=(int(world['screen_tiles_x'])//32)*(int(world['screen_tiles_y'])//32)
+    tileset=p1.archive_asset(files,world_path.parent/world['file'],'assets/maps/phase-4-tileset.bmp')
+    level['map']={'width':width,'height':height,'tileWidth':32,'tileHeight':32,'tileset':{'image':tileset,'tileCount':tile_count,'columns':int(world['screen_tiles_x'])//32,'imageWidth':int(world['screen_tiles_x']),'imageHeight':int(world['screen_tiles_y'])},'layers':{'tiles':[0 if f else g for g,_,f in triples],'frontTiles':[g if f else 0 for g,_,f in triples],'collisions':[p1.collision_gid(c,tile_count) for _,c,_ in triples]}}
+    parallax=[]
+    for i,s in enumerate(scrolls):
+        image=p1.archive_masked_bmp(files,world_path.parent/s['source'],f'assets/maps/phase-4-parallax-{i}.png'); vx=s.get('vel_x',1); vy=s.get('vel_y',1)
+        parallax.append({'id':f'phase-4-layer-{i}','image':image,'plane':s['plane'],'factorX':1/vx if s['plane']=='back' else vx,'factorY':1/vy if s['plane']=='back' else vy,'repeatX':True,'repeatY':True})
+    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'telephone-message','text':'A telephone was collected.','durationTicks':50}],'effects':[]}
+    music=p1.archive_asset(files,p1.legacy_path(root,phase['song']),'assets/music/phase-4.wav'); level['audio']['music']=[music]; level['audio']['initialMusic']=0; level['audio']['playback']['initialLoop']=True
+    level['runtimeProfile']['characterForms']['initialForm']='primary'; level['runtimeProfile']['capabilities']={'shoot':True,'bomb':True,'hit':True}
+    level['entities']={k:[] for k in ['platforms','items','backgroundObjects','blocks','hazards','lasers','triggers','enemies']}
+    level['entities']['checkpoints']=p1.parse_checkpoints(p1.legacy_path(root,phase['checkpoint_description']),'left'); level['entities']['cameraViews']=zones_dynamic(p1.legacy_path(root,phase['scrolls']))
+    definitions={'characters/player':level['definitions']['characters/player']}; enemies=[]; enemy_defs={}
+    for rec in parse_enemy_records_dynamic(p1.legacy_path(root,phase['enemies_description'])):
+        name=Path(rec['definition']).stem; key=f'enemies/{name}'
+        if key not in enemy_defs:
+            bitmap=p1.archive_asset(files,root/'data/characters'/f'{name}.bmp',f'assets/enemies/{name}.bmp'); enemy_defs[key],frame=p1.enemy_definition(root/'data/characters'/rec['definition'],bitmap,1); enemy_defs[key]['frameSize']=frame
+        frame=enemy_defs[key]['frameSize']; direction='left' if rec['direction']==1 else 'right'; speed=rec['speed']*4
+        if rec['type']==6: behavior={'type':'xyPatrol','distanceX':abs(rec['distanceX']),'distanceY':abs(rec['distanceY']),'stepsPerTick':speed,'initialDirectionX':direction,'initialDirectionY':'up' if rec['state']==2 else 'down','respawnDelayTicks':251}
+        elif rec['type']==4 or rec['distanceX']==0: behavior={'type':'idle'}
+        else: behavior={'type':'flyPatrol','axis':'horizontal','distance':abs(rec['distanceX']),'phaseTicks':max(1,math.ceil(abs(rec['distanceX'])/speed)),'initialDirection':direction}
+        behavior['deathMotion']='stationary'
+        enemies.append({'id':rec['id'],'x':rec['x'],'y':rec['y'],'bb_x':0,'bb_y':0,'bb_width':frame['width']*4,'bb_height':frame['height']*4,'direction':direction,'speed_x':speed,'speed_y':speed if rec['type']==6 else 0,'definition':key,'visualScale':4,'combatProfile':f'phase4-enemy-{rec["id"]}','behavior':behavior})
+    for definition in enemy_defs.values(): definition.pop('frameSize',None)
+    definitions.update(enemy_defs); level['entities']['enemies']=enemies
+    bitmap=p1.archive_asset(files,root/'data/objects/telefono.bmp','assets/objects/telephone.bmp'); objdef=p1.object_definition(root/'data/objects/telefono.txt',bitmap); definitions['objects/telephone']=objdef; sprite=objdef['states'][0]['animation']['sprites'][0]
+    for obj in parse_objects(p1.legacy_path(root,phase['objects'])):
+        attrs={'ini_x':obj['x'],'ini_y':obj['y'],'width':sprite['width']*4,'height':sprite['height']*4,'definition':'objects/telephone','visualScale':4}
+        if obj['visible']: level['entities']['items'].append({'id':obj['id'],'attributes':{**attrs,'physics':'fixed'},'onCollect':[{'type':'setFlag','flag':'carrying-object','value':True},{'type':'setFlag','flag':'telephone-picked','value':True},{'type':'showMessage','message':'telephone-message'}]})
+        else: level['entities']['backgroundObjects'].append({'id':obj['id'],'attributes':{**attrs,'skip_num_anims':0,'visible':0}})
+    # The inactive telephone stands on the floor at y=704. Restrict delivery
+    # and completion to its top edge so the scene cannot finish in mid-air.
+    offer={'x':2483,'y':703,'width':127,'height':1,'recursive':0,'onehot':1,'action':'enters','face':'any'}
+    level['entities']['triggers']=[{'id':1,'attributes':offer,'gameplay':{'conditions':[{'type':'flag','flag':'carrying-object','comparison':'equal','value':True},{'type':'flag','flag':'telephone-picked','comparison':'equal','value':True},{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'sequence':'offer-telephone'}},{'id':2,'attributes':{'x':2533,'y':434,'width':147,'height':261,'recursive':1,'onehot':0,'action':'enters','face':'any'},'gameplay':{'conditions':[{'type':'flag','flag':'carrying-object','comparison':'equal','value':False},{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'actions':[{'type':'emitEvent','event':'killed'}]}}]
+    level['definitions']=definitions
+    level['combat']['profiles']=[p for p in level['combat']['profiles'] if p['id'].startswith('player-')]+[{'id':f'phase4-enemy-{e["id"]}','faction':'enemies','maxHealth':1,'hurtboxes':[{'id':'body','x':0,'y':0,'width':e['bb_width'],'height':e['bb_height']}],'attacks':[{'id':'contact','states':['CHAR_STATE_RUNNING','CHAR_STATE_STOP'],'x':0,'y':0,'width':e['bb_width'],'height':e['bb_height'],'damageType':'contact','damage':1,'hitOnce':False}]} for e in enemies]
+    level['gameplay']={'flags':[{'id':'carrying-object','type':'boolean','initial':False},{'id':'telephone-picked','type':'boolean','initial':False},{'id':'offered-object','type':'boolean','initial':False}],'events':[],'sequences':[{'id':'offer-telephone','steps':[{'type':'action','action':{'type':'setPlayerMode','visible':True,'controllable':False}},{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':1,'visible':True,'restartAnimation':True}},{'type':'wait','ticks':50},{'type':'action','action':{'type':'setEntityVisible','entityType':'backgroundObject','id':1,'visible':False}},{'type':'action','action':{'type':'setFlag','flag':'carrying-object','value':False}},{'type':'action','action':{'type':'setFlag','flag':'offered-object','value':True}},{'type':'action','action':{'type':'setPlayerMode','visible':True,'controllable':True}}]}]}
+    level['objective']={'type':'reachZone','x':2483,'y':703,'width':127,'height':1,'onComplete':'freeze','conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':True}]}
+    return level
+
 def convert(legacy_root, output):
     legacy_root=legacy_root.resolve()
     with tempfile.TemporaryDirectory() as td:
         phase1_archive=Path(td)/'phase1.rick2-project'; p1.convert(legacy_root,phase1_archive)
         with ZipFile(phase1_archive) as z: files={n:z.read(n) for n in z.namelist()}; phase1=json.loads(files[p1.LEVEL_PATH]); report=json.loads(files['loss-report.json'])
-    phase2=build_phase2(legacy_root,files,phase1); phase3=build_phase3(legacy_root,files,phase1)
-    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH],'campaign':{'order':[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH],'unlockRules':[{'level':p1.LEVEL_PATH,'requiresCompleted':[]},{'level':PHASE2_PATH,'requiresCompleted':[p1.LEVEL_PATH]},{'level':PHASE3_PATH,'requiresCompleted':[PHASE2_PATH]}]}}
-    files['project.json']=p1.json_bytes(manifest); files['game.json']=p1.json_bytes({'formatVersion':1,'kind':'rick2.game','initialLevel':p1.LEVEL_PATH}); files[PHASE2_PATH]=p1.json_bytes(phase2); files[PHASE3_PATH]=p1.json_bytes(phase3)
+    phase2=build_phase2(legacy_root,files,phase1); phase3=build_phase3(legacy_root,files,phase1); phase4=build_phase4(legacy_root,files,phase1)
+    paths=[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH,PHASE4_PATH]
+    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':paths,'campaign':{'order':paths,'unlockRules':[{'level':path,'requiresCompleted':paths[index-1:index]} for index,path in enumerate(paths)]}}
+    files['project.json']=p1.json_bytes(manifest); files['game.json']=p1.json_bytes({'formatVersion':1,'kind':'rick2.game','initialLevel':p1.LEVEL_PATH}); files[PHASE2_PATH]=p1.json_bytes(phase2); files[PHASE3_PATH]=p1.json_bytes(phase3); files[PHASE4_PATH]=p1.json_bytes(phase4)
     phase2_sources=[
       'data/levels/phase2.txt','data/maps/world2_transparencia.txt','data/maps/world2_transparencia.bmp',
       'data/maps/fondo_agua.bmp','data/maps/fondo_agua2.bmp','data/characters/enemies_phase2.txt',
@@ -193,17 +237,19 @@ def convert(legacy_root, output):
     phase2_sources += [f'data/characters/{name}.{ext}' for name in ['bombolles2','pez_azul','caballito_mar','medusa','erizo_mar','pez_rosa','pez_amarillo','pez_verde'] for ext in ['txt','bmp']]
     phase2_sources += ['data/levels/phase3.txt','data/maps/world3_transparencia.txt','data/maps/world3_transparencia.bmp','data/maps/cueva.bmp','data/maps/estalactitas.bmp','data/characters/enemies_phase3.txt','data/checkpoints/checkpoints_fase3.txt','data/scripts/phase3.txt','data/objects/objects_phase3.txt','data/objects/cocacola.txt','data/objects/cocacola.bmp','data/machinimia/phase3.txt','data/levels/scroll_zones_phase3.txt','data/music/progre.wav']
     phase2_sources += [f'data/characters/{name}.{ext}' for name in ['planta','hipopotamo','bolita','bombolla','buho','arana','fuego','estrellita','dragon'] for ext in ['txt','bmp']]
+    phase2_sources += ['data/levels/phase4.txt','data/maps/world4_transparencia.txt','data/maps/world4_transparencia.bmp','data/maps/fondo_castillo.bmp','data/characters/enemies_phase4.txt','data/checkpoints/checkpoints_phase4.txt','data/scripts/phase4.txt','data/objects/objects_phase4.txt','data/objects/telefono.txt','data/objects/telefono.bmp','data/machinimia/phase4.txt','data/levels/scroll_zones_phase4.txt','data/music/cmlot.wav']
+    phase2_sources += [f'data/characters/{name}.{ext}' for name in ['fuego_candelabro_grande','fuego_candelabro_pequeno','fantasma','rata','buho','hipopotamo','arana','rey_arturo','muro'] for ext in ['txt','bmp']]
     known={entry['path'] for entry in report['inputs']}
     report['inputs'] += [{'path':name,'sha256':hashlib.sha256((legacy_root/name).read_bytes()).hexdigest()} for name in phase2_sources if name not in known]
     report['inputs'].sort(key=lambda entry:entry['path'])
     report['losses'].append({'code':'PHASE3_ENEMY_RESET_SCRIPT_DEFERRED','detail':'Phase 3 zones that reset and toggle enemies 7 and 16 remain deferred; the dragon delayed proximity advance is preserved.'})
     report['losses']=sorted(report['losses'],key=lambda x:x['code']); files['loss-report.json']=p1.json_bytes(report)
-    p1.validate(manifest,phase1,files); p1.validate(manifest,phase2,files); p1.validate(manifest,phase3,files)
+    p1.validate(manifest,phase1,files); p1.validate(manifest,phase2,files); p1.validate(manifest,phase3,files); p1.validate(manifest,phase4,files)
     output.parent.mkdir(parents=True,exist_ok=True)
     with ZipFile(output,'w') as z:
         for name,data in sorted(files.items()): info=ZipInfo(name,FIXED_DATE); info.compress_type=ZIP_DEFLATED; info.external_attr=0o100644<<16; z.writestr(info,data)
     return report
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--legacy-root',type=Path,default=DEFAULT_LEGACY_ROOT); ap.add_argument('--output',type=Path,default=ROOT/'build/camelot.rick2-project'); args=ap.parse_args(); report=convert(args.legacy_root,args.output); print(f'Created {args.output} with phases 1-3 and {len(report["losses"])} reported losses')
+    ap=argparse.ArgumentParser(); ap.add_argument('--legacy-root',type=Path,default=DEFAULT_LEGACY_ROOT); ap.add_argument('--output',type=Path,default=ROOT/'build/camelot.rick2-project'); args=ap.parse_args(); report=convert(args.legacy_root,args.output); print(f'Created {args.output} with phases 1-4 and {len(report["losses"])} reported losses')
 if __name__=='__main__': main()

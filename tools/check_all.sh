@@ -13,6 +13,7 @@ python3 tests/package_editor_project_test.py
 python3 tests/camelot_phase1_conversion_test.py
 python3 tests/camelot_phase2_conversion_test.py
 python3 tests/camelot_phase3_conversion_test.py
+python3 tests/camelot_phase4_conversion_test.py
 python3 tests/editor_level1_roundtrip_test.py
 python3 tests/native_project_archive_test.py
 python3 tests/native_animation_contract_test.py

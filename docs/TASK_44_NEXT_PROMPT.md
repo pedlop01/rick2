@@ -73,3 +73,14 @@ el comportamiento previo por defecto.
 El archivo regenerado tiene SHA-256
 `31b3ed320e3663f557657c3596cbe892aad354cefb6c96dd97113dc19578f332`.
 No hagas commit sin autorización.
+
+## Estado actual de fase 4
+
+La fase 3 fue aceptada y quedó cerrada en `53b704c`. La fase 4 está convertida
+como cuarto nivel de la campaña y fue aceptada en revisión nativa. Incluye el mapa de
+castillo 128x72, las 23 pendientes izquierdas, el parallax, seis checkpoints,
+31 enemigos y el flujo de recogida y entrega del teléfono. La entrega y el
+objetivo exigen tocar el suelo en `y=703`. Regenera el paquete con
+`python3 tools/convert_camelot.py --output /tmp/camelot.rick2-project` y prueba
+`/tmp/camelot-phase4-review/levels/phase-4/level.json`. El archivo combinado actual tiene SHA-256
+`ceb0485cd6e3732496aa8b926f615bcbfeed0e7afc6d6421de4d0e759f2669d8`.

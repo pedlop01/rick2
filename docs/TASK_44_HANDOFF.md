@@ -1112,3 +1112,35 @@ remaining paired enemy activation/reset zones for enemies 7 and 16.
 
 The current regenerated archive SHA-256 is
 `31b3ed320e3663f557657c3596cbe892aad354cefb6c96dd97113dc19578f332`.
+
+## Phase 4 complete conversion (accepted)
+
+The combined deterministic project now includes phase 4 as the fourth campaign
+level. It preserves the 128x72 castle map, the 17-column and 289-tile atlas,
+1060 solid cells and all 23 historical left-rising slope cells. Both historical
+foreground markers are retained in the front tile layer. The castle background
+uses its authored one-third horizontal and vertical parallax, and `cmlot.wav`
+loops for the level.
+
+The phase starts in primary form and contains the complete six-checkpoint
+chain, its single camera region and all 31 enemy records across nine definition
+families. Stationary candelabra flames and King Arthur use `idle`; the two
+independent-axis records use `xyPatrol`; the remaining moving records preserve
+their authored horizontal distances, directions and speeds. All retain Camelot's
+stationary death motion and delayed resurrection contract.
+
+The visible telephone is a fixed pickup and the second telephone appears in a
+50-tick delivery sequence. The historical uncarried-object death zone emits
+`killed` on entry. Delivery and the conditioned objective use the one-pixel
+strip immediately above the destination floor at `y=703`, preventing completion
+in mid-air.
+
+`tests/camelot_phase4_conversion_test.py` covers deterministic output, both
+schemas, campaign order, exact map/collision counts, slopes, presentation,
+checkpoints, the complete enemy inventory, telephone sequence and gated exit.
+Conversion tests for phases 1-4, native archive loading, native animation
+contracts, all 20 web suites and the official clean native build pass. Native
+phase-4 package loading reaches only the expected headless display failure.
+The current combined archive SHA-256 is
+`ceb0485cd6e3732496aa8b926f615bcbfeed0e7afc6d6421de4d0e759f2669d8`.
+The user completed the native review and accepted phase 4 for closure.
