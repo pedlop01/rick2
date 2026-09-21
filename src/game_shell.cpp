@@ -122,6 +122,12 @@ GameShell GameShell::FromProject(const std::string& project_file) {
       }
       if (targets.size() != shell.campaign_order_.size())
         throw DataLoadError("Invalid '" + project_file + "': unlock rule outside campaign");
+      if (campaign.contains("completion")) {
+        const json& completion = campaign.at("completion");
+        if (!completion.is_object() || !completion.contains("image"))
+          throw DataLoadError("Invalid '" + project_file + "': invalid campaign completion");
+        shell.completion_image_ = ProjectPath(base, completion.at("image"), project_file);
+      }
     }
     return shell;
   } catch (const DataLoadError&) { throw; }

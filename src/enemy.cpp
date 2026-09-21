@@ -59,7 +59,7 @@ Enemy::Enemy(const char* file,
 
   freezed = false;
   freeze_elapsed_ticks = 0;
-  behavior = _behavior; behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0; respawn_ticks = 0;
+  behavior = _behavior; behavior_ticks = 0; behavior_started = false; behavior_vertical_speed = 0; respawn_ticks = 0; active = true;
   if (behavior.value("type", "") == "xyPatrol") {
     direction = behavior.value("initialDirectionX", "right") == "left" ? CHAR_DIR_LEFT : CHAR_DIR_RIGHT;
     face = direction; initial_direction = direction;
@@ -88,8 +88,16 @@ void Enemy::Reset() {
     it->second->ResetAnim();
 }
 
+void Enemy::SetActive(bool value) {
+  if (value && !active) Reset();
+  active = value;
+  if (!active) state = CHAR_STATE_DEAD;
+}
+
 void Enemy::CharacterStep(World* map, Character* player) {
   Keyboard keyboard_enemy;
+
+  if (!active) return;
 
   if (state == CHAR_STATE_DEAD) {
     const int delay = behavior.value("respawnDelayTicks", 0);

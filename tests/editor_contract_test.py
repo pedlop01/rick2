@@ -82,6 +82,7 @@ class EditorContractTest(unittest.TestCase):
         )
         campaign = schema["$defs"]["campaign"]
         self.assertEqual(campaign["required"], ["order", "unlockRules"])
+        self.assertEqual(campaign["properties"]["completion"]["$ref"], "#/$defs/campaignCompletion")
         rule = schema["$defs"]["unlockRule"]
         self.assertEqual(rule["required"], ["level", "requiresCompleted"])
         self.assertEqual(rule["properties"]["level"]["$ref"], "#/$defs/safeRelativeJsonPath")

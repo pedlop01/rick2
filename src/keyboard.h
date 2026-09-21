@@ -15,6 +15,7 @@
 #define KEY_M     0x080
 #define KEY_Z     0x100
 #define KEY_ESC   0x200
+#define KEY_N     0x400
 
 using namespace std;
 
@@ -43,6 +44,7 @@ class Keyboard
        int  PressedM();
        int  PressedZ();
        int  PressedESC();
+       int  PressedN();
 };
 
 #endif // KEYBOARD_H

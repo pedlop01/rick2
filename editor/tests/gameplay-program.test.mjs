@@ -45,6 +45,8 @@ test("entity visibility is a closed typed registered action", () => {
   state.execute({ type: "setEntityVisible", entityType: "backgroundObject", id: 7, visible: true, restartAnimation: true });
   assert.deepEqual(seen, [{ type: "setEntityVisible", entityType: "backgroundObject", id: 7, visible: true, restartAnimation: true }]);
   assert.throws(() => validateGameplayProgram({ sequences: [{ id: "bad", steps: [{ type: "action", action: { type: "setEntityVisible", entityType: "backgroundObject", id: -1, visible: true } }] }] }), /invalid entity visibility/);
+  state.execute({ type: "setEnemyActive", id: 7, active: false, reset: true });
+  assert.equal(seen.at(-1).type, "setEnemyActive");
 });
 
 test("parallel visibility branches finish before the following explosion and replay cleanly", () => {

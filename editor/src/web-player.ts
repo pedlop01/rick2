@@ -64,9 +64,9 @@ export class WebPlayer {
     this.#carryWithPlatform(platforms, obstacles);
     if (this.#keepMoving && !Object.values(input).some(Boolean) && this.#grounded(platforms, obstacles)) input = { ...input, [this.#face]: true };
     const previousState = this.#state;
-    const groundedForState = this.#grounded(platforms, obstacles), onStairsForState = this.#capabilities.climb && this.#touchingStairs(), canDescendForState = this.#capabilities.climb && this.#canDescendStairs(), canStandForState = this.#canStand(obstacles), requestedAction = groundedForState && this.#state !== "jumping" && this.#state !== "climbing" ? groundActionForInput(input, this.#capabilities, this.#bindings) : null;
+    const groundedForState = this.#grounded(platforms, obstacles), onStairsForState = this.#capabilities.climb && this.#touchingStairs(), canDescendForState = this.#capabilities.climb && this.#canDescendStairs(), canStandForState = this.#canStand(obstacles), onSlopeLeftForState = this.#slopeStandingY(this.#x, this.#y, 1, "slopeLeft") !== null, requestedAction = groundedForState && this.#state !== "jumping" && this.#state !== "climbing" ? groundActionForInput(input, this.#capabilities, this.#bindings) : null;
     const formBefore = this.#forms.active.id, heightBefore = this.#height;
-    if (this.#forcedStatePending) this.#forcedStatePending = false; else this.#forms.step({ input, signals: { grounded: groundedForState, onStairs: onStairsForState, canDescendStairs: canDescendForState, canStand: canStandForState, ceilingBlocked: !canStandForState, descending: this.#state === "jumping" && !this.#ascending }, actions: new Set(requestedAction ? [requestedAction] : []), x: this.#x, y: this.#y });
+    if (this.#forcedStatePending) this.#forcedStatePending = false; else this.#forms.step({ input, signals: { grounded: groundedForState, onStairs: onStairsForState, canDescendStairs: canDescendForState, canStand: canStandForState, ceilingBlocked: !canStandForState, descending: this.#state === "jumping" && !this.#ascending, onSlopeLeft: onSlopeLeftForState }, actions: new Set(requestedAction ? [requestedAction] : []), x: this.#x, y: this.#y });
     if (this.#forms.active.id !== formBefore) { const next = this.#forms.active; this.#x += (this.#config.spriteWidth - next.controller.spriteWidth) / 2; this.#config = next.controller; this.#capabilities = next.capabilities; this.#bindings = next.actionBindings; this.#height = next.controller.standingHeight; this.#y += heightBefore - this.#height; }
     if (previousState !== "crouching" && this.#state === "crouching") { this.#height = config.crouchingHeight; this.#y += config.standingHeight - this.#height; }
     else if (previousState === "crouching" && this.#state !== "crouching") { this.#y -= config.standingHeight - this.#height; this.#height = config.standingHeight; }
@@ -102,7 +102,7 @@ export class WebPlayer {
   forceState(state: string, previousState: string): void { this.#forms.forceState(state, previousState); this.#forcedStatePending = true; if (this.#state === "jumping") { this.#ascending = false; this.#jumpOrigin = this.#y; this.#jumpDx = 0; this.#vy = this.#config.minimumVerticalSpeed; } }
   #dispatchStateEvent(event: string, input: PlayerInput = { left: false, right: false, up: false, down: false, action: false }, platforms: readonly PlayerPlatform[] = [], obstacles: readonly PlayerObstacle[] = []): void {
     const grounded = this.#grounded(platforms, obstacles), onStairs = this.#capabilities.climb && this.#touchingStairs(), canDescend = this.#capabilities.climb && this.#canDescendStairs(), canStand = this.#canStand(obstacles);
-    this.#forms.evaluate({ input, signals: { grounded, onStairs, canDescendStairs: canDescend, canStand, ceilingBlocked: !canStand, descending: this.#state === "jumping" && !this.#ascending }, events: new Set([event]), x: this.#x, y: this.#y });
+    this.#forms.evaluate({ input, signals: { grounded, onStairs, canDescendStairs: canDescend, canStand, ceilingBlocked: !canStand, descending: this.#state === "jumping" && !this.#ascending, onSlopeLeft: this.#slopeStandingY(this.#x, this.#y, 1, "slopeLeft") !== null }, events: new Set([event]), x: this.#x, y: this.#y });
   }
   #tileKindAt(x: number, y: number): TileKind {
     const tx = Math.floor(x / this.#map.tileWidth), ty = Math.floor(y / this.#map.tileHeight);
@@ -134,7 +134,7 @@ export class WebPlayer {
   #overlapsX(platform: PlayerPlatform): boolean { const config = this.#config; return this.#x + config.collisionOffsetX < platform.x + platform.width && this.#x + config.collisionOffsetX + config.collisionWidth > platform.x; }
   #carryWithPlatform(platforms: readonly PlayerPlatform[], obstacles: readonly PlayerObstacle[]): void { const support = platforms.find((platform) => this.#overlapsX(platform) && Math.abs(this.#y + this.#height - (platform.y - platform.dy)) <= 1); if (support) { this.#moveX(support.dx, obstacles); this.#moveY(support.dy, [], obstacles, true); } }
   #overlapsObstacle(x: number, y: number, height: number, obstacles: readonly PlayerObstacle[]): PlayerObstacle | undefined { return obstacles.find((obstacle) => x < obstacle.x + obstacle.width && x + this.#config.collisionWidth > obstacle.x && y < obstacle.y + obstacle.height && y + height > obstacle.y); }
-  #slopeStandingY(atX: number, atY: number, tolerance: number): number | null {
+  #slopeStandingY(atX: number, atY: number, tolerance: number, expectedKind?: "slopeLeft" | "slopeRight"): number | null {
     const config = this.#config, bottom = atY + this.#height;
     const feet = [atX + config.collisionOffsetX, atX + config.collisionOffsetX + config.collisionWidth - 1];
     let closest: number | null = null;
@@ -143,7 +143,7 @@ export class WebPlayer {
       for (const ty of new Set([Math.floor(bottom / this.#map.tileHeight), Math.floor((bottom - 1) / this.#map.tileHeight), Math.floor((bottom + tolerance) / this.#map.tileHeight)])) {
         if (tx < 0 || tx >= this.#map.width || ty < 0 || ty >= this.#map.height) continue;
         const kind = this.#tileKindAt(footX, ty * this.#map.tileHeight + .5);
-        if ((side === 0 && kind !== "slopeLeft") || (side === 1 && kind !== "slopeRight")) continue;
+        if ((side === 0 && kind !== "slopeLeft") || (side === 1 && kind !== "slopeRight") || (expectedKind && kind !== expectedKind)) continue;
         let localX = Math.max(0, Math.min(this.#map.tileWidth - 1, footX - tx * this.#map.tileWidth));
         if (kind === "slopeRight") localX = this.#map.tileWidth - 1 - localX;
         const surface = ty * this.#map.tileHeight + Math.floor(localX * (this.#map.tileHeight - 1) / (this.#map.tileWidth - 1));

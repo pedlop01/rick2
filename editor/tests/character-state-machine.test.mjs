@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { CharacterStateMachine, validateCharacterStateMachine } from "../test-dist/character-state-machine.mjs";
 
 const idleInput = { left: false, right: false, up: false, down: false, action: false };
-const signals = { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false };
+const signals = { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false, descending: false, onSlopeLeft: false };
 const context = (input = idleInput, x = 10, y = 20) => ({ input, signals, x, y });
 const definition = {
   initialState: "idle",

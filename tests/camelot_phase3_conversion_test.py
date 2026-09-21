@@ -5,7 +5,7 @@ from pathlib import Path
 from zipfile import ZipFile
 import jsonschema
 ROOT=Path(__file__).parents[1]; sys.path.insert(0,str(ROOT/'tools'))
-from convert_camelot import DEFAULT_LEGACY_ROOT, convert
+from convert_camelot import DEFAULT_LEGACY_ROOT, convert, parse_phase3_enemy_control_zones
 
 @unittest.skipUnless(DEFAULT_LEGACY_ROOT.is_dir(),'historical Camelot checkout is not available')
 class CamelotPhase3ConversionTest(unittest.TestCase):
@@ -26,10 +26,17 @@ class CamelotPhase3ConversionTest(unittest.TestCase):
     self.assertEqual(level['entities']['enemies'][-1]['behavior'],{'type':'proximityAttack','activationDistance':1024,'delayTicks':250,'durationTicks':90,'sequence':'dragon-fire','idleAnimation':'CHAR_STATE_STOP','attackAnimation':'CHAR_STATE_RUNNING','deathMotion':'stationary'})
     plant=level['combat']['profiles'][2]; self.assertEqual(plant['guards'][0]['id'],'sword-immunity')
     self.assertEqual([p['plane'] for p in level['presentation']['parallaxLayers']],['back','front']); self.assertTrue(level['audio']['playback']['initialLoop'])
+    self.assertEqual(level['presentation']['messages'],[{'id':'cocacola-message','text':'El elixir de la vida','durationTicks':50}])
     self.assertEqual(len(level['entities']['items']),1); self.assertEqual(len(level['entities']['backgroundObjects']),6)
     water=next(trigger for trigger in level['entities']['triggers'] if trigger['id']==3); self.assertEqual(water['attributes']['action'],'enters'); self.assertEqual(water['gameplay']['actions'],[{'type':'emitEvent','event':'killed'}])
     self.assertEqual(level['gameplay']['sequences'][0]['id'],'offer-cocacola'); self.assertEqual(level['gameplay']['sequences'][0]['steps'][2],{'type':'wait','ticks':50})
     self.assertEqual(level['gameplay']['sequences'][1]['id'],'dragon-fire'); self.assertEqual(level['gameplay']['sequences'][1]['steps'][0]['action']['visible'],True)
     self.assertEqual((level['objective']['y'],level['objective']['height']),(703,1)); self.assertEqual(level['objective']['conditions'],[{'type':'flag','flag':'offered-object','comparison':'equal','value':True}])
+    zones=parse_phase3_enemy_control_zones(DEFAULT_LEGACY_ROOT/'data/scripts/phase3.txt')
+    self.assertEqual([zone['bounds'] for zone in zones],[(6373,514,88,213),(6461,512,85,214)])
+    self.assertEqual(zones[0]['outputs'],{'enemy_reset_16':1,'enemy_reset_7':1,'enemy_activated_16':0,'enemy_activated_7':0})
+    self.assertEqual(zones[1]['outputs'],{'enemy_activated_16':1,'enemy_activated_7':1,'keepMoving':1})
+    self.assertEqual(level['entities']['triggers'][3]['gameplay']['actions'],[{'type':'setEnemyActive','id':7,'active':False,'reset':True},{'type':'setEnemyActive','id':16,'active':False,'reset':True}])
+    self.assertEqual(level['entities']['triggers'][4]['gameplay']['actions'],[{'type':'setEnemyActive','id':7,'active':True},{'type':'setEnemyActive','id':16,'active':True},{'type':'keepPlayerMoving'}])
 
 if __name__=='__main__': unittest.main()

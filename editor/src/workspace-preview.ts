@@ -3,7 +3,8 @@ import { tileSource, visibleTileBounds } from "./map-view";
 import type { TileMapDocument, TileRect } from "./level-document";
 import { ENTITY_COLORS, type EntityBox, type EntityRef, type GameplayLine, type GameplayZone } from "./entity-document";
 import type { RuntimeBody } from "./preview-runtime";
-import type { ParallaxLayerDefinition, PresentationSnapshot } from "./presentation";
+import type { ParallaxLayerDefinition, PostProcessEffectDefinition, PresentationSnapshot } from "./presentation";
+import { horizontalStripOffset } from "./postprocess";
 
 export type MapLayerName = "tiles" | "frontTiles" | "collisions";
 export type PreviewLayerName = MapLayerName | "backParallax" | "frontParallax";
@@ -22,6 +23,8 @@ export interface ViewState { zoom: number; offsetX: number; offsetY: number; }
 export class WorkspacePreview {
   readonly #canvas: HTMLCanvasElement;
   readonly #context: CanvasRenderingContext2D;
+  readonly #postProcessCanvas = document.createElement("canvas");
+  readonly #postProcessContext: CanvasRenderingContext2D;
   readonly #observer: ResizeObserver;
   readonly #events = new AbortController();
   readonly #visibleLayers: Record<PreviewLayerName, boolean> = {
@@ -55,6 +58,8 @@ export class WorkspacePreview {
   #presentationCamera = { x: 0, y: 0, width: 256, height: 200 };
   #parallaxLayers: readonly ParallaxLayerDefinition[] = [];
   #parallaxImages = new Map<string, ImageBitmap>();
+  #postProcessEffects: readonly PostProcessEffectDefinition[] = [];
+  #presentationTick = 0;
 
   constructor(canvas: HTMLCanvasElement, spacePanEnabled: () => boolean = () => true) {
     const context = canvas.getContext("2d");
@@ -62,6 +67,9 @@ export class WorkspacePreview {
     this.#canvas = canvas;
     this.#spacePanEnabled = spacePanEnabled;
     this.#context = context;
+    const postProcessContext = this.#postProcessCanvas.getContext("2d");
+    if (!postProcessContext) throw new Error("Canvas 2D is unavailable");
+    this.#postProcessContext = postProcessContext;
     this.#observer = new ResizeObserver(() => this.#resizeAndDraw());
   }
 
@@ -179,7 +187,7 @@ export class WorkspacePreview {
   setRuntimeSpritesVisible(visible: boolean): void { this.#runtimeSpritesVisible = visible; this.#scheduleDraw(); }
   setRuntimeBoundsVisible(visible: boolean): void { this.#runtimeBoundsVisible = visible; this.#scheduleDraw(); }
   setCombatBoxesVisible(kind: "hurt" | "attack" | "guard", visible: boolean): void { this.#combatBoxesVisible[kind] = visible; this.#scheduleDraw(); }
-  setPresentation(snapshot: PresentationSnapshot | null, layers: readonly ParallaxLayerDefinition[] = [], camera = { x: 0, y: 0, width: 256, height: 200 }): void { this.#presentation = snapshot; this.#parallaxLayers = layers; this.#presentationCamera = camera; this.#scheduleDraw(); }
+  setPresentation(snapshot: PresentationSnapshot | null, layers: readonly ParallaxLayerDefinition[] = [], camera = { x: 0, y: 0, width: 256, height: 200 }, postProcessEffects: readonly PostProcessEffectDefinition[] = [], tick = 0): void { this.#presentation = snapshot; this.#parallaxLayers = layers; this.#presentationCamera = camera; this.#postProcessEffects = postProcessEffects; this.#presentationTick = tick; this.#scheduleDraw(); }
   refresh(): void { this.#scheduleDraw(); }
 
   tileAtClient(clientX: number, clientY: number): PointerPosition | null {
@@ -277,6 +285,28 @@ export class WorkspacePreview {
     if (this.#grid && this.#zoom * map.tileWidth >= 4) this.#drawMapGrid();
     if (this.#selection) this.#drawSelection(this.#selection);
     this.#drawPresentationOverlay();
+    this.#applyPostProcess();
+  }
+
+  #applyPostProcess(): void {
+    const effect = this.#postProcessEffects.find((item) => item.kind === "horizontalStripDisplacement");
+    if (!effect) return;
+    const width = this.#canvas.width, height = this.#canvas.height, dpr = window.devicePixelRatio || 1;
+    if (this.#postProcessCanvas.width !== width) this.#postProcessCanvas.width = width;
+    if (this.#postProcessCanvas.height !== height) this.#postProcessCanvas.height = height;
+    const source = this.#postProcessContext;
+    source.setTransform(1, 0, 0, 1, 0, 0);
+    source.clearRect(0, 0, width, height);
+    source.drawImage(this.#canvas, 0, 0);
+    this.#context.setTransform(1, 0, 0, 1, 0, 0);
+    this.#context.fillStyle = "#000";
+    this.#context.fillRect(0, 0, width, height);
+    this.#context.imageSmoothingEnabled = false;
+    for (let strip = 0; strip < effect.strips; ++strip) {
+      const top = Math.floor(strip * height / effect.strips), bottom = Math.floor((strip + 1) * height / effect.strips);
+      const offset = horizontalStripOffset(strip, effect, this.#presentationTick * 20) * dpr;
+      this.#context.drawImage(this.#postProcessCanvas, 0, top, width, bottom - top, offset, top, width, bottom - top);
+    }
   }
 
   #drawParallax(plane: "back" | "front"): void { const context = this.#context, camera = this.#presentationCamera; for (const layer of this.#parallaxLayers.filter((item) => item.plane === plane)) { const image = this.#parallaxImages.get(layer.id); if (!image) continue; const x = camera.x * (1 - layer.factorX) + (layer.offsetX ?? 0), y = camera.y * (1 - layer.factorY) + (layer.offsetY ?? 0); context.save(); context.globalAlpha = layer.opacity ?? 1; const startX = layer.repeatX ? x - Math.ceil((x + camera.width) / image.width) * image.width : x, startY = layer.repeatY ? y - Math.ceil((y + camera.height) / image.height) * image.height : y; const endX = layer.repeatX ? camera.x + camera.width + image.width : startX + 1, endY = layer.repeatY ? camera.y + camera.height + image.height : startY + 1; for (let py = startY; py < endY; py += image.height) for (let px = startX; px < endX; px += image.width) context.drawImage(image, px, py); context.restore(); } }

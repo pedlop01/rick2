@@ -26,5 +26,10 @@ int main() {
   assert(apex.Step(apex_context).state == "jumping");
   apex_context.signals["descending"] = true;
   assert(apex.Step(apex_context).state == "falling" && apex.Snapshot().previous_state == "jumping");
+  const nlohmann::json slope_graph = nlohmann::json::parse(R"({"initialState":"walking","states":[{"id":"walking","transitions":[{"to":"slope-moving","conditions":[{"type":"signal","signal":"onSlopeLeft","value":true}]}]},{"id":"slope-moving","transitions":[]}]})");
+  CharacterStateMachine slope(slope_graph); CharacterStateContext slope_context;
+  assert(slope.Step(slope_context).state == "walking");
+  slope_context.signals["onSlopeLeft"] = true;
+  assert(slope.Step(slope_context).state == "slope-moving");
   std::cout << "character state machine ok\n";
 }

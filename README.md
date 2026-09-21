@@ -128,7 +128,10 @@ g++ -std=c++11 tests/resource_cache_test.cpp src/resource_cache.cpp \
 Debug overlays are disabled during normal play. Start the game with `--debug`
 to draw collision boxes, checkpoints, triggers, camera views and entity IDs.
 While this mode is active, holding the left mouse button prints its correctly
-scaled world coordinates:
+scaled world coordinates. In a campaign, `N` completes the current level
+through the normal progression path so partially reviewed levels can be
+skipped; this shortcut is unavailable without `--debug` and in direct-level
+mode:
 
 ```sh
 cd bin

@@ -5,11 +5,11 @@ import { CharacterForms, validateCharacterForms } from "../test-dist/character-f
 
 test("shared native/web character forms fixture transforms without moving its feet", async () => {
   const definition = JSON.parse(await readFile(new URL("../../tests/fixtures/character_forms.json", import.meta.url), "utf8"));
-  const forms = new CharacterForms(definition); assert.equal(forms.active.visualScale, 4); const context = { input: { left: false, right: true, up: false, down: false, action: false }, signals: { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false }, x: 10, y: 20 };
+  const forms = new CharacterForms(definition); assert.equal(forms.active.visualScale, 4); const context = { input: { left: false, right: true, up: false, down: false, action: false }, signals: { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false, descending: false, onSlopeLeft: false }, x: 10, y: 20 };
   forms.step(context); const result = forms.step({ ...context, x: 18 }); assert.equal(result.requestedForm, "frog"); assert.equal(forms.active.id, "frog"); assert.equal(forms.active.controller.standingHeight, 31);
 });
 
-const signals = { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false }, idle = { left: false, right: false, up: false, down: false, action: false };
+const signals = { grounded: true, onStairs: false, canDescendStairs: false, canStand: true, ceilingBlocked: false, descending: false, onSlopeLeft: false }, idle = { left: false, right: false, up: false, down: false, action: false };
 const formsDefinition = {
   initialForm: "warrior",
   forms: [

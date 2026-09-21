@@ -84,3 +84,29 @@ objetivo exigen tocar el suelo en `y=703`. Regenera el paquete con
 `python3 tools/convert_camelot.py --output /tmp/camelot.rick2-project` y prueba
 `/tmp/camelot-phase4-review/levels/phase-4/level.json`. El archivo combinado actual tiene SHA-256
 `ceb0485cd6e3732496aa8b926f615bcbfeed0e7afc6d6421de4d0e759f2669d8`.
+
+## Próximo bloque tras las cuatro fases
+
+Las cuatro fases jugables están aceptadas y comprometidas hasta `e124e05`.
+La revisión manual confirma expresamente que las escaleras funcionan bien y
+que las pendientes izquierdas reales de fase 4 se recorren correctamente. Las
+marcas decorativas `stairs_right` de fase 3 deben seguir sin colisión.
+
+Task 44 continúa abierta únicamente para completar el final histórico de
+Camelot, auditar los diálogos/mensajes y resolver las dos pérdidas declaradas:
+las zonas de activación/reset de los enemigos 7 y 16 de fase 3 y el residuo de
+la gramática histórica de estados. Empieza por una auditoría acotada del final
+y los textos antes de ampliar contratos del runtime.
+
+El postprocesado de agua de fase 2 está implementado mediante el contrato
+genérico `horizontalStripDisplacement`, con 48 franjas, desplazamiento máximo
+de 4 píxeles y periodo de 25 ms en web y C++. Espera revisión nativa; la pérdida
+`LEGACY_PRESENTATION_FILTERS_DEFERRED` ya no se emite.
+
+La última pérdida, `STATE_TRANSITIONS_DEFERRED`, está resuelta y aceptada. La
+auditoría fija las 48 transiciones históricas y convierte
+el único flujo de pendiente alcanzable mediante la señal genérica
+`onSlopeLeft`; los aliases `RIGHT` no tienen transiciones en el original. El
+paquete regenerado tiene `losses: []`. La regresión de cierre y la revisión
+manual fueron aceptadas; Task 44 quedó autorizada para su commit final y se
+marca `Completada` junto con él.

@@ -1070,7 +1070,7 @@ phase-2 source and retains only the existing historical state-transition loss.
 The user completed the native level and accepted its movement, map, enemies,
 pickup, delivery and exit flow. Commit `cc622c6` closes this block.
 
-## Phase 3 complete conversion (implemented, awaiting runtime review)
+## Phase 3 complete conversion (accepted)
 
 The combined converter now appends phase 3 to the campaign. It preserves the
 236x24 cave map, its 22-column tileset and 735 solid cells. Its 81 legacy
@@ -1144,3 +1144,207 @@ phase-4 package loading reaches only the expected headless display failure.
 The current combined archive SHA-256 is
 `ceb0485cd6e3732496aa8b926f615bcbfeed0e7afc6d6421de4d0e759f2669d8`.
 The user completed the native review and accepted phase 4 for closure.
+
+## Current Task 44 closure status
+
+The four playable phases, their campaign transitions, maps, assets used during
+play, enemies, pickups, scripted deliveries, hazards, music and objectives are
+accepted and committed through `e124e05`.
+
+Manual review also explicitly accepts stair and slope traversal. The generic
+web/C++ stair implementation works correctly, and the authored left-rising
+slopes used by phase 4 traverse correctly. Phase 3's collision-3 decorations
+remain intentionally non-physical because the historical graph never consumes
+their `stairs_right` signal.
+
+Task 44 remains open against its full `DEVELOPMENT_PLAN.md` definition for
+three bounded items:
+
+1. Convert and present Camelot's historical ending (`data/intro/final.bmp`)
+   after phase 4 instead of relying only on the generic campaign completion.
+2. Audit the historical message-box content and replace the current concise
+   pickup messages where source dialogue exists.
+3. Resolve the two entries still emitted by `loss-report.json`: the paired
+   phase-3 activation/reset zones for enemies 7 and 16, and the remaining
+   legacy state-transition grammar. Stair and slope gameplay is already
+   accepted; the latter audit should determine whether the residual record can
+   be narrowed to non-observable grammar or removed.
+
+## Historical ending and message audit (implemented, awaiting review)
+
+The legacy message box does not load a dialogue file. `Game::prepareMsgBox`
+selects one fixed item name from the current phase, while death, pause and exit
+confirmation use separate status messages. The four converted pickup messages
+now preserve those exact historical literals instead of the earlier English
+summaries:
+
+- phase 1: `El fuego que no quema`;
+- phase 2: `El espejo de la sabiduria`;
+- phase 3: `El elixir de la vida`;
+- phase 4: `La voz del otro mundo`.
+
+Their existing 50-tick display and physical-pickup behavior are unchanged.
+Each phase conversion test fixes its corresponding text, so this audit does
+not add a dialogue parser or a runtime game/phase discriminator.
+
+The historical ending is likewise narrow and now fully located. `main.cpp`
+loads `data/intro/final.bmp`, a 1024x768 24-bit bitmap with SHA-256
+`90d4d21ff5f382c56a8b3d9cd9b120b25ffbf5e2213b7cab5c39cc1f52ae64ce`.
+It displays the image only after phase 4 returns successful completion, scales
+it to the display, and waits for an Escape press and release before returning
+to the main menu. There is no ending animation, dialogue, music change or
+additional historical asset in that path.
+
+This block deliberately does not extend the project or shell contract. The
+next bounded block may add one optional generic campaign-completion
+presentation asset, package the bitmap deterministically and implement the
+same post-campaign hold/dismiss flow in web and C++. The two existing loss
+records remain out of scope. No commit has been created.
+
+## Historical ending part 1 (implemented, awaiting native review)
+
+Projects may now declare an optional generic `campaign.completion.image`.
+The C++ shell loads that project-relative asset and scales it to the current
+display when the last campaign level completes. Projects omitting the property
+retain the existing text-only `CAMPAIGN COMPLETE` screen. The combined Camelot
+converter packages the historical 1024x768 `final.bmp` as
+`assets/presentation/final.bmp` and references it through this contract.
+
+For partial native review, `N` completes the current campaign level only when
+the executable was launched with `--debug`. It uses the normal campaign
+advance operation, so unlock state, automatic loading and final completion are
+the same as with a real objective. Normal play and direct single-level mode do
+not gain a skip control.
+
+The historical presentation audit also found one active post-processing path:
+phase 2 divides the rendered frame into horizontal strips and cyclically
+offsets each strip to create a water distortion. No other active legacy
+post-processing filter was found. Its later implementation uses a generic
+data-driven web/C++ effect rather than a phase-name branch.
+
+This part does not add a web campaign shell or editor control for authoring the
+completion image. The shared project schema, TypeScript import/export model
+and project validation do understand the optional field and reject a missing
+asset. No commit has been created.
+
+Manual native review accepted the historical completion image and the debug
+`N` progression shortcut. The ending is therefore closed; a dedicated campaign
+authoring panel is not required by Task 44.
+
+## Phase-3 enemy control audit (implemented, runtime deferred)
+
+The remaining phase-3 enemy loss consists of exactly two unconditional,
+adjacent script zones. `(6373, 514, 88, 213)` sets reset for enemies 7 and 16
+and deactivates both. `(6461, 512, 85, 214)` reactivates both and also sets the
+historical `keepMoving` output. In the legacy update order, reset restores the
+enemy's initial state before the inactive guard skips movement, collision and
+drawing; activation resumes that reset instance.
+
+`parse_phase3_enemy_control_zones` now validates the complete seven-record
+script file and requires these exact bounds, inputs and outputs. The phase-3
+conversion regression fixes both records, and the loss-report detail now states
+the complete observed behavior instead of the former broad description.
+
+No runtime contract is added in this audit block. The next block should add a
+generic enemy reset/activation action with web/C++ parity, ensuring inactive
+enemies neither move, draw nor participate in combat. It can then emit the two
+triggers and remove `PHASE3_ENEMY_RESET_SCRIPT_DEFERRED`.
+
+## Phase-3 enemy reset and activation (implemented, awaiting native review)
+
+The typed `setEnemyActive` gameplay action addresses an enemy by authored ID,
+sets its active state and can request a reset. Inactive enemies do not update,
+render or participate in combat. Reactivation restores the initial position,
+directions, behavior counters, animation and combat state before movement
+resumes. Web preview and C++ implement the same lifecycle; projects without the
+action retain the existing always-active behavior.
+
+Phase 3 now emits both audited continuous top-left zones. The first resets and
+deactivates enemies 7 and 16; the second reactivates both and applies the
+already-generic `keepPlayerMoving` action. `PHASE3_ENEMY_RESET_SCRIPT_DEFERRED`
+is removed. At this point the loss report contained only the presentation
+filter and `STATE_TRANSITIONS_DEFERRED`; the filter is closed by the block
+below.
+
+Native review should use `--debug`, reach the adjacent zones around world X
+6373-6546, and confirm that IDs 7 and 16 disappear/reset in the first zone and
+restart from their authored initial state after the second. No commit has been
+created.
+
+Manual native review accepted the phase-3 reset/activation zones.
+
+## Phase-2 water postprocess data foundation (implemented)
+
+The legacy constants and implementation prove that phase 2 divides the full
+rendered frame into 48 horizontal strips, initializes their horizontal offsets
+as a triangular wave from 0 through a maximum of 4 pixels, and rotates that
+offset sequence every 25 ms. The effect is applied after composing the whole
+scene, not to an individual parallax layer.
+
+Presentation data now accepts a generic `horizontalStripDisplacement`
+post-process effect with positive `strips`, `maxOffset` and exact `periodMs`.
+Phase 2 declares `48`, `4` and `25`; the other phases declare no postprocess.
+Schema and web presentation validation cover the contract. The existing
+`LEGACY_PRESENTATION_FILTERS_DEFERRED` loss is narrowed to rendering only.
+
+## Phase-2 water postprocess rendering (implemented, awaiting native review)
+
+Web and C++ now render `horizontalStripDisplacement` after composing the whole
+scene. Both use the same pure triangular-wave rule, rotate it from elapsed
+milliseconds at the declared period and draw through an intermediate frame.
+Only active gameplay receives the effect; menus and the campaign completion
+screen remain unchanged. Phase 2 therefore renders 48 strips with a maximum
+four-pixel displacement and a 25-ms period in both runtimes.
+
+The native loader now validates the post-process contract too. Focused web and
+C++ rule tests cover the initial wave and its first two rotations. With the
+runtime support present, `LEGACY_PRESENTATION_FILTERS_DEFERRED` is removed and
+the regenerated package reports only `STATE_TRANSITIONS_DEFERRED`.
+
+Manual review should launch the combined package with `--debug`, press `N` to
+enter phase 2 and confirm the subtle horizontal water ripple across the full
+frame. No commit has been created.
+
+Manual review accepted the phase-2 water distortion in native and web.
+
+## Historical state-transition closure (implemented, awaiting native review)
+
+The final audit parses and fixes the complete inventory of 48 transitions in
+`warrior_def_states.txt`. Jumping, falling, neutral input, sword/guard timing,
+form change and forced-state behavior were already represented. Same-state
+legacy actions only refreshed timers or facing already owned by the generic
+controller. The remaining observable graph is the left-slope animation flow:
+walking enters the moving slope state, releasing input enters its idle state,
+and reaching ordinary solid ground returns to idle.
+
+Schema, web and C++ now expose the generic `onSlopeLeft` state-machine signal.
+Converted slope states use `running` and `stop`, so they retain the previously
+accepted 45-degree motion rather than borrowing vertical-ladder movement. The
+81 phase-3 `stairs_right` decorations remain non-physical. The 23 real
+left-rising phase-4 cells drive the historical declared states. Although the
+legacy file declares right-slope state aliases and associates their animations,
+none of its 48 transitions enters or originates from them; the conversion test
+fixes that evidence instead of inventing a graph.
+
+`STATE_TRANSITIONS_DEFERRED` is removed. The regenerated four-phase package has
+an empty loss report. Native review should enter phase 4 with `--debug`, walk a
+real left-rising slope and confirm that the top-left declared state changes to
+`stairs-moving` while moving and `stairs-idle` when released, without changing
+the accepted traversal. No commit has been created.
+
+Manual native review accepted the declared left-slope states and preserved
+traversal. All Task 44 runtime behavior is accepted, the task is marked
+`Completada`, and the final closure commit was explicitly authorized. The
+conversion reports no losses.
+
+Final closeout verification passed all Python conversion/schema/archive tests,
+the focused native rules and contracts, the official clean `bin/Makefile`
+build, all 21 web suites, the editor release/package tests and deterministic
+artifact generation. `tools/check_all.sh` reached its environment-owned
+`npm ci` step after all native checks, where sandboxed Node 18 produced the
+known esbuild `EPERM`; reinstalling dependencies outside that sandbox and
+running the remaining commands directly passed. The final combined package is
+`/tmp/camelot.rick2-project`, has SHA-256
+`4eff578c58838054cd7797eb6061a5feeb68d322ec16a6723140c4b968a702fa`,
+and reports zero losses. The pre-commit tree passed `git diff --check` on
+`master` from base `e124e05`.

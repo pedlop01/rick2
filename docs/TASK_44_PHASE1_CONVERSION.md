@@ -126,7 +126,7 @@ frame duration still requires deterministic rounding to the 50 Hz timestep.
 - Each form declares an optional horizontal jump distance limit (`184` or
   `192` world pixels). Both runtimes start descending after the absolute X
   displacement from takeoff exceeds that limit. Omitted limits retain the
-  existing Rick jump. The remaining legacy transition grammar is still deferred.
+  existing Rick jump.
 - After a declared fall lands, the primary form enters its historical
   crouching pause and returns to idle after five state ticks; the alternate
   form lands directly in idle. A primary crouch entered from another state
@@ -134,8 +134,15 @@ frame duration still requires deterministic rounding to the 50 Hz timestep.
   generic controller reports that physical descent has begun; the transition
   preserves the existing jump trajectory and then uses each form's landing
   graph. Other legacy state transitions remain deferred.
+- The complete 48-transition historical inventory is checked during
+  conversion. Its only slope entry is `WARRIOR_CAMINANDO` to the left-slope
+  moving state; the declared right-slope aliases have no incoming or outgoing
+  transition. A generic `onSlopeLeft` signal drives the observable moving,
+  idle and solid-ground exit states in web and C++, while the accepted 45°
+  collision geometry remains unchanged. The loss report is therefore empty.
 - `loss-report.json` is sorted and contains stable codes, source paths and
-  details. Every intentionally deferred or inexact conversion is visible.
+  details whenever a future input introduces an intentionally deferred or
+  inexact conversion.
 
 The output is valid only if `project.json` and its level satisfy the current
 JSON Schemas and project references remain inside the archive.

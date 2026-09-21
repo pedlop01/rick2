@@ -238,6 +238,10 @@ export function validateProject(project: Rick2Project): Diagnostic[] {
     for (const message of campaignErrors(project.manifest)) {
       diagnostics.push({ severity: "error", file: "project.json", path: "/campaign", message, source: "semantic" });
     }
+    const completionImage = project.manifest.campaign?.completion?.image;
+    if (completionImage && !project.files.has(completionImage)) {
+      diagnostics.push({ severity: "error", file: "project.json", path: "/campaign/completion/image", message: `Asset not found: ${completionImage}`, source: "semantic" });
+    }
   }
   for (const path of project.manifest.levels) {
     let level: unknown;

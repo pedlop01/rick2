@@ -1,5 +1,5 @@
 export type CharacterControl = "left" | "right" | "up" | "down" | "action";
-export type CharacterSignal = "grounded" | "onStairs" | "canDescendStairs" | "canStand" | "ceilingBlocked" | "descending";
+export type CharacterSignal = "grounded" | "onStairs" | "canDescendStairs" | "canStand" | "ceilingBlocked" | "descending" | "onSlopeLeft";
 export type Comparison = "equal" | "notEqual" | "greater" | "greaterOrEqual" | "lower" | "lowerOrEqual";
 
 export type StateCondition =

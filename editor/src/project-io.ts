@@ -19,6 +19,7 @@ export interface CampaignUnlockRule {
 export interface CampaignDefinition {
   order: string[];
   unlockRules: CampaignUnlockRule[];
+  completion?: { image: string };
 }
 
 export interface Rick2Project {
@@ -77,6 +78,9 @@ function validateManifest(value: unknown): ProjectManifest {
     if (!raw || !Array.isArray(raw.order) || !Array.isArray(raw.unlockRules)) {
       throw new Error("The campaign must declare order and unlockRules");
     }
+    if (raw.completion && typeof raw.completion.image !== "string") {
+      throw new Error("Campaign completion needs an image path");
+    }
     campaign = {
       order: raw.order.map((path) => normalizeProjectPath(path)),
       unlockRules: raw.unlockRules.map((rule) => {
@@ -88,6 +92,7 @@ function validateManifest(value: unknown): ProjectManifest {
           requiresCompleted: rule.requiresCompleted.map((path) => normalizeProjectPath(path)),
         };
       }),
+      ...(raw.completion ? { completion: { image: normalizeProjectPath(raw.completion.image) } } : {}),
     };
   }
   const validated = { ...manifest, initialLevel, levels, ...(campaign ? { campaign } : {}) } as ProjectManifest;

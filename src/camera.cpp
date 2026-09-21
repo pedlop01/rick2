@@ -473,7 +473,7 @@ void Camera::DrawEnemies(World* world, Character* player, ALLEGRO_FONT *font) {
   for(vector<Character*>::iterator it = world->GetEnemies()->begin(); it != world->GetEnemies()->end(); it++) {
     Enemy* enemy = (Enemy*)*it;
 
-    if (enemy->GetState() != CHAR_STATE_DEAD) {
+    if (enemy->IsActive() && enemy->GetState() != CHAR_STATE_DEAD) {
 
       ALLEGRO_BITMAP* enemy_bitmap = enemy->GetCurrentAnimationBitmap();
       // Flash according to simulation ticks; extra renders of the same state

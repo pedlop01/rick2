@@ -25,6 +25,7 @@ class GameShell {
   const std::vector<std::string>& CampaignOrder() const { return campaign_order_; }
   const std::string& CurrentLevel() const { return current_level_; }
   const std::set<std::string>& CompletedLevels() const { return completed_levels_; }
+  const std::string& CompletionImage() const { return completion_image_; }
 
   void ShowMenu() { if (!direct_level_) screen_ = SHELL_MENU; }
   void ShowLevelSelect() { if (!direct_level_) screen_ = SHELL_LEVEL_SELECT; }
@@ -42,6 +43,7 @@ class GameShell {
   GameShellScreen screen_;
   std::string initial_level_;
   std::string current_level_;
+  std::string completion_image_;
   std::vector<std::string> levels_;
   std::vector<std::string> campaign_order_;
   std::vector<CampaignUnlockRule> unlock_rules_;

@@ -43,6 +43,19 @@ STATE_IDS = {
 }
 
 
+def parse_state_transition_inventory(path):
+    text = path.read_text()
+    transitions = re.findall(r"^#transition\s+(WARRIOR_[A-Z_]+)\s+(WARRIOR_[A-Z_]+)", text, re.MULTILINE)
+    conditions = re.findall(r"^\s*(?:\d+\s+)?(col|key|stairs_left|stairs_right|time|prev_state|dist_x|dist_y)\s+[!=<>]+", text, re.MULTILINE)
+    if len(transitions) != 48:
+        raise ValueError("Unexpected historical state transition count")
+    if conditions.count("stairs_left") != 1 or conditions.count("stairs_right") != 0:
+        raise ValueError("Unexpected historical slope transition inventory")
+    if any(state.startswith("WARRIOR_EN_ESCALERAS_RIGHT_") for transition in transitions for state in transition):
+        raise ValueError("Unexpected reachable right-slope state graph")
+    return transitions
+
+
 def json_bytes(value):
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
@@ -333,7 +346,7 @@ def definition_and_forms(animations):
 
 def behavior(state):
     return {"walking": "running", "jumping": "jumping", "falling": "jumping",
-            "crouching": "crouching", "stairs-idle": "climbing", "stairs-moving": "climbing",
+            "crouching": "crouching", "stairs-idle": "stop", "stairs-moving": "running",
             "striking": "hitting"}.get(state, "stop")
 
 
@@ -344,6 +357,8 @@ def form_transitions(state, primary):
     right = {"type": "control", "control": "right", "pressed": True}
     up = {"type": "control", "control": "up", "pressed": True}
     down = {"type": "control", "control": "down", "pressed": True}
+    on_slope_left = {"type": "signal", "signal": "onSlopeLeft", "value": True}
+    off_slope_left = {"type": "signal", "signal": "onSlopeLeft", "value": False}
     still = [{"type": "control", "control": key, "pressed": False}
              for key in ["left", "right", "up", "down", "action"]]
     if state in ["idle", "walking"]:
@@ -351,6 +366,8 @@ def form_transitions(state, primary):
         if primary:
             result += [{"to": "drawing-sword", "conditions": [{"type": "action", "action": "hitting", "active": True}]},
                        {"to": "crouching", "conditions": [up, grounded]}]
+            if state == "walking":
+                result += [{"to": "stairs-moving", "conditions": [on_slope_left]}]
         else:
             result += [{"to": "jumping", "conditions": [up, grounded]}]
         result += [{"to": "walking", "conditions": [left]}, {"to": "walking", "conditions": [right]},
@@ -375,9 +392,12 @@ def form_transitions(state, primary):
     if state == "guarding":
         return [{"to": "striking", "conditions": [{"type": "action", "action": "hitting", "active": False}]}]
     if state == "stairs-moving":
-        return [{"to": "stairs-idle", "conditions": [{"type": "control", "control": "up", "pressed": False}, {"type": "control", "control": "down", "pressed": False}]}]
+        return [{"to": "idle", "conditions": [off_slope_left, grounded]},
+                {"to": "stairs-idle", "conditions": still}]
     if state == "stairs-idle":
-        return [{"to": "stairs-moving", "conditions": [up]}, {"to": "stairs-moving", "conditions": [down]}]
+        return [{"to": "idle", "conditions": [off_slope_left, grounded]},
+                {"to": "stairs-moving", "conditions": [left]},
+                {"to": "stairs-moving", "conditions": [right]}]
     return []
 
 
@@ -450,9 +470,11 @@ def convert(legacy_root, output):
     enemy_source = legacy_path(legacy_root, phase["enemies_description"])
     enemy_records = parse_enemy_records(enemy_source)
     animations = parse_animations(legacy_root / "data/characters/warrior.txt")
+    state_source = legacy_root / "data/characters/warrior_def_states.txt"
+    parse_state_transition_inventory(state_source)
     declared_states = set(re.findall(
         r"^#define\s+(WARRIOR_[A-Z_]+)",
-        (legacy_root / "data/characters/warrior_def_states.txt").read_text(), re.MULTILINE))
+        state_source.read_text(), re.MULTILINE))
     unknown_states = sorted(declared_states - set(STATE_IDS))
     if unknown_states:
         raise ValueError("State IDs lack an explicit mapping: " + ", ".join(unknown_states))
@@ -655,7 +677,7 @@ def convert(legacy_root, output):
                      "events": [{"id": "scene-started"}, {"id": "scene-finished"}],
                      "sequences": [{"id": "light-scene", "steps": scene_steps}]},
         "presentation": {"parallaxLayers": parallax,
-                         "messages": [{"id": "item-message", "text": "An unusual light source was collected.", "durationTicks": 50}],
+                         "messages": [{"id": "item-message", "text": "El fuego que no quema", "durationTicks": 50}],
                          "effects": [{"id": "transformation", "kind": "flash", "color": "#FFFFFF", "durationTicks": 10}]},
         "objective": {"type": "reachZone", "x": 3744, "y": 1400, "width": 188, "height": 132, "onComplete": "freeze"},
     }
@@ -671,9 +693,7 @@ def convert(legacy_root, output):
     input_paths.extend(f"data/objects/{name}.{extension}" for name in ["bombilla", "rayo", "explosion"] for extension in ["txt", "bmp"])
     input_paths.extend(f"data/characters/{name}.{extension}" for name in ["bolita", "mosca", "hipopotamo", "planta", "bombolles", "bombolla", "buho"] for extension in ["txt", "bmp"])
     inventory = [{"path": name, "sha256": hashlib.sha256((legacy_root / name).read_bytes()).hexdigest()} for name in input_paths]
-    losses = [
-        {"code": "STATE_TRANSITIONS_DEFERRED", "source": "./data/characters/warrior_def_states.txt", "detail": "State IDs and animations are preserved; the legacy transition grammar is not ported."},
-    ]
+    losses = []
     undeclared_states = sorted(referenced_states - declared_states)
     if undeclared_states:
         losses.append({"code": "LEGACY_UNDECLARED_STATES", "source": "./data/characters/warrior.txt",

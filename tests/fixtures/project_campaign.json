@@ -26,6 +26,7 @@
       { "level": "levels/three/level.json", "requiresCompleted": ["levels/two/level.json"] },
       { "level": "levels/four/level.json", "requiresCompleted": ["levels/three/level.json"] },
       { "level": "levels/final/level.json", "requiresCompleted": ["levels/one/level.json", "levels/two/level.json", "levels/three/level.json", "levels/four/level.json"] }
-    ]
+    ],
+    "completion": { "image": "assets/presentation/final.png" }
   }
 }

@@ -44,8 +44,23 @@
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/unlockRule" }
+        },
+        "completion": {
+          "$ref": "#/$defs/campaignCompletion"
         }
       }
+    },
+    "campaignCompletion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image"],
+      "properties": {
+        "image": { "$ref": "#/$defs/safeRelativeAssetPath" }
+      }
+    },
+    "safeRelativeAssetPath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*//)[^:]+$"
     },
     "unlockRule": {
       "type": "object",

@@ -23,6 +23,8 @@
 #include "runtime_options.h"
 #include "game_shell.h"
 #include "project_archive.h"
+#include "game_time.h"
+#include "postprocess_rules.h"
 
 using namespace std;
 
@@ -51,6 +53,34 @@ class ResourceCacheGuard {
  public:
   ~ResourceCacheGuard() { ResourceCache::Instance().Clear(); }
 };
+
+ALLEGRO_BITMAP* ApplyPostProcess(ALLEGRO_BITMAP* source, ALLEGRO_BITMAP* target,
+                                 const nlohmann::json& presentation,
+                                 unsigned long long elapsed_ms) {
+  const nlohmann::json effects = presentation.value(
+      "postProcessEffects", nlohmann::json::array());
+  if (effects.empty()) return source;
+  const nlohmann::json& effect = effects.front();
+  if (effect.value("kind", "") != "horizontalStripDisplacement") return source;
+  const int strips = effect.value("strips", 0);
+  const int max_offset = effect.value("maxOffset", 0);
+  const unsigned int period_ms = effect.value("periodMs", 0);
+  if (strips <= 0 || max_offset <= 0 || !period_ms) return source;
+
+  const int width = al_get_bitmap_width(source);
+  const int height = al_get_bitmap_height(source);
+  al_set_target_bitmap(target);
+  al_clear_to_color(al_map_rgb(0, 0, 0));
+  for (int strip = 0; strip < strips; ++strip) {
+    const int top = strip * height / strips;
+    const int bottom = (strip + 1) * height / strips;
+    const int offset = HorizontalStripOffset(
+        strip, strips, max_offset, elapsed_ms, period_ms);
+    al_draw_bitmap_region(source, 0, top, width, bottom - top,
+                          offset, top, 0);
+  }
+  return target;
+}
 }
 
 int main(int argc, char *argv[]) {
@@ -68,6 +98,8 @@ int main(int argc, char *argv[]) {
   // Allegro variables
   unique_ptr<ALLEGRO_DISPLAY, void(*)(ALLEGRO_DISPLAY*)> display(nullptr, al_destroy_display);
   unique_ptr<ALLEGRO_BITMAP, void(*)(ALLEGRO_BITMAP*)> bitmap(nullptr, al_destroy_bitmap);
+  unique_ptr<ALLEGRO_BITMAP, void(*)(ALLEGRO_BITMAP*)> postprocess_bitmap(nullptr, al_destroy_bitmap);
+  unique_ptr<ALLEGRO_BITMAP, void(*)(ALLEGRO_BITMAP*)> completion_bitmap(nullptr, al_destroy_bitmap);
   unique_ptr<ALLEGRO_FONT, void(*)(ALLEGRO_FONT*)> font(nullptr, al_destroy_font);
   unique_ptr<ALLEGRO_EVENT_QUEUE, void(*)(ALLEGRO_EVENT_QUEUE*)> event_queue(nullptr, al_destroy_event_queue);
   Keyboard               keyboard;
@@ -139,6 +171,15 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  if (!game_shell->CompletionImage().empty()) {
+    completion_bitmap.reset(al_load_bitmap(game_shell->CompletionImage().c_str()));
+    if (!completion_bitmap) {
+      fprintf(stderr, "Game data error: Cannot load campaign completion image '%s'\n",
+              game_shell->CompletionImage().c_str());
+      return -1;
+    }
+  }
+
   if (resource_check) {
     // Avoid attributing video-driver allocations to the game during LSan runs.
     al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
@@ -147,6 +188,11 @@ int main(int argc, char *argv[]) {
   bitmap.reset(al_create_bitmap(display_config.width, display_config.height));
   if(!bitmap) {
     printf("Error: failed to create bitmap!\n");
+    return -1;
+  }
+  postprocess_bitmap.reset(al_create_bitmap(display_config.width, display_config.height));
+  if (!postprocess_bitmap) {
+    printf("Error: failed to create post-process bitmap!\n");
     return -1;
   }
 
@@ -195,6 +241,7 @@ int main(int argc, char *argv[]) {
   al_register_event_source(event_queue.get(), al_get_keyboard_event_source());
 
   bool test_invulnerable = false;
+  unsigned int level_started_tick = processed_ticks;
   const auto load_level = [&](const std::string& next_level) {
     player.reset();
     world.reset();
@@ -206,8 +253,11 @@ int main(int argc, char *argv[]) {
         throw DataLoadError("Cannot resize the display for the selected level");
       bitmap.reset(al_create_bitmap(next_display.width, next_display.height));
       if (!bitmap) throw DataLoadError("Cannot create the level render target");
+      postprocess_bitmap.reset(al_create_bitmap(next_display.width, next_display.height));
+      if (!postprocess_bitmap) throw DataLoadError("Cannot create the post-process render target");
     }
     level_file = next_level;
+    level_started_tick = processed_ticks;
     world.reset(new World(level_file.c_str(), &sound_handler, false));
     const ViewportConfig& next_camera = GetCameraConfig();
     camera.InitCamera(next_camera.x, next_camera.y,
@@ -307,6 +357,12 @@ int main(int argc, char *argv[]) {
       } else if (game_shell->Screen() == SHELL_FINISHED && (pressed & KEY_SPACE)) {
         game_shell->ShowMenu();
       }
+
+      if (options.debug && game_shell->Screen() == SHELL_PLAYING &&
+          game_shell->HasCampaign() && (pressed & KEY_N)) {
+        const std::string next_level = game_shell->CompleteCurrentLevel();
+        if (!next_level.empty()) load_level(next_level);
+      }
     } catch (const std::exception& error) {
       fprintf(stderr, "Game shell error: %s\n", error.what());
       return -1;
@@ -354,14 +410,31 @@ int main(int argc, char *argv[]) {
           al_draw_text(font.get(), color, center, 55 + static_cast<int>(index) * 15, ALLEGRO_ALIGN_CENTER, label.c_str());
         }
       } else {
-        al_draw_text(font.get(), al_map_rgb(245, 200, 66), center, 75, ALLEGRO_ALIGN_CENTER, "CAMPAIGN COMPLETE");
-        al_draw_text(font.get(), al_map_rgb(220, 220, 220), center, 105, ALLEGRO_ALIGN_CENTER, "SPACE  Main menu");
+        if (completion_bitmap) {
+          al_draw_scaled_bitmap(completion_bitmap.get(), 0, 0,
+                                al_get_bitmap_width(completion_bitmap.get()),
+                                al_get_bitmap_height(completion_bitmap.get()),
+                                0, 0, al_get_bitmap_width(bitmap.get()),
+                                al_get_bitmap_height(bitmap.get()), 0);
+        } else {
+          al_draw_text(font.get(), al_map_rgb(245, 200, 66), center, 75, ALLEGRO_ALIGN_CENTER, "CAMPAIGN COMPLETE");
+          al_draw_text(font.get(), al_map_rgb(220, 220, 220), center, 105, ALLEGRO_ALIGN_CENTER, "SPACE  Main menu");
+        }
       }
     }
 
-    // Move bitmap into display
+    ALLEGRO_BITMAP* presented_bitmap = bitmap.get();
+    if (game_shell->Screen() == SHELL_PLAYING) {
+      presented_bitmap = ApplyPostProcess(
+          bitmap.get(), postprocess_bitmap.get(),
+          world->GetPresentation()->Definition(),
+          static_cast<unsigned long long>(processed_ticks - level_started_tick) *
+              GameTime::MILLISECONDS_PER_TICK);
+    }
+
+    // Move the composed scene into the display.
     al_set_target_bitmap(al_get_backbuffer(display.get()));
-    al_draw_bitmap(bitmap.get(), 0, 0, 0);
+    al_draw_bitmap(presented_bitmap, 0, 0, 0);
     al_flip_display();
     if (smoke_tick_limit && processed_ticks >= smoke_tick_limit) {
       break;

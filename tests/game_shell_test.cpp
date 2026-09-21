@@ -5,6 +5,7 @@
 int main() {
   GameShell shell = GameShell::FromProject("tests/fixtures/project_campaign.json");
   assert(shell.Screen() == SHELL_INTRO);
+  assert(shell.CompletionImage() == "tests/fixtures/assets/presentation/final.png");
   shell.ShowMenu();
   assert(shell.Screen() == SHELL_MENU);
   assert(shell.NewGame() == "tests/fixtures/levels/one/level.json");
@@ -28,6 +29,7 @@ int main() {
   GameShell direct = GameShell::DirectLevel("levels/level1/level.json");
   assert(direct.Screen() == SHELL_PLAYING);
   assert(direct.IsDirectLevel());
+  assert(direct.CompletionImage().empty());
   assert(direct.IsUnlocked("levels/level1/level.json"));
   assert(direct.CompleteCurrentLevel().empty());
   assert(direct.Screen() == SHELL_PLAYING);

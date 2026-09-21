@@ -214,7 +214,7 @@ class Character {
     void FixHorizontalDirection(Keyboard& keyboard);
     bool AlignToStairs(World* map);
     bool SlopeStandingY(World* map, int at_x, int at_y, int tolerance,
-                        int* standing_y) const;
+                        int* standing_y, int expected_tile = 0) const;
     bool SnapToSlope(World* map, int tolerance);
     int GroundActionState(Keyboard& keyboard) const;
     bool IsActionStatePressed(int action_state, Keyboard& keyboard) const;

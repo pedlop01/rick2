@@ -47,6 +47,26 @@ def parse_objects(path):
     if len(records)!=count: raise ValueError('Object count mismatch')
     return records
 
+def parse_phase3_enemy_control_zones(path):
+    tokens=path.read_text().split(); index=0
+    if tokens[index:index+2] != ['num_scripts','7']: raise ValueError('Invalid phase-3 script header')
+    index += 2; records=[]
+    for _ in range(7):
+        bounds=tuple(map(int,tokens[index:index+4])); index += 4
+        if tokens[index] != 'input_vars': raise ValueError('Invalid phase-3 script input marker')
+        count=int(tokens[index+1]); index += 2; inputs={tokens[index+2*i]:int(tokens[index+2*i+1]) for i in range(count)}; index += count*2
+        if tokens[index] != 'output_vars': raise ValueError('Invalid phase-3 script output marker')
+        count=int(tokens[index+1]); index += 2; outputs={tokens[index+2*i]:int(tokens[index+2*i+1]) for i in range(count)}; index += count*2
+        records.append({'bounds':bounds,'inputs':inputs,'outputs':outputs})
+    if index != len(tokens): raise ValueError('Unexpected phase-3 script data')
+    selected=[record for record in records if any(key.startswith('enemy_') for key in record['outputs'])]
+    expected=[
+      {'bounds':(6373,514,88,213),'inputs':{},'outputs':{'enemy_reset_16':1,'enemy_reset_7':1,'enemy_activated_16':0,'enemy_activated_7':0}},
+      {'bounds':(6461,512,85,214),'inputs':{},'outputs':{'enemy_activated_16':1,'enemy_activated_7':1,'keepMoving':1}},
+    ]
+    if selected != expected: raise ValueError('Unsupported phase-3 enemy control zones')
+    return selected
+
 def parse_enemy_records_dynamic(path):
     lines=[x.split() for x in path.read_text().splitlines() if x.strip()]
     if len(lines[0]) != 2 or lines[0][0].lower() not in ('numenemigos','num_enemies'):
@@ -82,7 +102,7 @@ def build_phase2(root, files, phase1):
     for i,s in enumerate(scrolls):
         image=p1.archive_masked_bmp(files,world_path.with_name(s['source']),f'assets/maps/phase-2-parallax-{i}.png'); vx=s.get('vel_x',1); vy=s.get('vel_y',1)
         parallax.append({'id':f'phase-2-layer-{i}','image':image,'plane':s['plane'],'factorX':1/vx if s['plane']=='back' else vx,'factorY':0 if s['plane']=='back' else vy,'repeatX':True,'repeatY':s['plane']=='front'})
-    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'television-message','text':'A television was collected.','durationTicks':50}],'effects':[]}
+    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'television-message','text':'El espejo de la sabiduria','durationTicks':50}],'effects':[],'postProcessEffects':[{'id':'water-distortion','kind':'horizontalStripDisplacement','strips':48,'maxOffset':4,'periodMs':25}]}
     music=p1.archive_asset(files,p1.legacy_path(root,phase['song']),'assets/music/phase-2.wav'); level['audio']['music']=[music]; level['audio']['initialMusic']=0; level['audio']['playback']['initialLoop']=True
     level['runtimeProfile']['characterForms']['initialForm']='alternate'; level['runtimeProfile']['capabilities']={'shoot':False,'bomb':False,'hit':False}
     checkpoints=p1.parse_checkpoints(p1.legacy_path(root,phase['checkpoint_description']),'left'); level['entities']={k:[] for k in ['platforms','items','backgroundObjects','blocks','hazards','lasers','triggers','enemies']}; level['entities']['checkpoints']=checkpoints; level['entities']['cameraViews']=zones_dynamic(p1.legacy_path(root,phase['scrolls']))
@@ -118,6 +138,7 @@ def build_phase2(root, files, phase1):
 
 def build_phase3(root, files, phase1):
     phase=phase_values(root,3); world_path=p1.legacy_path(root,phase['world_description']); world,scrolls,triples,width,height=world_dynamic(world_path)
+    parse_phase3_enemy_control_zones(p1.legacy_path(root,phase['scripts']))
     level=copy.deepcopy(phase1); level['id']='phase-3'; tile_count=453
     tileset=p1.archive_asset(files,world_path.parent/world['file'],'assets/maps/phase-3-tileset.bmp')
     # Legacy collision 3 only set `stairs_right`; the historical transition
@@ -128,7 +149,7 @@ def build_phase3(root, files, phase1):
     for i,s in enumerate(scrolls):
         image=p1.archive_masked_bmp(files,world_path.parent/s['source'],f'assets/maps/phase-3-parallax-{i}.png'); vx=s.get('vel_x',1); vy=s.get('vel_y',1)
         parallax.append({'id':f'phase-3-layer-{i}','image':image,'plane':s['plane'],'factorX':1/vx if s['plane']=='back' else vx,'factorY':0 if s['plane']=='back' else vy,'repeatX':True,'repeatY':s['plane']=='front'})
-    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'cocacola-message','text':'A bottle was collected.','durationTicks':50}],'effects':[]}
+    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'cocacola-message','text':'El elixir de la vida','durationTicks':50}],'effects':[]}
     music=p1.archive_asset(files,p1.legacy_path(root,phase['song']),'assets/music/phase-3.wav'); level['audio']['music']=[music]; level['audio']['initialMusic']=0; level['audio']['playback']['initialLoop']=True
     level['runtimeProfile']['characterForms']['initialForm']='primary'; level['runtimeProfile']['capabilities']={'shoot':True,'bomb':True,'hit':True}
     level['entities']={k:[] for k in ['platforms','items','backgroundObjects','blocks','hazards','lasers','triggers','enemies']}
@@ -168,6 +189,8 @@ def build_phase3(root, files, phase1):
       {'id':1,'attributes':offer,'gameplay':{'conditions':[{'type':'flag','flag':'carrying-object','comparison':'equal','value':True},{'type':'flag','flag':'cocacola-picked','comparison':'equal','value':True},{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'sequence':'offer-cocacola'}},
       {'id':2,'attributes':{'x':7250,'y':479,'width':299,'height':279,'recursive':1,'onehot':0,'action':'enters','face':'any'},'gameplay':{'conditions':[{'type':'flag','flag':'offered-object','comparison':'equal','value':False}],'actions':[{'type':'emitEvent','event':'killed'}]}},
       {'id':3,'attributes':{'x':4168,'y':581,'width':152,'height':153,'recursive':1,'onehot':0,'action':'enters','face':'any'},'gameplay':{'actions':[{'type':'emitEvent','event':'killed'}]}},
+      {'id':4,'attributes':{'x':6373,'y':514,'width':88,'height':213,'recursive':0,'onehot':0,'action':'stays','face':'any','activation':'continuousPoint'},'gameplay':{'actions':[{'type':'setEnemyActive','id':7,'active':False,'reset':True},{'type':'setEnemyActive','id':16,'active':False,'reset':True}]}},
+      {'id':5,'attributes':{'x':6461,'y':512,'width':85,'height':214,'recursive':0,'onehot':0,'action':'stays','face':'any','activation':'continuousPoint'},'gameplay':{'actions':[{'type':'setEnemyActive','id':7,'active':True},{'type':'setEnemyActive','id':16,'active':True},{'type':'keepPlayerMoving'}]}},
     ]
     level['definitions']=definitions
     level['combat']['profiles']=[p for p in level['combat']['profiles'] if p['id'].startswith('player-')]+[{'id':f'phase3-enemy-{e["id"]}','faction':'enemies','maxHealth':1,'hurtboxes':[{'id':'body','x':0,'y':0,'width':e['bb_width'],'height':e['bb_height']}],'attacks':[{'id':'contact','states':['CHAR_STATE_RUNNING','CHAR_STATE_STOP'],'x':0,'y':0,'width':e['bb_width'],'height':e['bb_height'],'damageType':'contact','damage':1,'hitOnce':False}],**({'guards':[{'id':'sword-immunity','states':['CHAR_STATE_RUNNING','CHAR_STATE_STOP'],'x':0,'y':0,'width':e['bb_width'],'height':e['bb_height'],'damageTypes':['contact'],'facingOnly':False}]} if e['definition']=='enemies/planta' else {})} for e in enemies]
@@ -185,7 +208,7 @@ def build_phase4(root, files, phase1):
     for i,s in enumerate(scrolls):
         image=p1.archive_masked_bmp(files,world_path.parent/s['source'],f'assets/maps/phase-4-parallax-{i}.png'); vx=s.get('vel_x',1); vy=s.get('vel_y',1)
         parallax.append({'id':f'phase-4-layer-{i}','image':image,'plane':s['plane'],'factorX':1/vx if s['plane']=='back' else vx,'factorY':1/vy if s['plane']=='back' else vy,'repeatX':True,'repeatY':True})
-    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'telephone-message','text':'A telephone was collected.','durationTicks':50}],'effects':[]}
+    level['presentation']={'parallaxLayers':parallax,'messages':[{'id':'telephone-message','text':'La voz del otro mundo','durationTicks':50}],'effects':[]}
     music=p1.archive_asset(files,p1.legacy_path(root,phase['song']),'assets/music/phase-4.wav'); level['audio']['music']=[music]; level['audio']['initialMusic']=0; level['audio']['playback']['initialLoop']=True
     level['runtimeProfile']['characterForms']['initialForm']='primary'; level['runtimeProfile']['capabilities']={'shoot':True,'bomb':True,'hit':True}
     level['entities']={k:[] for k in ['platforms','items','backgroundObjects','blocks','hazards','lasers','triggers','enemies']}
@@ -225,10 +248,12 @@ def convert(legacy_root, output):
         with ZipFile(phase1_archive) as z: files={n:z.read(n) for n in z.namelist()}; phase1=json.loads(files[p1.LEVEL_PATH]); report=json.loads(files['loss-report.json'])
     phase2=build_phase2(legacy_root,files,phase1); phase3=build_phase3(legacy_root,files,phase1); phase4=build_phase4(legacy_root,files,phase1)
     paths=[p1.LEVEL_PATH,PHASE2_PATH,PHASE3_PATH,PHASE4_PATH]
-    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':paths,'campaign':{'order':paths,'unlockRules':[{'level':path,'requiresCompleted':paths[index-1:index]} for index,path in enumerate(paths)]}}
+    final_image='assets/presentation/final.bmp'
+    p1.archive_asset(files,legacy_root/'data/intro/final.bmp',final_image)
+    manifest={'formatVersion':1,'kind':'rick2.project','id':'camelot','name':'Camelot Warriors','initialLevel':p1.LEVEL_PATH,'levels':paths,'campaign':{'order':paths,'unlockRules':[{'level':path,'requiresCompleted':paths[index-1:index]} for index,path in enumerate(paths)],'completion':{'image':final_image}}}
     files['project.json']=p1.json_bytes(manifest); files['game.json']=p1.json_bytes({'formatVersion':1,'kind':'rick2.game','initialLevel':p1.LEVEL_PATH}); files[PHASE2_PATH]=p1.json_bytes(phase2); files[PHASE3_PATH]=p1.json_bytes(phase3); files[PHASE4_PATH]=p1.json_bytes(phase4)
     phase2_sources=[
-      'data/levels/phase2.txt','data/maps/world2_transparencia.txt','data/maps/world2_transparencia.bmp',
+      'data/intro/final.bmp','data/levels/phase2.txt','data/maps/world2_transparencia.txt','data/maps/world2_transparencia.bmp',
       'data/maps/fondo_agua.bmp','data/maps/fondo_agua2.bmp','data/characters/enemies_phase2.txt',
       'data/checkpoints/checkpoint_fase2.txt','data/scripts/phase2.txt','data/objects/objects_phase2.txt',
       'data/objects/television.txt','data/objects/television.bmp','data/machinimia/phase2.txt',
@@ -242,7 +267,6 @@ def convert(legacy_root, output):
     known={entry['path'] for entry in report['inputs']}
     report['inputs'] += [{'path':name,'sha256':hashlib.sha256((legacy_root/name).read_bytes()).hexdigest()} for name in phase2_sources if name not in known]
     report['inputs'].sort(key=lambda entry:entry['path'])
-    report['losses'].append({'code':'PHASE3_ENEMY_RESET_SCRIPT_DEFERRED','detail':'Phase 3 zones that reset and toggle enemies 7 and 16 remain deferred; the dragon delayed proximity advance is preserved.'})
     report['losses']=sorted(report['losses'],key=lambda x:x['code']); files['loss-report.json']=p1.json_bytes(report)
     p1.validate(manifest,phase1,files); p1.validate(manifest,phase2,files); p1.validate(manifest,phase3,files); p1.validate(manifest,phase4,files)
     output.parent.mkdir(parents=True,exist_ok=True)

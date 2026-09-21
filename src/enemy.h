@@ -28,6 +28,7 @@ class Enemy : public Character {
     int patrol_anchor_x;
     int patrol_anchor_y;
     int patrol_y_direction;
+    bool active;
 
   private:
     bool BoxWithinBox(int a_x, int a_y, int a_width, int a_height,
@@ -48,6 +49,8 @@ class Enemy : public Character {
     ~Enemy() override;
 
     int GetId() { return id; }
+    bool IsActive() const { return active; }
+    void SetActive(bool value);
 
     bool CheckCollisionPlayer(World* map, Character* player);
 

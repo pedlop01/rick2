@@ -12,7 +12,7 @@ import jsonschema
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from convert_camelot_phase1 import DEFAULT_LEGACY_ROOT, collision_gid, convert, parse_checkpoints, parse_forced_state_zone, parse_keep_moving_zones
+from convert_camelot_phase1 import DEFAULT_LEGACY_ROOT, collision_gid, convert, parse_checkpoints, parse_forced_state_zone, parse_keep_moving_zones, parse_state_transition_inventory
 
 
 class CamelotCollisionConversionTest(unittest.TestCase):
@@ -120,6 +120,13 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                         {"type": "control", "control": control, "pressed": False}
                         for control in ["left", "right", "up", "down", "action"]
                     ])
+                self.assertEqual(primary_states["stairs-moving"]["behavior"], "running")
+                self.assertEqual(primary_states["stairs-idle"]["behavior"], "stop")
+                self.assertIn({"to": "stairs-moving", "conditions": [{"type": "signal", "signal": "onSlopeLeft", "value": True}]}, primary_states["walking"]["transitions"])
+                self.assertEqual(primary_states["stairs-moving"]["transitions"][-2:], [
+                    {"to": "idle", "conditions": [{"type": "signal", "signal": "onSlopeLeft", "value": False}, {"type": "signal", "signal": "grounded", "value": True}]},
+                    {"to": "stairs-idle", "conditions": [{"type": "control", "control": control, "pressed": False} for control in ["left", "right", "up", "down", "action"]]},
+                ])
                 self.assertEqual([transition["to"] for transition in primary_states["drawing-sword"]["transitions"][-2:]],
                                  ["idle", "striking"])
                 self.assertEqual([transition["to"] for transition in primary_states["striking"]["transitions"][-2:]],
@@ -371,7 +378,9 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                 self.assertTrue(all(trigger["attributes"]["activation"] == "continuousPoint" and
                                     trigger["gameplay"] == {"actions": [{"type": "keepPlayerMoving"}]}
                                     for trigger in level["entities"]["triggers"][3:]))
-                self.assertEqual(level["presentation"]["messages"][0]["durationTicks"], 50)
+                self.assertEqual(level["presentation"]["messages"], [{
+                    "id": "item-message", "text": "El fuego que no quema", "durationTicks": 50,
+                }])
                 self.assertEqual([item["attributes"]["visible"] for item in level["entities"]["backgroundObjects"]], [0, 0, 0])
                 self.assertTrue(all(item["attributes"]["visualScale"] == 4 for item in level["entities"]["backgroundObjects"]))
                 self.assertEqual(
@@ -395,8 +404,7 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                     transition.get("actions") == [{"form": "alternate", "type": "setForm"}]
                     for state in alternate["stateMachine"]["states"] for transition in state["transitions"]
                 ))
-                self.assertTrue(report["losses"])
-                self.assertEqual(len(report["losses"]), 1)
+                self.assertEqual(report["losses"], [])
                 self.assertNotIn("ANIMATION_ROUNDING", {loss["code"] for loss in report["losses"]})
                 self.assertNotIn("OBJECT_ANIMATION_ROUNDING", {loss["code"] for loss in report["losses"]})
                 self.assertNotIn("DEFERRED_CHECKPOINT_GRAPH", {loss["code"] for loss in report["losses"]})
@@ -406,6 +414,12 @@ class CamelotPhase1ConversionTest(unittest.TestCase):
                 self.assertNotIn("DEFERRED_ENTITY_RECORDS", {loss["code"] for loss in report["losses"]})
                 self.assertTrue({"data/characters/buho.txt", "data/characters/buho.bmp"}.issubset({entry["path"] for entry in report["inputs"]}))
                 self.assertEqual(len(level["audio"]["effects"]), 7)
+
+    def test_historical_transition_inventory_is_complete_and_has_no_right_slope_entries(self):
+        transitions = parse_state_transition_inventory(DEFAULT_LEGACY_ROOT / "data/characters/warrior_def_states.txt")
+        self.assertEqual(len(transitions), 48)
+        self.assertIn(("WARRIOR_CAMINANDO", "WARRIOR_EN_ESCALERAS_LEFT_CAMINANDO"), transitions)
+        self.assertFalse(any(state.startswith("WARRIOR_EN_ESCALERAS_RIGHT_") for transition in transitions for state in transition))
 
     def test_missing_required_historical_input_fails(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -462,7 +462,7 @@ void Character::GetCollisionsInternalWeightBoxExt(World* map, Colbox &mask_col) 
 }
 
 bool Character::SlopeStandingY(World* map, int at_x, int at_y, int tolerance,
-                               int* standing_y) const {
+                               int* standing_y, int expected_tile) const {
   const int tile_width = map->GetTilesetTileWidth();
   const int tile_height = map->GetTilesetTileHeight();
   if (tile_width <= 1 || tile_height <= 0 || bb_width <= 0 || bb_height <= 0)
@@ -480,7 +480,8 @@ bool Character::SlopeStandingY(World* map, int at_x, int at_y, int tolerance,
           rows[index] >= map->GetMapHeight()) continue;
       const int tile = map->GetTile(column, rows[index])->GetType();
       if ((side == 0 && tile != TILE_SLOPE_LEFT) ||
-          (side == 1 && tile != TILE_SLOPE_RIGHT)) continue;
+          (side == 1 && tile != TILE_SLOPE_RIGHT) ||
+          (expected_tile && tile != expected_tile)) continue;
       int candidate = at_y;
       if (!SlopeStandingPositionY(tile, column * tile_width,
                                   rows[index] * tile_height,

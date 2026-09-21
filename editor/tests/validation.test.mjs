@@ -36,6 +36,14 @@ test("generic platformer demo validates without errors", () => {
   assert.equal(hasValidationErrors(diagnostics), false);
 });
 
+test("campaign completion image must exist inside the project", () => {
+  const project = createEmptyProject();
+  project.manifest.campaign = { order: [project.manifest.initialLevel], unlockRules: [{ level: project.manifest.initialLevel, requiresCompleted: [] }], completion: { image: "assets/presentation/final.png" } };
+  assert.ok(validateProject(project).some((diagnostic) => diagnostic.path === "/campaign/completion/image" && diagnostic.message.includes("Asset not found")));
+  project.files.set("assets/presentation/final.png", new Uint8Array([1]));
+  assert.equal(validateProject(project).some((diagnostic) => diagnostic.path === "/campaign/completion/image"), false);
+});
+
 test("committed level 1 satisfies the same bundled contract", async () => {
   const project = createEmptyProject("level-one", "Level one");
   const bytes = new Uint8Array(await readFile(new URL("../../levels/level1/level.json", import.meta.url))); project.files.set(project.manifest.initialLevel, bytes);

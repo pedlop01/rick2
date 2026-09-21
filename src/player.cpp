@@ -219,7 +219,7 @@ void Player::DispatchGameplayEvent(const std::string& event) {
   CharacterStateContext context; context.x = pos_x; context.y = pos_y;
   context.signals["grounded"] = !inAir; context.signals["onStairs"] = inStairs;
   context.signals["canDescendStairs"] = overStairs; context.signals["canStand"] = !collisionHeadOrig;
-  context.signals["ceilingBlocked"] = collisionHeadOrig; context.events.insert(event);
+  context.signals["ceilingBlocked"] = collisionHeadOrig; context.signals["onSlopeLeft"] = false; context.events.insert(event);
   const std::string previous_form = forms->ActiveForm(); forms->Evaluate(context);
   if (forms->ActiveForm() != previous_form) { const int old_width = width; ApplyFormProfile(forms->ActiveDefinition()); pos_x += (old_width - width) / 2; }
   state = BehaviorState(ActiveState(*forms)); SelectFormAnimation();
@@ -242,7 +242,7 @@ void Player::ComputeNextState(World* map, Keyboard& keyboard) {
   const int old_state = state, old_direction = direction; prevState = state;
   CharacterStateContext context; context.x = pos_x; context.y = pos_y;
   context.controls["left"] = effective_keyboard.PressedLeft(); context.controls["right"] = effective_keyboard.PressedRight(); context.controls["up"] = effective_keyboard.PressedUp(); context.controls["down"] = effective_keyboard.PressedDown(); context.controls["action"] = effective_keyboard.PressedSpace();
-  context.signals["grounded"] = !inAir; context.signals["onStairs"] = inStairs; context.signals["canDescendStairs"] = overStairs; context.signals["canStand"] = !collisionHeadOrig; context.signals["ceilingBlocked"] = collisionHeadOrig; context.signals["descending"] = old_state == CHAR_STATE_JUMPING && (direction & CHAR_DIR_DOWN);
+  context.signals["grounded"] = !inAir; context.signals["onStairs"] = inStairs; context.signals["canDescendStairs"] = overStairs; context.signals["canStand"] = !collisionHeadOrig; context.signals["ceilingBlocked"] = collisionHeadOrig; context.signals["descending"] = old_state == CHAR_STATE_JUMPING && (direction & CHAR_DIR_DOWN); context.signals["onSlopeLeft"] = SlopeStandingY(map, pos_x, pos_y, 1, 0, TILE_SLOPE_LEFT);
   const int requested = GroundActionState(effective_keyboard); if (requested == CHAR_STATE_SHOOTING) context.actions.insert("shooting"); else if (requested == CHAR_STATE_BOMBING) context.actions.insert("bombing"); else if (requested == CHAR_STATE_HITTING) context.actions.insert("hitting");
   const bool killed_this_step = killed;
   if (killed) { context.events.insert("killed"); killed = false; pos_y_chk = pos_y; }
